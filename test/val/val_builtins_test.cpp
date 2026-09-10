@@ -2500,11 +2500,34 @@ INSTANTIATE_TEST_SUITE_P(
     RayTSuccess,
     ValidateGenericCombineBuiltInExecutionModelDataTypeCapabilityExtensionResult,
     Combine(Values(SPV_ENV_VULKAN_1_2), Values("RayTmaxKHR", "RayTminKHR"),
-            Values("AnyHitKHR", "ClosestHitKHR", "IntersectionKHR", "MissKHR"),
-            Values("Input"), Values("%f32"),
+            Values("AnyHitKHR", "ClosestHitKHR", "MissKHR"), Values("Input"),
+            Values("%f32"), Values("OpCapability RayTracingKHR\n"),
+            Values("OpExtension \"SPV_KHR_ray_tracing\"\n"), Values(nullptr),
+            Values(TestResult())));
+
+// VUID-StandaloneSpirv-VulkanMemoryModel-04678 singles out RayTmaxKHR in an
+// intersection shader, so the two builtins part company on that stage.
+INSTANTIATE_TEST_SUITE_P(
+    RayTminIntersectionSuccess,
+    ValidateGenericCombineBuiltInExecutionModelDataTypeCapabilityExtensionResult,
+    Combine(Values(SPV_ENV_VULKAN_1_2), Values("RayTminKHR"),
+            Values("IntersectionKHR"), Values("Input"), Values("%f32"),
             Values("OpCapability RayTracingKHR\n"),
             Values("OpExtension \"SPV_KHR_ray_tracing\"\n"), Values(nullptr),
             Values(TestResult())));
+
+INSTANTIATE_TEST_SUITE_P(
+    RayTmaxIntersectionNeedsVolatile,
+    ValidateGenericCombineBuiltInExecutionModelDataTypeCapabilityExtensionResult,
+    Combine(Values(SPV_ENV_VULKAN_1_2), Values("RayTmaxKHR"),
+            Values("IntersectionKHR"), Values("Input"), Values("%f32"),
+            Values("OpCapability RayTracingKHR\n"),
+            Values("OpExtension \"SPV_KHR_ray_tracing\"\n"), Values(nullptr),
+            Values(TestResult(
+                SPV_ERROR_INVALID_DATA,
+                "requires the Volatile decoration on a variable with the "
+                "BuiltIn",
+                "when VulkanMemoryModel is not declared"))));
 
 INSTANTIATE_TEST_SUITE_P(
     RayTNotExecutionMode,
@@ -2852,11 +2875,14 @@ INSTANTIATE_TEST_SUITE_P(
                "\"SPV_NV_mesh_shader\"\n"),
         Values(nullptr), Values(TestResult())));
 
+// SMIDNV and WarpIDNV are the two of these that
+// VUID-StandaloneSpirv-VulkanMemoryModel-04678 names, and it does not list the
+// any-hit stage, so the grid splits three ways along that boundary.
 INSTANTIATE_TEST_SUITE_P(
     SMBuiltinsInputRaySuccess,
     ValidateVulkanCombineBuiltInExecutionModelDataTypeCapabilityExtensionResult,
     Combine(
-        Values("SMCountNV", "SMIDNV", "WarpsPerSMNV", "WarpIDNV"),
+        Values("SMCountNV", "WarpsPerSMNV"),
         Values("RayGenerationNV", "IntersectionNV", "AnyHitNV", "ClosestHitNV",
                "MissNV", "CallableNV"),
         Values("Input"), Values("%u32"),
@@ -2864,6 +2890,34 @@ INSTANTIATE_TEST_SUITE_P(
         Values("OpExtension \"SPV_NV_shader_sm_builtins\"\nOpExtension "
                "\"SPV_NV_ray_tracing\"\n"),
         Values(nullptr), Values(TestResult())));
+
+INSTANTIATE_TEST_SUITE_P(
+    SMBuiltinsInputAnyHitSuccess,
+    ValidateVulkanCombineBuiltInExecutionModelDataTypeCapabilityExtensionResult,
+    Combine(
+        Values("SMIDNV", "WarpIDNV"), Values("AnyHitNV"), Values("Input"),
+        Values("%u32"),
+        Values("OpCapability ShaderSMBuiltinsNV\nOpCapability RayTracingNV\n"),
+        Values("OpExtension \"SPV_NV_shader_sm_builtins\"\nOpExtension "
+               "\"SPV_NV_ray_tracing\"\n"),
+        Values(nullptr), Values(TestResult())));
+
+INSTANTIATE_TEST_SUITE_P(
+    SMBuiltinsInputRayNeedsVolatile,
+    ValidateVulkanCombineBuiltInExecutionModelDataTypeCapabilityExtensionResult,
+    Combine(
+        Values("SMIDNV", "WarpIDNV"),
+        Values("RayGenerationNV", "IntersectionNV", "ClosestHitNV", "MissNV",
+               "CallableNV"),
+        Values("Input"), Values("%u32"),
+        Values("OpCapability ShaderSMBuiltinsNV\nOpCapability RayTracingNV\n"),
+        Values("OpExtension \"SPV_NV_shader_sm_builtins\"\nOpExtension "
+               "\"SPV_NV_ray_tracing\"\n"),
+        Values(nullptr),
+        Values(TestResult(
+            SPV_ERROR_INVALID_DATA,
+            "requires the Volatile decoration on a variable with the BuiltIn",
+            "when VulkanMemoryModel is not declared"))));
 
 INSTANTIATE_TEST_SUITE_P(
     SMBuiltinsNotInput,
@@ -3680,7 +3734,8 @@ OpDecorate %gl_ViewportIndex PerPrimitiveNV
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_VULKAN_1_1));
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("needs to be a 32-bit int scalar"));
-  EXPECT_THAT(getDiagnosticString(), HasSubstr("is not an int scalar"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("is not an int scalar"));
 }
 
 TEST_P(ValidateVulkanSubgroupBuiltIns, InMain) {
@@ -7238,7 +7293,8 @@ TEST_F(ValidateBuiltIns, HitTriangleVertexPositionType) {
 )";
   CompileSuccessfully(spirv, SPV_ENV_VULKAN_1_3);
   EXPECT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_VULKAN_1_3));
-  EXPECT_THAT(getDiagnosticString(), HasSubstr("array length must be 3"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("array length must be 3"));
   EXPECT_THAT(getDiagnosticString(),
               AnyVUID("VUID-HitTriangleVertexPositionsKHR-"
                       "HitTriangleVertexPositionsKHR-08749"));
@@ -7539,6 +7595,195 @@ TEST_F(ValidateBuiltIns,
       HasSubstr("According to the Vulkan spec BuiltIn TileApronSizeQCOM "
                 "variable must be a 2-component 32-bit "
                 "unsigned int vector."));
+}
+
+TEST_F(ValidateBuiltIns, VolatileSemanticsRequiresDecoration) {
+  const std::string spirv = R"(
+               OpCapability RayTracingKHR
+               OpCapability GroupNonUniform
+               OpCapability Shader
+               OpExtension "SPV_KHR_ray_tracing"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint RayGenerationKHR %main "main" %var
+               OpDecorate %var BuiltIn SubgroupSize
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+       %type = OpTypeInt 32 0
+    %ptr_var = OpTypePointer Input %type
+        %var = OpVariable %ptr_var Input
+       %main = OpFunction %void None %3
+          %5 = OpLabel
+          %6 = OpLoad %type %var
+               OpReturn
+               OpFunctionEnd
+)";
+  CompileSuccessfully(spirv, SPV_ENV_VULKAN_1_2);
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA,
+            ValidateInstructions(SPV_ENV_VULKAN_1_2));
+  EXPECT_THAT(getDiagnosticString(),
+              AnyVUID("VUID-StandaloneSpirv-VulkanMemoryModel-04678"));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("requires the Volatile decoration on a variable with "
+                "the BuiltIn SubgroupSize"));
+}
+
+TEST_F(ValidateBuiltIns, VolatileSemanticsDecorationSatisfiesRequirement) {
+  const std::string spirv = R"(
+               OpCapability RayTracingKHR
+               OpCapability GroupNonUniform
+               OpCapability Shader
+               OpExtension "SPV_KHR_ray_tracing"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint RayGenerationKHR %main "main" %var
+               OpDecorate %var BuiltIn SubgroupSize
+               OpDecorate %var Volatile
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+       %type = OpTypeInt 32 0
+    %ptr_var = OpTypePointer Input %type
+        %var = OpVariable %ptr_var Input
+       %main = OpFunction %void None %3
+          %5 = OpLabel
+          %6 = OpLoad %type %var
+               OpReturn
+               OpFunctionEnd
+)";
+  CompileSuccessfully(spirv, SPV_ENV_VULKAN_1_2);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_2));
+}
+
+TEST_F(ValidateBuiltIns, VolatileSemanticsRequiresVolatileLoad) {
+  const std::string spirv = R"(
+               OpCapability RayTracingKHR
+               OpCapability GroupNonUniform
+               OpCapability Shader
+               OpCapability VulkanMemoryModel
+               OpExtension "SPV_KHR_ray_tracing"
+               OpMemoryModel Logical Vulkan
+               OpEntryPoint RayGenerationKHR %main "main" %var
+               OpDecorate %var BuiltIn SubgroupSize
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+       %type = OpTypeInt 32 0
+    %ptr_var = OpTypePointer Input %type
+        %var = OpVariable %ptr_var Input
+       %main = OpFunction %void None %3
+          %5 = OpLabel
+          %6 = OpLoad %type %var
+               OpReturn
+               OpFunctionEnd
+)";
+  CompileSuccessfully(spirv, SPV_ENV_VULKAN_1_2);
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA,
+            ValidateInstructions(SPV_ENV_VULKAN_1_2));
+  EXPECT_THAT(getDiagnosticString(),
+              AnyVUID("VUID-StandaloneSpirv-VulkanMemoryModel-04679"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("requires OpLoad to use the Volatile memory operand"));
+}
+
+TEST_F(ValidateBuiltIns, VolatileSemanticsVolatileLoadSatisfiesRequirement) {
+  const std::string spirv = R"(
+               OpCapability RayTracingKHR
+               OpCapability GroupNonUniform
+               OpCapability Shader
+               OpCapability VulkanMemoryModel
+               OpExtension "SPV_KHR_ray_tracing"
+               OpMemoryModel Logical Vulkan
+               OpEntryPoint RayGenerationKHR %main "main" %var
+               OpDecorate %var BuiltIn SubgroupSize
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+       %type = OpTypeInt 32 0
+    %ptr_var = OpTypePointer Input %type
+        %var = OpVariable %ptr_var Input
+       %main = OpFunction %void None %3
+          %5 = OpLabel
+          %6 = OpLoad %type %var Volatile
+               OpReturn
+               OpFunctionEnd
+)";
+  CompileSuccessfully(spirv, SPV_ENV_VULKAN_1_2);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_2));
+}
+
+TEST_F(ValidateBuiltIns, VolatileSemanticsRayTmaxInIntersection) {
+  const std::string spirv = R"(
+               OpCapability RayTracingKHR
+               OpCapability GroupNonUniform
+               OpCapability Shader
+               OpExtension "SPV_KHR_ray_tracing"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint IntersectionKHR %main "main" %var
+               OpDecorate %var BuiltIn RayTmaxKHR
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+       %type = OpTypeFloat 32
+    %ptr_var = OpTypePointer Input %type
+        %var = OpVariable %ptr_var Input
+       %main = OpFunction %void None %3
+          %5 = OpLabel
+          %6 = OpLoad %type %var
+               OpReturn
+               OpFunctionEnd
+)";
+  CompileSuccessfully(spirv, SPV_ENV_VULKAN_1_2);
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA,
+            ValidateInstructions(SPV_ENV_VULKAN_1_2));
+  EXPECT_THAT(getDiagnosticString(),
+              AnyVUID("VUID-StandaloneSpirv-VulkanMemoryModel-04678"));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("requires the Volatile decoration on a variable with "
+                "the BuiltIn RayTmaxKHR"));
+}
+
+TEST_F(ValidateBuiltIns, VolatileSemanticsRayTmaxOutsideIntersectionIsFine) {
+  const std::string spirv = R"(
+               OpCapability RayTracingKHR
+               OpCapability GroupNonUniform
+               OpCapability Shader
+               OpExtension "SPV_KHR_ray_tracing"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint ClosestHitKHR %main "main" %var
+               OpDecorate %var BuiltIn RayTmaxKHR
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+       %type = OpTypeFloat 32
+    %ptr_var = OpTypePointer Input %type
+        %var = OpVariable %ptr_var Input
+       %main = OpFunction %void None %3
+          %5 = OpLabel
+          %6 = OpLoad %type %var
+               OpReturn
+               OpFunctionEnd
+)";
+  CompileSuccessfully(spirv, SPV_ENV_VULKAN_1_2);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_2));
+}
+
+TEST_F(ValidateBuiltIns, VolatileSemanticsIgnoresNonRayTracingStage) {
+  const std::string spirv = R"(
+               OpCapability GroupNonUniform
+               OpCapability Shader
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %main "main" %var
+               OpExecutionMode %main LocalSize 1 1 1
+               OpDecorate %var BuiltIn SubgroupSize
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+       %type = OpTypeInt 32 0
+    %ptr_var = OpTypePointer Input %type
+        %var = OpVariable %ptr_var Input
+       %main = OpFunction %void None %3
+          %5 = OpLabel
+          %6 = OpLoad %type %var
+               OpReturn
+               OpFunctionEnd
+)";
+  CompileSuccessfully(spirv, SPV_ENV_VULKAN_1_2);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_2));
 }
 
 }  // namespace

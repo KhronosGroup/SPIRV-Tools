@@ -258,6 +258,47 @@ bool IsExecutionModelValidForRtBuiltIn(spv::BuiltIn builtin,
   return false;
 }
 
+// VUID-StandaloneSpirv-VulkanMemoryModel-04678 and -04679 name these built-ins.
+// Both VUIDs cover the same set; they differ only in what carries the Volatile
+// semantics, which depends on whether VulkanMemoryModel is declared.
+bool IsVolatileSemanticsBuiltIn(spv::BuiltIn built_in) {
+  switch (built_in) {
+    case spv::BuiltIn::SMIDNV:
+    case spv::BuiltIn::WarpIDNV:
+    case spv::BuiltIn::SubgroupSize:
+    case spv::BuiltIn::SubgroupLocalInvocationId:
+    case spv::BuiltIn::SubgroupEqMask:
+    case spv::BuiltIn::SubgroupGeMask:
+    case spv::BuiltIn::SubgroupGtMask:
+    case spv::BuiltIn::SubgroupLeMask:
+    case spv::BuiltIn::SubgroupLtMask:
+    case spv::BuiltIn::RayTmaxKHR:
+      return true;
+    default:
+      return false;
+  }
+}
+
+// The requirement only applies to the ray tracing stages, and RayTmaxKHR is
+// listed for an intersection shader only.
+bool NeedsVolatileSemantics(spv::BuiltIn built_in,
+                            spv::ExecutionModel execution_model) {
+  if (built_in == spv::BuiltIn::RayTmaxKHR) {
+    return execution_model == spv::ExecutionModel::IntersectionKHR;
+  }
+  if (!IsVolatileSemanticsBuiltIn(built_in)) return false;
+  switch (execution_model) {
+    case spv::ExecutionModel::RayGenerationKHR:
+    case spv::ExecutionModel::ClosestHitKHR:
+    case spv::ExecutionModel::MissKHR:
+    case spv::ExecutionModel::IntersectionKHR:
+    case spv::ExecutionModel::CallableKHR:
+      return true;
+    default:
+      return false;
+  }
+}
+
 // Helper class managing validation of built-ins.
 // TODO: Generic functionality of this class can be moved into
 // ValidationState_t to be made available to other users.
@@ -351,6 +392,8 @@ class BuiltInsValidator {
                                                const Instruction& inst);
   // Used for GlobalInvocationId, LocalInvocationId, NumWorkgroups, WorkgroupId.
   spv_result_t ValidateComputeShaderI32Vec3InputAtDefinition(
+      const Decoration& decoration, const Instruction& inst);
+  spv_result_t ValidateVolatileSemanticsAtDefinition(
       const Decoration& decoration, const Instruction& inst);
   spv_result_t ValidateNVSMOrARMCoreBuiltinsAtDefinition(const Decoration& decoration,
                                               const Instruction& inst);
@@ -566,6 +609,11 @@ class BuiltInsValidator {
   spv_result_t ValidateComputeI32InputAtReference(
       const Decoration& decoration, const Instruction& built_in_inst,
       const Instruction& referenced_inst,
+      const Instruction& referenced_from_inst);
+
+  spv_result_t ValidateVolatileSemanticsAtReference(
+      const Decoration& decoration, const Instruction& built_in_inst,
+      uint32_t variable_id, const Instruction& referenced_inst,
       const Instruction& referenced_from_inst);
 
   spv_result_t ValidateNVSMOrARMCoreBuiltinsAtReference(
@@ -4491,6 +4539,80 @@ spv_result_t BuiltInsValidator::ValidateNVSMOrARMCoreBuiltinsAtReference(
   return SPV_SUCCESS;
 }
 
+spv_result_t BuiltInsValidator::ValidateVolatileSemanticsAtDefinition(
+    const Decoration& decoration, const Instruction& inst) {
+  // Which stage the variable is used from is only known at a reference, so the
+  // whole rule is checked there. A member decoration names a Block type rather
+  // than a variable, and the Volatile decoration the rule asks for sits on the
+  // variable, so that id is picked up as the chain walks past it.
+  const uint32_t variable_id =
+      decoration.struct_member_index() == Decoration::kInvalidMember ? inst.id()
+                                                                     : 0u;
+  return ValidateVolatileSemanticsAtReference(decoration, inst, variable_id,
+                                              inst, inst);
+}
+
+spv_result_t BuiltInsValidator::ValidateVolatileSemanticsAtReference(
+    const Decoration& decoration, const Instruction& built_in_inst,
+    uint32_t variable_id, const Instruction& referenced_inst,
+    const Instruction& referenced_from_inst) {
+  if (variable_id == 0 &&
+      referenced_from_inst.opcode() == spv::Op::OpVariable) {
+    variable_id = referenced_from_inst.id();
+  }
+
+  if (spvIsVulkanEnv(_.context()->target_env)) {
+    const spv::BuiltIn built_in = decoration.builtin();
+    for (const spv::ExecutionModel execution_model : execution_models_) {
+      if (!NeedsVolatileSemantics(built_in, execution_model)) continue;
+
+      if (_.HasCapability(spv::Capability::VulkanMemoryModel)) {
+        // The load carries the semantics, so only a load is interesting here.
+        if (referenced_from_inst.opcode() != spv::Op::OpLoad) continue;
+        // OpLoad's memory operands are optional and follow the pointer.
+        const uint32_t mask =
+            referenced_from_inst.operands().size() > 3
+                ? referenced_from_inst.GetOperandAs<uint32_t>(3)
+                : 0u;
+        if (!(mask & uint32_t(spv::MemoryAccessMask::Volatile))) {
+          return _.diag(SPV_ERROR_INVALID_DATA, &referenced_from_inst)
+                 << _.VkErrorID(4679)
+                 << spvLogStringForEnv(_.context()->target_env)
+                 << " spec requires OpLoad to use the Volatile memory operand "
+                    "when it accesses a variable with the BuiltIn "
+                 << _.grammar().lookupOperandName(SPV_OPERAND_TYPE_BUILT_IN,
+                                                  uint32_t(built_in))
+                 << " decoration, because VulkanMemoryModel is declared. "
+                 << GetReferenceDesc(decoration, built_in_inst, referenced_inst,
+                                     referenced_from_inst, execution_model);
+        }
+      } else if (variable_id != 0 &&
+                 !_.HasDecoration(variable_id, spv::Decoration::Volatile)) {
+        return _.diag(SPV_ERROR_INVALID_DATA, _.FindDef(variable_id))
+               << _.VkErrorID(4678)
+               << spvLogStringForEnv(_.context()->target_env)
+               << " spec requires the Volatile decoration on a variable with "
+                  "the BuiltIn "
+               << _.grammar().lookupOperandName(SPV_OPERAND_TYPE_BUILT_IN,
+                                                uint32_t(built_in))
+               << " decoration when VulkanMemoryModel is not declared. "
+               << GetReferenceDesc(decoration, built_in_inst, referenced_inst,
+                                   referenced_from_inst, execution_model);
+      }
+    }
+  }
+
+  if (function_id_ == 0) {
+    // Propagate this rule to all dependant ids in the global scope.
+    id_to_at_reference_checks_[referenced_from_inst.id()].push_back(std::bind(
+        &BuiltInsValidator::ValidateVolatileSemanticsAtReference, this,
+        decoration, built_in_inst, variable_id, referenced_from_inst,
+        std::placeholders::_1));
+  }
+
+  return SPV_SUCCESS;
+}
+
 spv_result_t BuiltInsValidator::ValidatePrimitiveShadingRateAtDefinition(
     const Decoration& decoration, const Instruction& inst) {
   return ValidatePrimitiveShadingRateAtReference(decoration, inst, inst, inst);
@@ -5064,6 +5186,13 @@ spv_result_t BuiltInsValidator::ValidateSingleBuiltInAtDefinition(
 spv_result_t BuiltInsValidator::ValidateSingleBuiltInAtDefinitionVulkan(
     const Decoration& decoration, const Instruction& inst,
     const spv::BuiltIn label) {
+  if (IsVolatileSemanticsBuiltIn(label)) {
+    if (spv_result_t error =
+            ValidateVolatileSemanticsAtDefinition(decoration, inst)) {
+      return error;
+    }
+  }
+
   // If you are adding a new BuiltIn enum, please register it here.
   // If the newly added enum has validation rules associated with it
   // consider leaving a TODO and/or creating an issue.
