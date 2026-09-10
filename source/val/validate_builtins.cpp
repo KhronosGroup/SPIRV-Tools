@@ -258,6 +258,49 @@ bool IsExecutionModelValidForRtBuiltIn(spv::BuiltIn builtin,
   return false;
 }
 
+bool IsVolatileSemanticsBuiltIn(spv::BuiltIn builtin) {
+  switch (builtin) {
+    case spv::BuiltIn::SMIDNV:
+    case spv::BuiltIn::WarpIDNV:
+    case spv::BuiltIn::SubgroupSize:
+    case spv::BuiltIn::SubgroupLocalInvocationId:
+    case spv::BuiltIn::SubgroupEqMask:
+    case spv::BuiltIn::SubgroupGeMask:
+    case spv::BuiltIn::SubgroupGtMask:
+    case spv::BuiltIn::SubgroupLeMask:
+    case spv::BuiltIn::SubgroupLtMask:
+    case spv::BuiltIn::RayTmaxKHR:
+      return true;
+    default:
+      return false;
+  }
+}
+
+// Some background: certain ray tracing inputs can change when you
+// execute a "repack" instruction or cast a dependent ray or whatever.
+// SPIR-V needs to have them marked as volatile so each load would actually
+// load rather than use a stale cached value
+//
+// These stages/builtin are listed in the Vulkan Spec and found in VU
+// 04678/04679
+bool NeedsVolatileSemantics(spv::BuiltIn builtin, spv::ExecutionModel stage) {
+  if (builtin == spv::BuiltIn::RayTmaxKHR) {
+    return stage == spv::ExecutionModel::IntersectionKHR;
+  }
+  if (!IsVolatileSemanticsBuiltIn(builtin)) return false;
+
+  switch (stage) {
+    case spv::ExecutionModel::RayGenerationKHR:
+    case spv::ExecutionModel::ClosestHitKHR:
+    case spv::ExecutionModel::MissKHR:
+    case spv::ExecutionModel::IntersectionKHR:
+    case spv::ExecutionModel::CallableKHR:
+      return true;
+    default:
+      return false;
+  }
+}
+
 // Helper class managing validation of built-ins.
 // TODO: Generic functionality of this class can be moved into
 // ValidationState_t to be made available to other users.
@@ -379,6 +422,12 @@ class BuiltInsValidator {
 
   spv_result_t ValidateRayTracingBuiltinsAtDefinition(
       const Decoration& decoration, const Instruction& inst);
+
+  spv_result_t ValidateVolatileSemantics(const Decoration& decoration,
+                                         const Instruction& inst);
+  spv_result_t ValidateVolatileLoads(const Decoration& decoration,
+                                     const Instruction& pointer,
+                                     spv::ExecutionModel stage);
 
   spv_result_t ValidateMeshShadingEXTBuiltinsAtDefinition(
       const Decoration& decoration, const Instruction& inst);
@@ -3671,6 +3720,118 @@ spv_result_t BuiltInsValidator::ValidateComputeI32InputAtReference(
   return SPV_SUCCESS;
 }
 
+spv_result_t BuiltInsValidator::ValidateVolatileLoads(
+    const Decoration& decoration, const Instruction& pointer,
+    spv::ExecutionModel stage) {
+  for (const auto& use : pointer.uses()) {
+    const Instruction* user = use.first;
+    // Some of these builtins are composite types, so need to trace through to
+    // find them
+    switch (user->opcode()) {
+      case spv::Op::OpLoad:
+      case spv::Op::OpAccessChain:
+      case spv::Op::OpInBoundsAccessChain:
+      case spv::Op::OpPtrAccessChain:
+      case spv::Op::OpInBoundsPtrAccessChain:
+      case spv::Op::OpCopyObject:
+        if (user->GetOperandAs<uint32_t>(2u) != pointer.id()) continue;
+        break;
+      default:
+        continue;
+    }
+
+    if (user->opcode() != spv::Op::OpLoad) {
+      if (spv_result_t error =
+              ValidateVolatileLoads(decoration, *user, stage)) {
+        return error;
+      }
+      continue;
+    }
+
+    const uint32_t mask =
+        user->operands().size() > 3u ? user->GetOperandAs<uint32_t>(3u) : 0u;
+    if (!(mask & uint32_t(spv::MemoryAccessMask::Volatile))) {
+      return _.diag(SPV_ERROR_INVALID_DATA, user)
+             << _.VkErrorID(4679)
+             << "With the VulkanMemoryModel capability declared, OpLoad "
+                "must use a Volatile memory access when it accesses into a "
+                "variable decorated with BuiltIn "
+             << _.grammar().lookupOperandName(SPV_OPERAND_TYPE_BUILT_IN,
+                                              uint32_t(decoration.builtin()))
+             << " used in "
+             << _.grammar().lookupOperandName(SPV_OPERAND_TYPE_EXECUTION_MODEL,
+                                              uint32_t(stage));
+    }
+  }
+
+  return SPV_SUCCESS;
+}
+
+spv_result_t BuiltInsValidator::ValidateVolatileSemantics(
+    const Decoration& decoration, const Instruction& inst) {
+  const spv::BuiltIn builtin = decoration.builtin();
+  const bool vulkan_memory_model =
+      _.HasCapability(spv::Capability::VulkanMemoryModel);
+
+  auto validate_variable = [&](const Instruction& variable) -> spv_result_t {
+    if (GetStorageClass(variable) != spv::StorageClass::Input) {
+      return SPV_SUCCESS;  // Validated elsewhere already
+    }
+
+    spv::ExecutionModel stage = spv::ExecutionModel::Max;
+    for (uint32_t entry_point : _.EntryPointReferences(variable.id())) {
+      const auto* models = _.GetExecutionModels(entry_point);
+      if (!models) continue;
+      for (const spv::ExecutionModel model : *models) {
+        if (NeedsVolatileSemantics(builtin, model)) {
+          stage = model;
+          break;
+        }
+      }
+      if (stage != spv::ExecutionModel::Max) break;
+    }
+    // The variable is never used in a stage the VUIDs list
+    if (stage == spv::ExecutionModel::Max) return SPV_SUCCESS;
+
+    if (vulkan_memory_model) {
+      return ValidateVolatileLoads(decoration, variable, stage);
+    }
+
+    if (!_.HasDecoration(variable.id(), spv::Decoration::Volatile)) {
+      return _.diag(SPV_ERROR_INVALID_DATA, &variable)
+             << _.VkErrorID(4678)
+             << "Without the VulkanMemoryModel capability, a variable "
+                "decorated with BuiltIn "
+             << _.grammar().lookupOperandName(SPV_OPERAND_TYPE_BUILT_IN,
+                                              uint32_t(builtin))
+             << " must also be decorated with Volatile when used in "
+             << _.grammar().lookupOperandName(SPV_OPERAND_TYPE_EXECUTION_MODEL,
+                                              uint32_t(stage));
+    }
+    return SPV_SUCCESS;
+  };
+
+  if (inst.opcode() != spv::Op::OpTypeStruct) {
+    return validate_variable(inst);
+  }
+
+  // The BuiltIn was a Block member, so the decoration is on the struct type,
+  // the Volatile decoration rule are applied on the variable declared with it.
+  for (const auto& struct_use : inst.uses()) {
+    const Instruction* pointer_type = struct_use.first;
+    if (pointer_type->opcode() != spv::Op::OpTypePointer) continue;
+    for (const auto& pointer_use : pointer_type->uses()) {
+      const Instruction* variable = pointer_use.first;
+      if (variable->opcode() != spv::Op::OpVariable) continue;
+      if (spv_result_t error = validate_variable(*variable)) {
+        return error;
+      }
+    }
+  }
+
+  return SPV_SUCCESS;
+}
+
 spv_result_t BuiltInsValidator::ValidateI32InputAtDefinition(
     const Decoration& decoration, const Instruction& inst) {
   if (spvIsVulkanEnv(_.context()->target_env)) {
@@ -3701,10 +3862,10 @@ spv_result_t BuiltInsValidator::ValidateI32InputAtDefinition(
         storage_class != spv::StorageClass::Input) {
       uint32_t vuid = GetVUIDForBuiltin(builtin, VUIDErrorStorageClass);
       return _.diag(SPV_ERROR_INVALID_DATA, &inst)
-             << _.VkErrorID(vuid)
-             << spvLogStringForEnv(_.context()->target_env)
+             << _.VkErrorID(vuid) << spvLogStringForEnv(_.context()->target_env)
              << " spec allows BuiltIn "
-             << _.grammar().lookupOperandName(SPV_OPERAND_TYPE_BUILT_IN, uint32_t(builtin))
+             << _.grammar().lookupOperandName(SPV_OPERAND_TYPE_BUILT_IN,
+                                              uint32_t(builtin))
              << " to be only used for variables with Input storage class. "
              << GetReferenceDesc(decoration, inst, inst, inst) << " "
              << GetStorageClassDesc(inst);
@@ -3746,10 +3907,10 @@ spv_result_t BuiltInsValidator::ValidateI32Vec4InputAtDefinition(
         storage_class != spv::StorageClass::Input) {
       uint32_t vuid = GetVUIDForBuiltin(builtin, VUIDErrorStorageClass);
       return _.diag(SPV_ERROR_INVALID_DATA, &inst)
-             << _.VkErrorID(vuid)
-             << spvLogStringForEnv(_.context()->target_env)
+             << _.VkErrorID(vuid) << spvLogStringForEnv(_.context()->target_env)
              << " spec allows BuiltIn "
-             << _.grammar().lookupOperandName(SPV_OPERAND_TYPE_BUILT_IN, uint32_t(builtin))
+             << _.grammar().lookupOperandName(SPV_OPERAND_TYPE_BUILT_IN,
+                                              uint32_t(builtin))
              << " to be only used for variables with Input storage class. "
              << GetReferenceDesc(decoration, inst, inst, inst) << " "
              << GetStorageClassDesc(inst);
@@ -5056,7 +5217,14 @@ spv_result_t BuiltInsValidator::ValidateSingleBuiltInAtDefinition(
   }
 
   if (spvIsVulkanEnv(_.context()->target_env)) {
-    return ValidateSingleBuiltInAtDefinitionVulkan(decoration, inst, label);
+    if (spv_result_t error =
+            ValidateSingleBuiltInAtDefinitionVulkan(decoration, inst, label)) {
+      return error;
+    }
+
+    if (IsVolatileSemanticsBuiltIn(label)) {
+      return ValidateVolatileSemantics(decoration, inst);
+    }
   }
   return SPV_SUCCESS;
 }
