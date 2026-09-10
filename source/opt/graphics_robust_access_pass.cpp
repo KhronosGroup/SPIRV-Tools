@@ -862,9 +862,13 @@ Instruction* GraphicsRobustAccessPass::MakeRuntimeArrayLengthInst(
   }
   analysis::Integer uint_type_for_query(32, false);
   auto* uint_type = type_mgr->GetRegisteredType(&uint_type_for_query);
+  uint32_t uint_type_id = type_mgr->GetTypeInstruction(uint_type);
+  if (uint_type_id == 0) {
+    Fail();
+    return nullptr;
+  }
   auto* array_len = InsertInst(
-      access_chain, spv::Op::OpArrayLength, type_mgr->GetId(uint_type),
-      array_len_id,
+      access_chain, spv::Op::OpArrayLength, uint_type_id, array_len_id,
       {{SPV_OPERAND_TYPE_ID, {pointer_to_containing_struct->result_id()}},
        {SPV_OPERAND_TYPE_LITERAL_INTEGER, {member_index_of_runtime_array}}});
   return array_len;

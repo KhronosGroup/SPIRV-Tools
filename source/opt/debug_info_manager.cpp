@@ -303,7 +303,9 @@ uint32_t DebugInfoManager::BuildDebugInlinedAtChain(
   do {
     Instruction* new_inlined_at_in_chain = CloneDebugInlinedAt(
         chain_iter_id, /* insert_before */ last_inlined_at_in_chain);
-    assert(new_inlined_at_in_chain != nullptr);
+    if (new_inlined_at_in_chain == nullptr) {
+      return kNoInlinedAt;
+    }
 
     // Set DebugInlinedAt of the new scope as the head of the chain.
     if (chain_head_id == kNoInlinedAt)
@@ -376,6 +378,9 @@ Instruction* DebugInfoManager::GetDebugOperationWithDeref() {
 Instruction* DebugInfoManager::DerefDebugExpression(Instruction* dbg_expr) {
   assert(dbg_expr->GetCommonDebugOpcode() == CommonDebugInfoDebugExpression);
   std::unique_ptr<Instruction> deref_expr(dbg_expr->Clone(context()));
+  if (!deref_expr) {
+    return nullptr;
+  }
   uint32_t result_id = context()->TakeNextId();
   if (result_id == 0) return nullptr;
   deref_expr->SetResultId(result_id);
@@ -457,6 +462,9 @@ Instruction* DebugInfoManager::CloneDebugInlinedAt(uint32_t clone_inlined_at_id,
   uint32_t result_id = context()->TakeNextId();
   if (result_id == 0) return nullptr;
   std::unique_ptr<Instruction> new_inlined_at(inlined_at->Clone(context()));
+  if (!new_inlined_at) {
+    return nullptr;
+  }
   new_inlined_at->SetResultId(result_id);
   RegisterDbgInst(new_inlined_at.get());
   if (context()->AreAnalysesValid(IRContext::Analysis::kAnalysisDefUse))
@@ -604,6 +612,9 @@ Instruction* DebugInfoManager::AddDebugValueForDecl(Instruction* dbg_decl,
   if (result_id == 0) return nullptr;
 
   std::unique_ptr<Instruction> dbg_val(dbg_decl->Clone(context()));
+  if (!dbg_val) {
+    return nullptr;
+  }
   dbg_val->SetResultId(result_id);
   dbg_val->SetInOperand(kExtInstInstructionInIdx, {CommonDebugInfoDebugValue});
   dbg_val->SetOperand(kDebugDeclareOperandVariableIndex, {value_id});
