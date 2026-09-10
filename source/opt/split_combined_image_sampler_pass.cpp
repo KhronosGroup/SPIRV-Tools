@@ -73,6 +73,9 @@ Pass::Status SplitCombinedImageSamplerPass::Process() {
   def_use_mgr_ = nullptr;
   type_mgr_ = nullptr;
 
+  if (context()->id_overflow()) {
+    return Pass::Status::Failure;
+  }
   return Ok();
 }
 
@@ -505,6 +508,9 @@ spv_result_t SplitCombinedImageSamplerPass::RemapUses(
           auto* sampled_image =
               builder.AddSampledImage(used_type_id, use.image_part->result_id(),
                                       use.sampler_part->result_id());
+          if (!sampled_image) {
+            return SPV_ERROR_INTERNAL;
+          }
           use.user->SetOperand(use.index, {sampled_image->result_id()});
           def_use_mgr_->AnalyzeInstUse(use.user);
           break;
@@ -551,6 +557,9 @@ spv_result_t SplitCombinedImageSamplerPass::RemapFunctions() {
         // Replace this type.
         analysis::Function new_f_ty(f_ty->return_type(), new_params);
         const uint32_t new_f_ty_id = type_mgr_->GetTypeInstruction(&new_f_ty);
+        if (new_f_ty_id == 0) {
+          return SPV_ERROR_INTERNAL;
+        }
         std::unordered_set<Instruction*> users;
         def_use_mgr_->ForEachUse(
             &inst,

@@ -48,6 +48,9 @@ Pass::Status ScalarReplacementPass::Process() {
       status = functionStatus;
   }
 
+  if (context()->id_overflow()) {
+    return Status::Failure;
+  }
   return status;
 }
 
@@ -175,6 +178,9 @@ bool ScalarReplacementPass::ReplaceWholeDebugDeclare(
       dbg_decl->GetSingleWordOperand(kDebugValueOperandExpressionIndex));
   auto* deref_expr =
       context()->get_debug_info_mgr()->DerefDebugExpression(dbg_expr);
+  if (deref_expr == nullptr) {
+    return false;
+  }
 
   // Add DebugValue instruction with Indexes operand and Deref operation.
   int32_t idx = 0;
@@ -189,9 +195,11 @@ bool ScalarReplacementPass::ReplaceWholeDebugDeclare(
             /*insert_before=*/insert_before, /*line=*/dbg_decl);
 
     if (added_dbg_value == nullptr) return false;
-    added_dbg_value->AddOperand(
-        {SPV_OPERAND_TYPE_ID,
-         {context()->get_constant_mgr()->GetSIntConstId(idx)}});
+    uint32_t idx_id = context()->get_constant_mgr()->GetSIntConstId(idx);
+    if (idx_id == 0) {
+      return false;
+    }
+    added_dbg_value->AddOperand({SPV_OPERAND_TYPE_ID, {idx_id}});
     added_dbg_value->SetOperand(kDebugValueOperandExpressionIndex,
                                 {deref_expr->result_id()});
     if (context()->AreAnalysesValid(IRContext::Analysis::kAnalysisDefUse)) {
@@ -209,15 +217,22 @@ bool ScalarReplacementPass::ReplaceWholeDebugValue(
   for (auto var : replacements) {
     // Clone the DebugValue.
     std::unique_ptr<Instruction> new_dbg_value(dbg_value->Clone(context()));
+    if (!new_dbg_value) {
+      return false;
+    }
     uint32_t new_id = TakeNextId();
-    if (new_id == 0) return false;
+    if (new_id == 0) {
+      return false;
+    }
     new_dbg_value->SetResultId(new_id);
     // Update 'Value' operand to the |replacements|.
     new_dbg_value->SetOperand(kDebugValueOperandValueIndex, {var->result_id()});
     // Append 'Indexes' operand.
-    new_dbg_value->AddOperand(
-        {SPV_OPERAND_TYPE_ID,
-         {context()->get_constant_mgr()->GetSIntConstId(idx)}});
+    uint32_t idx_id = context()->get_constant_mgr()->GetSIntConstId(idx);
+    if (idx_id == 0) {
+      return false;
+    }
+    new_dbg_value->AddOperand({SPV_OPERAND_TYPE_ID, {idx_id}});
     // Insert the new DebugValue to the basic block.
     auto* added_instr = dbg_value->InsertBefore(std::move(new_dbg_value));
     get_def_use_mgr()->AnalyzeInstDefUse(added_instr);

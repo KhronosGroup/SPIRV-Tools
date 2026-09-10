@@ -46,6 +46,9 @@ Pass::Status ReplaceDescArrayAccessUsingVarIndex::Process() {
       if (s == Status::SuccessWithChange) status = Status::SuccessWithChange;
     }
   }
+  if (context()->id_overflow()) {
+    return Status::Failure;
+  }
   return status;
 }
 
@@ -234,9 +237,14 @@ bool ReplaceDescArrayAccessUsingVarIndex::CloneInstsToBlock(
   for (auto* inst_to_be_cloned : insts_to_be_cloned) {
     if (inst_to_be_cloned == inst_to_skip_cloning) continue;
     std::unique_ptr<Instruction> clone(inst_to_be_cloned->Clone(context()));
+    if (!clone) {
+      return false;
+    }
     if (inst_to_be_cloned->HasResultId()) {
       uint32_t new_id = context()->TakeNextId();
-      if (new_id == 0) return false;
+      if (new_id == 0) {
+        return false;
+      }
       clone->SetResultId(new_id);
       (*old_ids_to_new_ids)[inst_to_be_cloned->result_id()] = new_id;
     }
@@ -360,10 +368,15 @@ bool ReplaceDescArrayAccessUsingVarIndex::AddConstElementAccessToCaseBlock(
     uint32_t const_element_idx,
     std::unordered_map<uint32_t, uint32_t>* old_ids_to_new_ids) const {
   std::unique_ptr<Instruction> access_clone(access_chain->Clone(context()));
+  if (!access_clone) {
+    return false;
+  }
   UseConstIndexForAccessChain(access_clone.get(), const_element_idx);
 
   uint32_t new_access_id = context()->TakeNextId();
-  if (new_access_id == 0) return false;
+  if (new_access_id == 0) {
+    return false;
+  }
   (*old_ids_to_new_ids)[access_clone->result_id()] = new_access_id;
   access_clone->SetResultId(new_access_id);
   get_def_use_mgr()->AnalyzeInstDefUse(access_clone.get());
@@ -391,6 +404,9 @@ BasicBlock* ReplaceDescArrayAccessUsingVarIndex::CreateDefaultBlock(
   // Create null value for OpPhi
   Instruction* inst = context()->get_def_use_mgr()->GetDef((*phi_operands)[0]);
   auto* null_const_inst = GetConstNull(inst->type_id());
+  if (!null_const_inst) {
+    return nullptr;
+  }
   phi_operands->push_back(null_const_inst->result_id());
   return default_block;
 }
@@ -399,7 +415,13 @@ Instruction* ReplaceDescArrayAccessUsingVarIndex::GetConstNull(
     uint32_t type_id) const {
   assert(type_id != 0 && "Result type is expected");
   auto* type = context()->get_type_mgr()->GetType(type_id);
+  if (!type) {
+    return nullptr;
+  }
   auto* null_const = context()->get_constant_mgr()->GetConstant(type, {});
+  if (!null_const) {
+    return nullptr;
+  }
   return context()->get_constant_mgr()->GetDefiningInstruction(null_const);
 }
 
