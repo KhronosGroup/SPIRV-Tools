@@ -19,7 +19,13 @@ namespace spvtools {
 namespace opt {
 namespace {
 
-using CanonicalizeIdsTest = PassTest<::testing::Test>;
+class CanonicalizeIdsTest : public PassTest<::testing::Test> {
+ public:
+  // Canonical IDs can be arbitrarily large, making per-bound ID overflow
+  // testing prohibitively time-consuming. Disable ID overflow tests for this
+  // pass.
+  CanonicalizeIdsTest() { SetTestIdOverflow(false); }
+};
 
 // ported from remap.basic.everything.frag
 TEST_F(CanonicalizeIdsTest, remap_basic) {
