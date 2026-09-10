@@ -1,6 +1,6 @@
 Revision history for SPIRV-Tools
 
-v2026.4 2026-09-08
+v2026.4 2026-09-09
   - Optimizer
     - Add pass to convert typed pointers to untyped pointers (`--convert-to-untyped`) (#6714)
     - Support optimizing shaders using SPV_KHR_opacity_micromap across dead-code elimination and local passes (#6833)
@@ -23,6 +23,9 @@ v2026.4 2026-09-08
     - Allow BFloat16 and FP8 result types in OpExtInst (#6734)
     - Validate OpSourceContinued order following OpSource (#6840)
     - Correctness fixes for >64-bit integer constant evaluation and AliasScopeINTELMask/NoAliasINTELMask operand counting (#6816, #6791, #6865)
+    - Validate ArrayStride on OpConstantDataKHR result types (#6870)
+    - Add validation for UTFEncodedKHR decoration on array types (#6872)
+    - Validate that OpAbortKHR Message Type is a concrete type (#6873)
   - Linker
     - Detect duplicate exported definitions without imports to prevent ODR violations (#6750)
   - Assembler/Disassembler
