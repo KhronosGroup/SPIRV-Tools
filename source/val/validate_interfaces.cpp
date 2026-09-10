@@ -290,6 +290,7 @@ spv_result_t GetLocationsForVariable(
   // validator allows duplicate decorations if the location/component/index are
   // equal. Also track Patch and PerTaskNV decorations.
   bool has_location = false;
+  bool has_component = false;
   uint32_t location = 0;
   uint32_t component = 0;
   bool has_index = false;
@@ -304,6 +305,7 @@ spv_result_t GetLocationsForVariable(
       location = dec.params()[0];
     } else if (dec.dec_type() == spv::Decoration::Component) {
       component = dec.params()[0];
+      has_component = true;
     } else if (dec.dec_type() == spv::Decoration::Index) {
       if (!is_output || !is_fragment) {
         return _.diag(SPV_ERROR_INVALID_DATA, variable)
@@ -537,6 +539,35 @@ spv_result_t GetLocationsForVariable(
     }
   }
 
+  if (has_component) {
+    uint32_t array_depth = 0;
+    const Instruction* depth_type = type;
+    while (depth_type->opcode() == spv::Op::OpTypeArray) {
+      array_depth++;
+      depth_type = _.FindDef(depth_type->GetOperandAs<uint32_t>(1));
+    }
+    if (array_depth >= 2) {
+      const auto model = entry_point->GetOperandAs<spv::ExecutionModel>(0);
+      if (is_output) {
+        if (model != spv::ExecutionModel::MeshNV) {
+          return _.diag(SPV_ERROR_INVALID_DATA, variable)
+                 << _.VkErrorID(10585)
+                 << "Entry-point interface variable in the Output storage "
+                    "class is decorated with Component and is an array of "
+                    "arrays of scalars or vectors";
+        }
+      } else {
+        if (model != spv::ExecutionModel::TessellationControl &&
+            model != spv::ExecutionModel::Geometry) {
+          return _.diag(SPV_ERROR_INVALID_DATA, variable)
+                 << _.VkErrorID(10584)
+                 << "Entry-point interface variable in the Input storage "
+                    "class is decorated with Component and is an array of "
+                    "arrays of scalars or vectors";
+        }
+      }
+    }
+  }
   return SPV_SUCCESS;
 }
 

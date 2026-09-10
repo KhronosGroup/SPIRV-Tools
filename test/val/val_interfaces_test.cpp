@@ -2310,6 +2310,72 @@ OpFunctionEnd
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_3));
 }
 
+TEST_F(ValidateInterfacesTest, VulkanComponentArrayOfArraysInput) {
+  const std::string text = R"(
+    OpCapability Shader
+    OpMemoryModel Logical GLSL450
+    OpEntryPoint Fragment %main "main" %var
+    OpExecutionMode %main OriginUpperLeft
+    OpDecorate %var Location 0
+    OpDecorate %var Component 0
+    %void = OpTypeVoid
+    %void_fn = OpTypeFunction %void
+    %float = OpTypeFloat 32
+    %uint = OpTypeInt 32 0
+    %uint_2 = OpConstant %uint 2
+    %arr_float = OpTypeArray %float %uint_2
+    %arr_arr_float = OpTypeArray %arr_float %uint_2
+    %ptr_input_arr_arr = OpTypePointer Input %arr_arr_float
+    %var = OpVariable %ptr_input_arr_arr Input
+    %main = OpFunction %void None %void_fn
+    %entry = OpLabel
+    OpReturn
+    OpFunctionEnd
+  )";
+
+  CompileSuccessfully(text, SPV_ENV_VULKAN_1_0);
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_VULKAN_1_0));
+  EXPECT_THAT(getDiagnosticString(),
+              AnyVUID("VUID-StandaloneSpirv-Execution-10584"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Entry-point interface variable in the Input storage "
+                        "class is decorated with Component and is an array of "
+                        "arrays of scalars or vectors"));
+}
+
+TEST_F(ValidateInterfacesTest, VulkanComponentArrayOfArraysOutput) {
+  const std::string text = R"(
+    OpCapability Shader
+    OpMemoryModel Logical GLSL450
+    OpEntryPoint Fragment %main "main" %var
+    OpExecutionMode %main OriginUpperLeft
+    OpDecorate %var Location 0
+    OpDecorate %var Component 0
+    %void = OpTypeVoid
+    %void_fn = OpTypeFunction %void
+    %float = OpTypeFloat 32
+    %uint = OpTypeInt 32 0
+    %uint_2 = OpConstant %uint 2
+    %arr_float = OpTypeArray %float %uint_2
+    %arr_arr_float = OpTypeArray %arr_float %uint_2
+    %ptr_output_arr_arr = OpTypePointer Output %arr_arr_float
+    %var = OpVariable %ptr_output_arr_arr Output
+    %main = OpFunction %void None %void_fn
+    %entry = OpLabel
+    OpReturn
+    OpFunctionEnd
+  )";
+
+  CompileSuccessfully(text, SPV_ENV_VULKAN_1_0);
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_VULKAN_1_0));
+  EXPECT_THAT(getDiagnosticString(),
+              AnyVUID("VUID-StandaloneSpirv-Execution-10585"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Entry-point interface variable in the Output storage "
+                        "class is decorated with Component and is an array of "
+                        "arrays of scalars or vectors"));
+}
+
 }  // namespace
 }  // namespace val
 }  // namespace spvtools
