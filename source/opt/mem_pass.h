@@ -25,6 +25,7 @@
 #include <unordered_set>
 #include <utility>
 
+#include "spirv-tools/optimizer.hpp"
 #include "source/opt/basic_block.h"
 #include "source/opt/def_use_manager.h"
 #include "source/opt/dominator_analysis.h"
@@ -69,6 +70,7 @@ class MemPass : public Pass {
 
  protected:
   MemPass();
+  explicit MemPass(SSARewriteMode ssa_rewrite_mode);
 
   // Returns true if |typeInst| is a scalar type
   // or a vector or matrix
@@ -133,7 +135,9 @@ class MemPass : public Pass {
   // Cache of verified non-target vars
   std::unordered_set<uint32_t> seen_non_target_vars_;
 
- private:
+private:
+  SSARewriteMode ssa_rewrite_mode_ = SSARewriteMode::All;
+
   // Return true if all uses of |varId| are only through supported reference
   // operations ie. loads and store. Also cache in supported_ref_vars_.
   // TODO(dnovillo): This function is replicated in other passes and it's
