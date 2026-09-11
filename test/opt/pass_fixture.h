@@ -75,27 +75,20 @@ class PassTest : public TestT {
         disassemble_options_(SpirvTools::kDefaultDisassembleOption),
         env_(SPV_ENV_UNIVERSAL_1_3) {}
 
-  // Runs the given |pass| on the binary assembled from the |original|.
-  // Returns a tuple of the optimized binary and the boolean value returned
-  // from pass Process() function.
-  std::tuple<std::vector<uint32_t>, Pass::Status> OptimizeToBinary(
-      Pass* pass, const std::string& original, bool skip_nop) {
-    context_ = BuildModule(env_, consumer_, original, assemble_options_);
-    EXPECT_NE(nullptr, context()) << "Assembling failed for shader:\n"
-                                  << original << std::endl;
-    if (!context()) {
-      return std::make_tuple(std::vector<uint32_t>(), Pass::Status::Failure);
-    }
-
-    context()->set_preserve_bindings(OptimizerOptions()->preserve_bindings_);
-    context()->set_preserve_spec_constants(
+  // Runs the given |pass| on the given |context|. Returns a tuple of the
+  // optimized binary and the boolean value returned from pass Process()
+  // function.
+  std::tuple<std::vector<uint32_t>, Pass::Status> RunPassAndGetBinary(
+      Pass* pass, IRContext* context, bool skip_nop) {
+    context->set_preserve_bindings(OptimizerOptions()->preserve_bindings_);
+    context->set_preserve_spec_constants(
         OptimizerOptions()->preserve_spec_constants_);
 
-    const auto status = pass->Run(context());
+    const auto status = pass->Run(context);
 
     std::vector<uint32_t> binary;
     if (status != Pass::Status::Failure) {
-      context()->module()->ToBinary(&binary, skip_nop);
+      context->module()->ToBinary(&binary, skip_nop);
     }
     return std::make_tuple(binary, status);
   }
@@ -108,7 +101,13 @@ class PassTest : public TestT {
       const std::string& assembly, bool skip_nop, Args&&... args) {
     auto pass = MakeUnique<PassT>(std::forward<Args>(args)...);
     pass->SetMessageConsumer(consumer_);
-    return OptimizeToBinary(pass.get(), assembly, skip_nop);
+    context_ = BuildModule(env_, consumer_, assembly, assemble_options_);
+    EXPECT_NE(nullptr, context()) << "Assembling failed for shader:\n"
+                                  << assembly << std::endl;
+    if (!context()) {
+      return std::make_tuple(std::vector<uint32_t>(), Pass::Status::Failure);
+    }
+    return RunPassAndGetBinary(pass.get(), context_.get(), skip_nop);
   }
 
   // Runs a single pass of class |PassT| on the binary assembled from the
@@ -152,31 +151,15 @@ class PassTest : public TestT {
   void SinglePassRunAndCheck(const std::string& original,
                              const std::string& expected, bool skip_nop,
                              bool do_validation, Args&&... args) {
-    std::vector<uint32_t> optimized_bin;
-    auto status = Pass::Status::SuccessWithoutChange;
-    std::tie(optimized_bin, status) = SinglePassRunToBinary<PassT>(
-        original, skip_nop, std::forward<Args>(args)...);
+    std::string optimized_asm;
+    Pass::Status status;
+    std::tie(optimized_asm, status) = SinglePassRunAndDisassemble<PassT>(
+        original, skip_nop, do_validation, std::forward<Args>(args)...);
+
     // Check whether the pass returns the correct modification indication.
     EXPECT_NE(Pass::Status::Failure, status);
     EXPECT_EQ(original == expected,
               status == Pass::Status::SuccessWithoutChange);
-    if (do_validation) {
-      spv_context spvContext = spvContextCreate(env_);
-      spv_diagnostic diagnostic = nullptr;
-      spv_const_binary_t binary = {optimized_bin.data(), optimized_bin.size()};
-      spv_result_t error = spvValidateWithOptions(
-          spvContext, ValidatorOptions(), &binary, &diagnostic);
-      EXPECT_EQ(error, 0);
-      if (error != 0) spvDiagnosticPrint(diagnostic);
-      spvDiagnosticDestroy(diagnostic);
-      spvContextDestroy(spvContext);
-    }
-    std::string optimized_asm;
-    SpirvTools tools(env_);
-    EXPECT_TRUE(
-        tools.Disassemble(optimized_bin, &optimized_asm, disassemble_options_))
-        << "Disassembling failed for shader:\n"
-        << original << std::endl;
     EXPECT_EQ(expected, optimized_asm);
   }
 
