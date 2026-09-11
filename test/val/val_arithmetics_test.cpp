@@ -1714,12 +1714,13 @@ OpCapability Shader
 OpCapability Float16
 OpCapability CooperativeMatrixKHR
 OpCapability CooperativeMatrixNV
-OpCapability CooperativeMatrixReductionsNV
-OpCapability CooperativeMatrixPerElementOperationsNV
+OpCapability CooperativeMatrixReductionsEXT
+OpCapability CooperativeMatrixPerElementOperationsEXT
 OpCapability VulkanMemoryModel
 OpExtension "SPV_KHR_cooperative_matrix"
 OpExtension "SPV_NV_cooperative_matrix"
 OpExtension "SPV_NV_cooperative_matrix2"
+OpExtension "SPV_EXT_cooperative_matrix_maintenance1"
 OpExtension "SPV_KHR_vulkan_memory_model"
 OpMemoryModel Logical Vulkan
 OpEntryPoint GLCompute %main "main"
@@ -1883,11 +1884,11 @@ OpFunctionEnd
 
   )";
   const std::string body = R"(
-%val1 = OpCooperativeMatrixReduceNV %f16matC8 %f16mat_C_1 2x2 %reducefunc
-%val2 = OpCooperativeMatrixReduceNV %f16matC16x8 %f16mat_C_1 Row %reducefunc
-%val3 = OpCooperativeMatrixReduceNV %f16matC8x16 %f16mat_C_1 Column %reducefunc
-%val4 = OpCooperativeMatrixReduceNV %f16matC %f16mat_C_1 Row|Column %reducefunc
-%val5 = OpCooperativeMatrixReduceNV %f16matC8 %f16mat_C_1 Row|Column %reducefunc
+%val1 = OpCooperativeMatrixReduceEXT %f16matC8 %f16mat_C_1 2x2 %reducefunc
+%val2 = OpCooperativeMatrixReduceEXT %f16matC16x8 %f16mat_C_1 Row %reducefunc
+%val3 = OpCooperativeMatrixReduceEXT %f16matC8x16 %f16mat_C_1 Column %reducefunc
+%val4 = OpCooperativeMatrixReduceEXT %f16matC %f16mat_C_1 Row|Column %reducefunc
+%val5 = OpCooperativeMatrixReduceEXT %f16matC8 %f16mat_C_1 Row|Column %reducefunc
 )";
 
   CompileSuccessfully(GenerateCoopMatKHRCode(extra_types, body).c_str(),
@@ -1989,7 +1990,7 @@ OpFunctionEnd
 
   )";
   const std::string body = R"(
-%val1 = OpCooperativeMatrixReduceNV %f16matC %f16mat_C_1 2x2 %reducefunc
+%val1 = OpCooperativeMatrixReduceEXT %f16matC %f16mat_C_1 2x2 %reducefunc
 )";
 
   CompileSuccessfully(GenerateCoopMatKHRCode(extra_types, body).c_str(),
@@ -2020,7 +2021,7 @@ OpFunctionEnd
 
   )";
   const std::string body = R"(
-%val1 = OpCooperativeMatrixReduceNV %f16matC8 %f16mat_C17_1 2x2 %reducefunc
+%val1 = OpCooperativeMatrixReduceEXT %f16matC8 %f16mat_C17_1 2x2 %reducefunc
 )";
 
   CompileSuccessfully(GenerateCoopMatKHRCode(extra_types, body).c_str(),
@@ -2048,7 +2049,7 @@ OpFunctionEnd
 
   )";
   const std::string body = R"(
-%val1 = OpCooperativeMatrixReduceNV %f16matC8x16 %f16mat_C_1 Row %reducefunc
+%val1 = OpCooperativeMatrixReduceEXT %f16matC8x16 %f16mat_C_1 Row %reducefunc
 )";
 
   CompileSuccessfully(GenerateCoopMatKHRCode(extra_types, body).c_str(),
@@ -2076,7 +2077,7 @@ OpFunctionEnd
 
   )";
   const std::string body = R"(
-%val1 = OpCooperativeMatrixReduceNV %f16matC16x8 %f16mat_C_1 Column %reducefunc
+%val1 = OpCooperativeMatrixReduceEXT %f16matC16x8 %f16mat_C_1 Column %reducefunc
 )";
 
   CompileSuccessfully(GenerateCoopMatKHRCode(extra_types, body).c_str(),
@@ -2130,7 +2131,7 @@ OpFunctionEnd
 
   )";
   const std::string body = R"(
-%val1 = OpCooperativeMatrixReduceNV %f16matC8 %f16mat_C_1 Row|Column|2x2 %reducefunc
+%val1 = OpCooperativeMatrixReduceEXT %f16matC8 %f16mat_C_1 Row|Column|2x2 %reducefunc
 )";
 
   CompileSuccessfully(GenerateCoopMatKHRCode(extra_types, body).c_str(),
@@ -2156,7 +2157,7 @@ OpFunctionEnd
 
   )";
   const std::string body = R"(
-%val1 = OpCooperativeMatrixReduceNV %f16matC %f16mat_C_1 Row|Column %reducefunc
+%val1 = OpCooperativeMatrixReduceEXT %f16matC %f16mat_C_1 Row|Column %reducefunc
 )";
 
   CompileSuccessfully(GenerateCoopMatKHRCode(extra_types, body).c_str(),
@@ -2204,9 +2205,9 @@ OpFunctionEnd
 
   )";
   const std::string body = R"(
-%val1 = OpCooperativeMatrixPerElementOpNV %f16matC %f16mat_C_1 %elemfunc
-%val2 = OpCooperativeMatrixPerElementOpNV %f16matC %f16mat_C_1 %elemfunc2 %f16mat_C_1
-%val3 = OpCooperativeMatrixPerElementOpNV %f16matC %f16mat_C_1 %elemfunc3 %f16mat_C_1 %f32_1
+%val1 = OpCooperativeMatrixPerElementOpEXT %f16matC %f16mat_C_1 %elemfunc
+%val2 = OpCooperativeMatrixPerElementOpEXT %f16matC %f16mat_C_1 %elemfunc2 %f16mat_C_1
+%val3 = OpCooperativeMatrixPerElementOpEXT %f16matC %f16mat_C_1 %elemfunc3 %f16mat_C_1 %f32_1
 )";
 
   CompileSuccessfully(GenerateCoopMatKHRCode(extra_types, body).c_str(),
@@ -2230,7 +2231,7 @@ OpFunctionEnd
 
   )";
   const std::string body = R"(
-%val1 = OpCooperativeMatrixPerElementOpNV %f16matC %f16mat_C_1 %elemfunc
+%val1 = OpCooperativeMatrixPerElementOpEXT %f16matC %f16mat_C_1 %elemfunc
 )";
 
   CompileSuccessfully(GenerateCoopMatKHRCode(extra_types, body).c_str(),
@@ -2258,7 +2259,7 @@ OpFunctionEnd
 
   )";
   const std::string body = R"(
-%val1 = OpCooperativeMatrixPerElementOpNV %f16matC %f16mat_C_1 %elemfunc %f16_1
+%val1 = OpCooperativeMatrixPerElementOpEXT %f16matC %f16mat_C_1 %elemfunc %f16_1
 )";
 
   CompileSuccessfully(GenerateCoopMatKHRCode(extra_types, body).c_str(),
@@ -2286,7 +2287,7 @@ OpFunctionEnd
 
   )";
   const std::string body = R"(
-%val1 = OpCooperativeMatrixPerElementOpNV %f16matC %f16mat_C_1 %elemfunc %f16mat_A_1
+%val1 = OpCooperativeMatrixPerElementOpEXT %f16matC %f16mat_C_1 %elemfunc %f16mat_A_1
 )";
 
   CompileSuccessfully(GenerateCoopMatKHRCode(extra_types, body).c_str(),
@@ -2342,7 +2343,7 @@ OpFunctionEnd
 
   )";
   const std::string body = R"(
-%val1 = OpCooperativeMatrixPerElementOpNV %f16matC %f16mat_C_1 %elemfunc %f16mat_C_1
+%val1 = OpCooperativeMatrixPerElementOpEXT %f16matC %f16mat_C_1 %elemfunc %f16mat_C_1
 )";
 
   CompileSuccessfully(GenerateCoopMatKHRCode(extra_types, body).c_str(),
@@ -2369,7 +2370,7 @@ OpFunctionEnd
 
   )";
   const std::string body = R"(
-%val1 = OpCooperativeMatrixPerElementOpNV %f16matC %f16mat_C_1 %elemfunc
+%val1 = OpCooperativeMatrixPerElementOpEXT %f16matC %f16mat_C_1 %elemfunc
 )";
 
   CompileSuccessfully(GenerateCoopMatKHRCode(extra_types, body).c_str(),
@@ -2394,7 +2395,7 @@ OpFunctionEnd
 
   )";
   const std::string body = R"(
-%val1 = OpCooperativeMatrixPerElementOpNV %f16matC %f16mat_C_1 %elemfunc
+%val1 = OpCooperativeMatrixPerElementOpEXT %f16matC %f16mat_C_1 %elemfunc
 )";
 
   CompileSuccessfully(GenerateCoopMatKHRCode(extra_types, body).c_str(),
