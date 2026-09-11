@@ -61,11 +61,54 @@ bool IsOCPMicroscalingScalarOrCompositeType(ValidationState_t& _,
   return _.ContainsOCPMicroscalingType(type_id);
 }
 
+// Returns true for the arithmetic and relational/logical instructions that
+// the BFloat16ArithmeticINTEL capability (SPV_INTEL_bfloat16_arithmetic)
+// permits to operate on the BFloat16 type.
+bool IsBfloat16ArithmeticInstruction(spv::Op opcode) {
+  switch (opcode) {
+    case spv::Op::OpFNegate:
+    case spv::Op::OpFAdd:
+    case spv::Op::OpFSub:
+    case spv::Op::OpFMul:
+    case spv::Op::OpFDiv:
+    case spv::Op::OpFRem:
+    case spv::Op::OpFMod:
+    case spv::Op::OpVectorTimesScalar:
+    case spv::Op::OpIsNan:
+    case spv::Op::OpIsInf:
+    case spv::Op::OpIsFinite:
+    case spv::Op::OpIsNormal:
+    case spv::Op::OpFOrdEqual:
+    case spv::Op::OpFUnordEqual:
+    case spv::Op::OpFOrdNotEqual:
+    case spv::Op::OpFUnordNotEqual:
+    case spv::Op::OpFOrdLessThan:
+    case spv::Op::OpFUnordLessThan:
+    case spv::Op::OpFOrdGreaterThan:
+    case spv::Op::OpFUnordGreaterThan:
+    case spv::Op::OpFOrdLessThanEqual:
+    case spv::Op::OpFUnordLessThanEqual:
+    case spv::Op::OpFOrdGreaterThanEqual:
+    case spv::Op::OpFUnordGreaterThanEqual:
+    case spv::Op::OpLessOrGreater:
+    case spv::Op::OpOrdered:
+    case spv::Op::OpUnordered:
+    case spv::Op::OpSignBitSet:
+      return true;
+    default:
+      return false;
+  }
+}
+
 spv_result_t CheckInvalidScalarOrCompositeType(ValidationState_t& _,
                                                const Instruction* inst,
                                                uint32_t type_id) {
   const spv::Op opcode = inst->opcode();
-  if (IsBfloat16ScalarOrCompositeType(_, type_id)) {
+  const bool bfloat16_arithmetic_allowed =
+      _.HasCapability(spv::Capability::BFloat16ArithmeticINTEL) &&
+      IsBfloat16ArithmeticInstruction(opcode);
+  if (!bfloat16_arithmetic_allowed &&
+      IsBfloat16ScalarOrCompositeType(_, type_id)) {
     return _.diag(SPV_ERROR_INVALID_DATA, inst)
            << spvOpcodeString(opcode) << " doesn't support BFloat16 type.";
   }
@@ -213,7 +256,10 @@ spv_result_t InvalidTypePass(ValidationState_t& _, const Instruction* inst) {
     case spv::Op::OpUnordered:
     case spv::Op::OpSignBitSet: {
       const uint32_t operand_type = _.GetOperandTypeId(inst, 2);
-      if (_.IsBfloat16Type(operand_type)) {
+      const bool bfloat16_arithmetic_allowed =
+          _.HasCapability(spv::Capability::BFloat16ArithmeticINTEL) &&
+          IsBfloat16ArithmeticInstruction(opcode);
+      if (!bfloat16_arithmetic_allowed && _.IsBfloat16Type(operand_type)) {
         return _.diag(SPV_ERROR_INVALID_DATA, inst)
                << spvOpcodeString(opcode) << " doesn't support BFloat16 type.";
       }

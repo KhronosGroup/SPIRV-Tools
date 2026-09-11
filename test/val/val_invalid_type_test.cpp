@@ -246,6 +246,112 @@ OpFunctionEnd
                         "capabilities: BFloat16TypeKHR"));
 }
 
+std::string GenerateBFloatArithmeticCode(const std::string& main_body) {
+  const std::string prefix =
+      R"(
+OpCapability Shader
+OpCapability BFloat16TypeKHR
+OpCapability BFloat16ArithmeticINTEL
+OpExtension "SPV_KHR_bfloat16"
+OpExtension "SPV_INTEL_bfloat16_arithmetic"
+%1 = OpExtInstImport "GLSL.std.450"
+%2 = OpExtInstImport "OpenCL.std"
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %main "main"
+OpExecutionMode %main LocalSize 1 1 1
+OpSource GLSL 450
+OpName %main "main"
+%bool = OpTypeBool
+%void = OpTypeVoid
+%bfloat16 = OpTypeFloat 16 BFloat16KHR
+%func = OpTypeFunction %void
+%bf16_1 = OpConstant %bfloat16 1
+%main = OpFunction %void None %func
+%main_entry = OpLabel)";
+
+  const std::string suffix =
+      R"(
+OpReturn
+OpFunctionEnd)";
+
+  return prefix + main_body + suffix;
+}
+
+TEST_F(ValidateInvalidType,
+       Bfloat16ArithmeticInstructionAllowedWithCapability) {
+  const std::string body = R"(
+%15 = OpFMul %bfloat16 %bf16_1 %bf16_1
+)";
+
+  CompileSuccessfully(GenerateBFloatArithmeticCode(body).c_str(),
+                      SPV_ENV_VULKAN_1_3);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_UNIVERSAL_1_6));
+}
+
+TEST_F(ValidateInvalidType,
+       Bfloat16RelationalInstructionAllowedWithCapability) {
+  const std::string body = R"(
+%15 = OpFOrdEqual %bool %bf16_1 %bf16_1
+)";
+
+  CompileSuccessfully(GenerateBFloatArithmeticCode(body).c_str(),
+                      SPV_ENV_VULKAN_1_3);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_UNIVERSAL_1_6));
+}
+
+TEST_F(ValidateInvalidType,
+       Bfloat16GlslStd450InstructionStillRejectedWithArithmeticCapability) {
+  const std::string body = R"(
+%15 = OpExtInst %bfloat16 %1 FClamp %bf16_1 %bf16_1 %bf16_1
+)";
+
+  CompileSuccessfully(GenerateBFloatArithmeticCode(body).c_str(),
+                      SPV_ENV_VULKAN_1_3);
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA,
+            ValidateInstructions(SPV_ENV_UNIVERSAL_1_6));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("FClamp: doesn't support BFloat16 type."));
+}
+
+TEST_F(ValidateInvalidType,
+       Bfloat16OpenCLStdExtInstAllowedWithArithmeticCapability) {
+  const std::string body = R"(
+%15 = OpExtInst %bfloat16 %2 fabs %bf16_1
+)";
+
+  CompileSuccessfully(GenerateBFloatArithmeticCode(body).c_str(),
+                      SPV_ENV_UNIVERSAL_1_6);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_UNIVERSAL_1_6));
+}
+
+TEST_F(ValidateInvalidType,
+       Bfloat16OpenCLStdExtInstStillRejectedWithoutArithmeticCapability) {
+  const std::string spirv = R"(
+OpCapability Kernel
+OpCapability Addresses
+OpCapability BFloat16TypeKHR
+OpExtension "SPV_KHR_bfloat16"
+%2 = OpExtInstImport "OpenCL.std"
+OpMemoryModel Physical32 OpenCL
+OpEntryPoint Kernel %main "main"
+%void = OpTypeVoid
+%func = OpTypeFunction %void
+%bfloat16 = OpTypeFloat 16 BFloat16KHR
+%bf16_1 = OpConstant %bfloat16 1
+%main = OpFunction %void None %func
+%entry = OpLabel
+%15 = OpExtInst %bfloat16 %2 fabs %bf16_1
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv.c_str(), SPV_ENV_UNIVERSAL_1_6);
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA,
+            ValidateInstructions(SPV_ENV_UNIVERSAL_1_6));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("OpenCL.std fabs: doesn't support BFloat16 type."));
+}
+
 std::string GenerateFP8Code(const std::string& main_body) {
   const std::string prefix =
       R"(
