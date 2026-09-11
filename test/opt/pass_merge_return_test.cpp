@@ -2662,6 +2662,84 @@ TEST_F(MergeReturnPassTest, DebugFunctionDefinitionStillInEntryBlock) {
   SinglePassRunAndMatch<MergeReturnPass>(text, true);
 }
 
+TEST_F(MergeReturnPassTest, DebugFunctionDefinitionDefUseRecordsAreUpdated) {
+  // The DebugFunctionDefinition instruction is moved back into the entry block
+  // after the entry block is split.  The def-use records of the original
+  // instruction have to be removed when it is deleted, otherwise later lookups
+  // dereference the freed instruction.
+  const std::string text =
+      R"(
+; CHECK: OpFunction
+; CHECK: OpLabel
+; CHECK: DebugFunctionDefinition
+; CHECK: OpSwitch
+        OpCapability Shader
+        OpExtension "SPV_KHR_non_semantic_info"
+        %2 = OpExtInstImport "NonSemantic.Shader.DebugInfo.100"
+        OpMemoryModel Logical GLSL450
+        OpEntryPoint GLCompute %main "main"
+        %5 = OpString "test.hlsl"
+        %21 = OpString "uint"
+        %28 = OpString "unnamed"
+        %30 = OpString "RWStructuredBuffer"
+        %36 = OpString "main"
+        %void = OpTypeVoid
+        %4 = OpExtInst %void %2 DebugSource %5
+        %uint = OpTypeInt 32 0
+        %uint_11 = OpConstant %uint 11
+        %uint_5 = OpConstant %uint 5
+        %uint_100 = OpConstant %uint 100
+        %10 = OpExtInst %void %2 DebugCompilationUnit %uint_100 %uint_5 %4 %uint_11
+        %12 = OpTypeFunction %void
+        %_ptr_Function_uint = OpTypePointer Function %uint
+        %uint_32 = OpConstant %uint 32
+        %uint_6 = OpConstant %uint 6
+        %uint_131072 = OpConstant %uint 131072
+        %20 = OpExtInst %void %2 DebugTypeBasic %21 %uint_32 %uint_6 %uint_131072
+        %uint_0 = OpConstant %uint 0
+        %25 = OpExtInst %void %2 DebugTypeArray %20 %uint_0
+        %27 = OpExtInst %void %2 DebugTypeMember %28 %25 %4 %uint_0 %uint_0 %uint_0 %uint_0 %uint_0
+        %uint_1 = OpConstant %uint 1
+        %29 = OpExtInst %void %2 DebugTypeComposite %30 %uint_1 %4 %uint_0 %uint_0 %10 %30 %uint_0 %uint_131072 %27
+        %uint_12 = OpConstant %uint 12
+        %32 = OpExtInst %void %2 DebugTypePointer %29 %uint_12 %uint_131072
+        %34 = OpExtInst %void %2 DebugTypeFunction %uint_0 %void %32 %32
+        %35 = OpExtInst %void %2 DebugFunction %36 %34 %4 %uint_11 %uint_6 %10 %36 %uint_0 %uint_11
+        %bool = OpTypeBool
+        %uint_3 = OpConstant %uint 3
+        %uint_22 = OpConstant %uint 22
+        %main = OpFunction %void None %12
+        %13 = OpLabel
+        %iter = OpVariable %_ptr_Function_uint Function
+        %37 = OpExtInst %void %2 DebugFunctionDefinition %35 %main
+        OpBranch %40
+        %40 = OpLabel
+        OpLoopMerge %47 %51 None
+        OpBranch %41
+        %41 = OpLabel
+        OpBranch %43
+        %43 = OpLabel
+        %111 = OpLoad %uint %iter
+        %iter_1 = OpIAdd %uint %111 %uint_1
+        %124 = OpULessThan %bool %iter_1 %uint_3
+        %126 = OpLogicalNot %bool %124
+        OpSelectionMerge %49 None
+        OpBranchConditional %126 %45 %49
+        %45 = OpLabel
+        OpBranch %47
+        %47 = OpLabel
+        %129 = OpExtInst %void %2 DebugLine %4 %uint_22 %uint_22 %uint_5 %uint_6
+        OpReturn
+        %49 = OpLabel
+        OpBranch %51
+        %51 = OpLabel
+        OpBranch %40
+        OpFunctionEnd
+)";
+
+  SinglePassRunAndMatch<MergeReturnPass>(text, true);
+}
+
 }  // namespace
 }  // namespace opt
 }  // namespace spvtools
