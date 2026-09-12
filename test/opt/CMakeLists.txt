@@ -81,6 +81,7 @@ add_spvtools_unittest(TARGET opt
        modify_maximal_reconvergence_test.cpp
        module_test.cpp
        module_utils.h
+       nonwritable_propagation_test.cpp
        opextinst_forward_ref_fixup_pass_test.cpp
        optimizer_test.cpp
        pass_manager_test.cpp
