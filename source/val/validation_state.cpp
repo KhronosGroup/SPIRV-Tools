@@ -3254,6 +3254,10 @@ std::string ValidationState_t::VkErrorID(uint32_t id,
       return VUID_WRAP(VUID-StandaloneSpirv-FPRoundingMode-04675);
     case 4677:
       return VUID_WRAP(VUID-StandaloneSpirv-Invariant-04677);
+    case 4678:
+      return VUID_WRAP(VUID-StandaloneSpirv-VulkanMemoryModel-04678);
+    case 4679:
+      return VUID_WRAP(VUID-StandaloneSpirv-VulkanMemoryModel-04679);
     case 4680:
       return VUID_WRAP(VUID-StandaloneSpirv-OpTypeRuntimeArray-04680);
     case 4682:
