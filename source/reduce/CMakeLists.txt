@@ -97,10 +97,10 @@ spvtools_check_symbol_exports(SPIRV-Tools-reduce)
 
 if(ENABLE_SPIRV_TOOLS_INSTALL)
   install(TARGETS SPIRV-Tools-reduce EXPORT SPIRV-Tools-reduceTargets)
-  export(EXPORT SPIRV-Tools-reduceTargets FILE SPIRV-Tools-reduceTarget.cmake)
+  export(EXPORT SPIRV-Tools-reduceTargets FILE SPIRV-Tools-reduceTargets.cmake)
 
   spvtools_config_package_dir(SPIRV-Tools-reduce PACKAGE_DIR)
-  install(EXPORT SPIRV-Tools-reduceTargets FILE SPIRV-Tools-reduceTarget.cmake
+  install(EXPORT SPIRV-Tools-reduceTargets FILE SPIRV-Tools-reduceTargets.cmake
   	DESTINATION ${PACKAGE_DIR})
 
   spvtools_generate_config_file(SPIRV-Tools-reduce)
