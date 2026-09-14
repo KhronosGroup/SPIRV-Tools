@@ -208,9 +208,12 @@ Instruction* FoldSpecConstantOpAndCompositePass::FoldWithInstructionFolder(
   }
 
   if (need_to_clone) {
-    new_const_inst = new_const_inst->Clone(context());
     uint32_t new_id = TakeNextId();
     if (new_id == 0) {
+      return nullptr;
+    }
+    new_const_inst = new_const_inst->Clone(context());
+    if (!new_const_inst) {
       return nullptr;
     }
     new_const_inst->SetResultId(new_id);

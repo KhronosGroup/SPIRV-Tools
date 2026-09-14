@@ -184,15 +184,15 @@ class LoopUnswitch {
       bool ok = true;
       if_merge_block->ForEachPhiInst(
           [loop_merge_block, &ok, &builder, this](Instruction* phi) -> bool {
-            Instruction* cloned = phi->Clone(context_);
+            std::unique_ptr<Instruction> cloned(phi->Clone(context_));
             uint32_t new_id = TakeNextId();
             if (new_id == 0) {
               ok = false;
               return false;
             }
             cloned->SetResultId(new_id);
-            builder.AddInstruction(std::unique_ptr<Instruction>(cloned));
-            phi->SetInOperand(0, {cloned->result_id()});
+            builder.AddInstruction(std::move(cloned));
+            phi->SetInOperand(0, {new_id});
             phi->SetInOperand(1, {loop_merge_block->id()});
             for (uint32_t j = phi->NumInOperands() - 1; j > 1; j--)
               phi->RemoveInOperand(j);
