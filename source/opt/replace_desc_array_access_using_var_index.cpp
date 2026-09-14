@@ -396,10 +396,10 @@ void ReplaceDescArrayAccessUsingVarIndex::AddBranchToBlock(
 BasicBlock* ReplaceDescArrayAccessUsingVarIndex::CreateDefaultBlock(
     bool null_const_for_phi_is_needed, std::vector<uint32_t>* phi_operands,
     uint32_t merge_block_id) const {
-  auto* default_block = CreateNewBlock();
+  std::unique_ptr<BasicBlock> default_block(CreateNewBlock());
   if (!default_block) return nullptr;
-  AddBranchToBlock(default_block, merge_block_id);
-  if (!null_const_for_phi_is_needed) return default_block;
+  AddBranchToBlock(default_block.get(), merge_block_id);
+  if (!null_const_for_phi_is_needed) return default_block.release();
 
   // Create null value for OpPhi
   Instruction* inst = context()->get_def_use_mgr()->GetDef((*phi_operands)[0]);
@@ -408,7 +408,7 @@ BasicBlock* ReplaceDescArrayAccessUsingVarIndex::CreateDefaultBlock(
     return nullptr;
   }
   phi_operands->push_back(null_const_inst->result_id());
-  return default_block;
+  return default_block.release();
 }
 
 Instruction* ReplaceDescArrayAccessUsingVarIndex::GetConstNull(

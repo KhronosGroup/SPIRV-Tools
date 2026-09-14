@@ -406,6 +406,9 @@ bool LoopUnrollerUtilsImpl::PartiallyUnrollResidualFactor(Loop* loop,
     return false;
   }
 
+  // The merge block created by |DuplicateLoop| is not owned by the function.
+  std::unique_ptr<BasicBlock> new_loop_merge_block(new_loop->GetMergeBlock());
+
   // Add the blocks to the function.
   AddBlocksToFunction(loop->GetMergeBlock());
   blocks_to_add_.clear();
@@ -428,8 +431,7 @@ bool LoopUnrollerUtilsImpl::PartiallyUnrollResidualFactor(Loop* loop,
 
   // Add the new merge block to the back of the list of blocks to be added. It
   // needs to be the last block added to maintain dominator order in the binary.
-  blocks_to_add_.push_back(
-      std::unique_ptr<BasicBlock>(new_loop->GetMergeBlock()));
+  blocks_to_add_.push_back(std::move(new_loop_merge_block));
 
   // Add the blocks to the function.
   AddBlocksToFunction(loop->GetMergeBlock());
@@ -651,16 +653,16 @@ void LoopUnrollerUtilsImpl::KillDebugDeclares(BasicBlock* bb) {
 bool LoopUnrollerUtilsImpl::CopyBasicBlock(Loop* loop, const BasicBlock* itr,
                                            bool preserve_instructions) {
   // Clone the block exactly, including the IDs.
-  BasicBlock* basic_block = itr->Clone(context_);
+  std::unique_ptr<BasicBlock> basic_block(itr->Clone(context_));
   if (!basic_block) return false;
   basic_block->SetParent(itr->GetParent());
 
   // We do not want to duplicate DebugDeclare.
-  KillDebugDeclares(basic_block);
+  KillDebugDeclares(basic_block.get());
 
   // Assign each result a new unique ID and keep a mapping of the old ids to
   // the new ones.
-  if (!AssignNewResultIds(basic_block)) {
+  if (!AssignNewResultIds(basic_block.get())) {
     return false;
   }
 
@@ -673,12 +675,12 @@ bool LoopUnrollerUtilsImpl::CopyBasicBlock(Loop* loop, const BasicBlock* itr,
       context_->UpdateDefUse(merge_inst);
     }
 
-    state_.new_continue_block = basic_block;
+    state_.new_continue_block = basic_block.get();
   }
 
   // If this is the header block we are copying.
   if (itr == loop->GetHeaderBlock()) {
-    state_.new_header_block = basic_block;
+    state_.new_header_block = basic_block.get();
 
     if (!preserve_instructions) {
       // Remove the loop merge instruction if it exists.
@@ -688,19 +690,19 @@ bool LoopUnrollerUtilsImpl::CopyBasicBlock(Loop* loop, const BasicBlock* itr,
   }
 
   // If this is the latch block being copied, record it in the state.
-  if (itr == loop->GetLatchBlock()) state_.new_latch_block = basic_block;
+  if (itr == loop->GetLatchBlock()) state_.new_latch_block = basic_block.get();
 
   // If this is the condition block we are copying.
   if (itr == loop_condition_block_) {
-    state_.new_condition_block = basic_block;
+    state_.new_condition_block = basic_block.get();
   }
+
+  // Keep tracking the old block via a map.
+  state_.new_blocks[itr->id()] = basic_block.get();
 
   // Add this block to the list of blocks to add to the function at the end of
   // the unrolling process.
-  blocks_to_add_.push_back(std::unique_ptr<BasicBlock>(basic_block));
-
-  // Keep tracking the old block via a map.
-  state_.new_blocks[itr->id()] = basic_block;
+  blocks_to_add_.push_back(std::move(basic_block));
   return true;
 }
 
@@ -863,13 +865,14 @@ bool LoopUnrollerUtilsImpl::DuplicateLoop(Loop* old_loop, Loop* new_loop) {
   }
 
   // Clone the merge block, give it a new id and record it in the state.
-  BasicBlock* new_merge = old_loop->GetMergeBlock()->Clone(context_);
+  std::unique_ptr<BasicBlock> new_merge(
+      old_loop->GetMergeBlock()->Clone(context_));
   if (!new_merge) return false;
   new_merge->SetParent(old_loop->GetMergeBlock()->GetParent());
-  if (!AssignNewResultIds(new_merge)) {
+  if (!AssignNewResultIds(new_merge.get())) {
     return false;
   }
-  state_.new_blocks[old_loop->GetMergeBlock()->id()] = new_merge;
+  state_.new_blocks[old_loop->GetMergeBlock()->id()] = new_merge.get();
 
   // Remap the operands of every instruction in the loop to point to the new
   // copies.
@@ -884,7 +887,7 @@ bool LoopUnrollerUtilsImpl::DuplicateLoop(Loop* old_loop, Loop* new_loop) {
   new_loop->SetHeaderBlock(state_.new_header_block);
   new_loop->SetContinueBlock(state_.new_continue_block);
   new_loop->SetLatchBlock(state_.new_latch_block);
-  new_loop->SetMergeBlock(new_merge);
+  new_loop->SetMergeBlock(new_merge.release());
   return true;
 }
 
