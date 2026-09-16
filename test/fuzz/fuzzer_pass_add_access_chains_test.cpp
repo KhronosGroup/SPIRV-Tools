@@ -16,12 +16,25 @@
 
 #include "gtest/gtest.h"
 #include "source/fuzz/fuzzer_util.h"
-#include "source/fuzz/pseudo_random_generator.h"
+#include "source/fuzz/random_generator.h"
 #include "test/fuzz/fuzz_test_util.h"
 
 namespace spvtools {
 namespace fuzz {
 namespace {
+
+class AlwaysZeroGenerator : public RandomGenerator {
+ public:
+  uint32_t RandomUint32(uint32_t /*bound*/) override { return 0; }
+
+  uint64_t RandomUint64(uint64_t /*bound*/) override { return 0; }
+
+  uint32_t RandomPercentage() override { return 0; }
+
+  bool RandomBool() override { return false; }
+
+  double RandomDouble() override { return 0.0; }
+};
 
 TEST(FuzzerPassAddAccessChainsTest, RuntimeArray) {
   const std::string shader = R"(
@@ -56,9 +69,7 @@ TEST(FuzzerPassAddAccessChainsTest, RuntimeArray) {
   TransformationContext transformation_context(
       MakeUnique<FactManager>(context.get()), validator_options);
   protobufs::TransformationSequence transformation_sequence;
-  // This seed descends through the struct to the runtime array.
-  FuzzerContext fuzzer_context(MakeUnique<PseudoRandomGenerator>(31), 100,
-                               false);
+  FuzzerContext fuzzer_context(MakeUnique<AlwaysZeroGenerator>(), 100, false);
 
   FuzzerPassAddAccessChains fuzzer_pass(context.get(), &transformation_context,
                                         &fuzzer_context,
