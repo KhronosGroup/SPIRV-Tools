@@ -141,7 +141,7 @@ void FuzzerPassAddStores::Apply() {
           case spv::StorageClass::Image:
             if (GetFuzzerContext()->ChoosePercentage(
                     GetFuzzerContext()->GetChanceOfAddingAtomicStore()) &&
-                fuzzerutil::IsIntegerOrFloatScalarType(
+                fuzzerutil::Is32BitIntegerScalarType(
                     GetIRContext()->get_type_mgr()->GetType(
                         fuzzerutil::GetPointeeTypeIdFromPointerType(
                             GetIRContext(), pointer->type_id())))) {

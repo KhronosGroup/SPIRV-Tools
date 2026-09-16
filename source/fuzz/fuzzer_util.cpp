@@ -359,8 +359,8 @@ bool IsCompositeType(const opt::analysis::Type* type) {
                   type->AsVector());
 }
 
-bool IsIntegerOrFloatScalarType(const opt::analysis::Type* type) {
-  return type && (type->AsInteger() || type->AsFloat());
+bool Is32BitIntegerScalarType(const opt::analysis::Type* type) {
+  return type && type->AsInteger() && type->AsInteger()->width() == 32;
 }
 
 std::vector<uint32_t> RepeatedFieldToVector(

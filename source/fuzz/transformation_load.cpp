@@ -55,11 +55,11 @@ bool TransformationLoad::IsApplicable(
   if (pointer_type->opcode() != spv::Op::OpTypePointer) {
     return false;
   }
-  // Atomic loads can only operate on integer or floating-point scalars.
+  // Atomic loads can only operate on 32-bit integer scalars. Floating-point
+  // and 64-bit integer atomics require additional Vulkan capabilities.
   if (message_.is_atomic() &&
-      !fuzzerutil::IsIntegerOrFloatScalarType(
-          ir_context->get_type_mgr()->GetType(
-              fuzzerutil::GetPointeeTypeIdFromPointerType(pointer_type)))) {
+      !fuzzerutil::Is32BitIntegerScalarType(ir_context->get_type_mgr()->GetType(
+          fuzzerutil::GetPointeeTypeIdFromPointerType(pointer_type)))) {
     return false;
   }
   // We do not want to allow loading from null or undefined pointers, as it is
