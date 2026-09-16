@@ -140,7 +140,11 @@ void FuzzerPassAddStores::Apply() {
           case spv::StorageClass::AtomicCounter:
           case spv::StorageClass::Image:
             if (GetFuzzerContext()->ChoosePercentage(
-                    GetFuzzerContext()->GetChanceOfAddingAtomicStore())) {
+                    GetFuzzerContext()->GetChanceOfAddingAtomicStore()) &&
+                fuzzerutil::IsIntegerOrFloatScalarType(
+                    GetIRContext()->get_type_mgr()->GetType(
+                        fuzzerutil::GetPointeeTypeIdFromPointerType(
+                            GetIRContext(), pointer->type_id())))) {
               is_atomic_store = true;
 
               memory_scope_id = FindOrCreateConstant(

@@ -124,6 +124,10 @@ bool CanMakeSynonymOf(opt::IRContext* ir_context,
 // struct or vector.
 bool IsCompositeType(const opt::analysis::Type* type);
 
+// Returns true if and only if the given type is an integer or floating-point
+// scalar type.
+bool IsIntegerOrFloatScalarType(const opt::analysis::Type* type);
+
 // Returns a vector containing the same elements as |repeated_field|.
 std::vector<uint32_t> RepeatedFieldToVector(
     const google::protobuf::RepeatedField<uint32_t>& repeated_field);

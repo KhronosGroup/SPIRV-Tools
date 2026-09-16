@@ -51,6 +51,13 @@ bool TransformationStore::IsApplicable(
   if (pointer_type->opcode() != spv::Op::OpTypePointer) {
     return false;
   }
+  // Atomic stores can only operate on integer or floating-point scalars.
+  if (message_.is_atomic() &&
+      !fuzzerutil::IsIntegerOrFloatScalarType(
+          ir_context->get_type_mgr()->GetType(
+              fuzzerutil::GetPointeeTypeIdFromPointerType(pointer_type)))) {
+    return false;
+  }
 
   // The pointer must not be read only.
   if (pointer->IsReadOnlyPointer()) {

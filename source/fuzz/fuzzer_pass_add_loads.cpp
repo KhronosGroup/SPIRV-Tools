@@ -108,7 +108,11 @@ void FuzzerPassAddLoads::Apply() {
           case spv::StorageClass::AtomicCounter:
           case spv::StorageClass::Image:
             if (GetFuzzerContext()->ChoosePercentage(
-                    GetFuzzerContext()->GetChanceOfAddingAtomicLoad())) {
+                    GetFuzzerContext()->GetChanceOfAddingAtomicLoad()) &&
+                fuzzerutil::IsIntegerOrFloatScalarType(
+                    GetIRContext()->get_type_mgr()->GetType(
+                        fuzzerutil::GetPointeeTypeIdFromPointerType(
+                            GetIRContext(), chosen_instruction->type_id())))) {
               is_atomic_load = true;
 
               memory_scope_id = FindOrCreateConstant(
