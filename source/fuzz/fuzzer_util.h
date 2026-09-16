@@ -162,6 +162,11 @@ uint32_t GetNumberOfStructMembers(
 uint32_t GetArraySize(const opt::Instruction& array_type_instruction,
                       opt::IRContext* context);
 
+// Returns true if and only if |composite_type_inst| has a statically known
+// bound for indexing.
+bool HasStaticBoundForCompositeIndex(
+    const opt::Instruction& composite_type_inst);
+
 // Returns the bound for indexing into a composite of type
 // |composite_type_inst|, i.e. the number of fields of a struct, the size of an
 // array, the number of components of a vector, or the number of columns of a
