@@ -496,8 +496,8 @@ spv_result_t Parser::parseOperand(size_t inst_offset,
 
   const uint32_t word = peek();
 
-  // Do the words in this operand have to be converted to native endianness?
-  // True for all but literal strings.
+  // Instruction callbacks receive all operand words in native endianness,
+  // including words that encode literal strings.
   bool convert_operand_endianness = true;
 
   switch (type) {
@@ -664,10 +664,24 @@ spv_result_t Parser::parseOperand(size_t inst_offset,
     case SPV_OPERAND_TYPE_LITERAL_STRING:
     case SPV_OPERAND_TYPE_OPTIONAL_LITERAL_STRING: {
       const size_t max_words = _.num_words - _.word_index;
-      std::string string =
-          spvtools::utils::MakeString(_.words + _.word_index, max_words, false);
+      std::string string;
+      bool found_terminating_null = false;
+      for (size_t word_index = 0;
+           word_index < max_words && !found_terminating_null; ++word_index) {
+        const uint32_t string_word = peekAt(_.word_index + word_index);
+        for (size_t byte_index = 0; byte_index < sizeof(string_word);
+             ++byte_index) {
+          const char c = static_cast<char>((string_word >> (8 * byte_index)) &
+                                           uint32_t{0xff});
+          if (c == '\0') {
+            found_terminating_null = true;
+            break;
+          }
+          string += c;
+        }
+      }
 
-      if (string.length() == max_words * 4)
+      if (!found_terminating_null)
         return exhaustedInputDiagnostic(inst_offset, opcode, type);
 
       // Make sure we can record the word count without overflow.
