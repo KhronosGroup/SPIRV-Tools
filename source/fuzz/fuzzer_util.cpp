@@ -359,6 +359,10 @@ bool IsCompositeType(const opt::analysis::Type* type) {
                   type->AsVector());
 }
 
+bool Is32BitIntegerScalarType(const opt::analysis::Type* type) {
+  return type && type->AsInteger() && type->AsInteger()->width() == 32;
+}
+
 std::vector<uint32_t> RepeatedFieldToVector(
     const google::protobuf::RepeatedField<uint32_t>& repeated_field) {
   std::vector<uint32_t> result;

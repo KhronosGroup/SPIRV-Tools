@@ -36,6 +36,8 @@ class TransformationStore : public Transformation {
   // - The pointer type must not have read-only storage class
   // - The pointer must not be OpConstantNull or OpUndef
   // - |message_.is_atomic| must be true if want to work with OpAtomicStore.
+  // - If |message_.is_atomic| is true then the pointee type must be a 32-bit
+  //   integer scalar.
   // - If |is_atomic| is true then |message_memory_scope_id| must be the id of
   //   an OpConstant 32 bit integer instruction with the value
   //   spv::Scope::Invocation.

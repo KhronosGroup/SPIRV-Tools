@@ -351,6 +351,13 @@ TEST(TransformationLoadTest, AtomicLoadTestCase) {
                    MakeInstructionDescriptor(24, spv::Op::OpAccessChain, 0))
                    .IsApplicable(context.get(), transformation_context));
 
+  // Bad: atomic loads require an integer or floating-point scalar pointee
+  // type; id 11 points to a struct.
+  ASSERT_FALSE(TransformationLoad(
+                   21, 11, true, 15, 20,
+                   MakeInstructionDescriptor(24, spv::Op::OpAccessChain, 0))
+                   .IsApplicable(context.get(), transformation_context));
+
   // Bad: id 100 of memory scope instruction does not exist.
   ASSERT_FALSE(TransformationLoad(
                    21, 14, true, 100, 20,
