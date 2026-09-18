@@ -66,6 +66,7 @@
 #include "source/opt/loop_unswitch_pass.h"
 #include "source/opt/merge_return_pass.h"
 #include "source/opt/modify_maximal_reconvergence.h"
+#include "source/opt/nonwritable_propagation_pass.h"
 #include "source/opt/null_pass.h"
 #include "source/opt/opextinst_forward_ref_fixup_pass.h"
 #include "source/opt/private_to_local_pass.h"
