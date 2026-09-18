@@ -74,6 +74,48 @@ TEST(FuzzerUtilMaybeFindBlockTest, BasicTest) {
   ASSERT_FALSE(fuzzerutil::MaybeFindBlock(ir_context, block_id4) != nullptr);
 }
 
+TEST(FuzzerutilTest, HasStaticBoundForCompositeIndex) {
+  const std::string shader = R"(
+               OpCapability Shader
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %11 "main"
+               OpExecutionMode %11 LocalSize 1 1 1
+               OpDecorate %7 ArrayStride 4
+          %1 = OpTypeInt 32 0
+          %2 = OpTypeFloat 32
+          %3 = OpConstant %1 4
+          %4 = OpTypeVector %2 4
+          %5 = OpTypeMatrix %4 4
+          %6 = OpTypeArray %1 %3
+          %7 = OpTypeRuntimeArray %1
+          %8 = OpTypeStruct %1
+          %9 = OpTypeVoid
+         %10 = OpTypeFunction %9
+         %11 = OpFunction %9 None %10
+         %12 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  const auto env = SPV_ENV_UNIVERSAL_1_4;
+  const auto consumer = nullptr;
+  const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
+  spvtools::ValidatorOptions validator_options;
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
+  const auto has_static_bound = [&context](uint32_t type_id) {
+    return fuzzerutil::HasStaticBoundForCompositeIndex(
+        *context->get_def_use_mgr()->GetDef(type_id));
+  };
+
+  ASSERT_TRUE(has_static_bound(4));
+  ASSERT_TRUE(has_static_bound(5));
+  ASSERT_TRUE(has_static_bound(6));
+  ASSERT_TRUE(has_static_bound(8));
+  ASSERT_FALSE(has_static_bound(7));
+  ASSERT_FALSE(has_static_bound(1));
+}
+
 TEST(FuzzerutilTest, FuzzerUtilMaybeGetBoolConstantTest) {
   std::string shader = R"(
                OpCapability Shader
