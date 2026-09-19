@@ -557,6 +557,8 @@ Optimizer::PassToken CreateAggressiveDCEPass(bool preserve_interface,
 // that this could cause the shader interface to no longer match other shader
 // stages.
 Optimizer::PassToken CreateRemoveUnusedInterfaceVariablesPass();
+Optimizer::PassToken CreateRemoveUnusedInterfaceVariablesPass(
+    bool preserve_interface);
 
 // Creates an empty pass.
 // This is deprecated and will be removed.
