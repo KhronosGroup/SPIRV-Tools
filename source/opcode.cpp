@@ -422,6 +422,7 @@ bool spvOpcodeIsBaseOpaqueType(spv::Op opcode) {
     case spv::Op::OpTypeForwardPointer:
     case spv::Op::OpTypePipeStorage:
     case spv::Op::OpTypeNamedBarrier:
+    case spv::Op::OpTypeRayQueryKHR:
       return true;
     default:
       return false;

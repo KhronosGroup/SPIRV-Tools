@@ -1113,6 +1113,104 @@ TEST_F(ValidateRayQuery, RayQueryOpacityMicromapGood) {
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_UNIVERSAL_1_4));
 }
 
+TEST_F(ValidateRayQuery, RayQueryInStruct) {
+  const std::string shader = R"(
+               OpCapability Shader
+               OpCapability RayQueryKHR
+               OpExtension "SPV_KHR_ray_query"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %main "main" %as_var
+               OpExecutionMode %main LocalSize 1 1 1
+               OpDecorate %as_var DescriptorSet 0
+               OpDecorate %as_var Binding 0
+       %void = OpTypeVoid
+       %func = OpTypeFunction %void
+        %int = OpTypeInt 32 1
+       %uint = OpTypeInt 32 0
+      %float = OpTypeFloat 32
+    %v3float = OpTypeVector %float 3
+      %int_0 = OpConstant %int 0
+     %uint_0 = OpConstant %uint 0
+   %uint_255 = OpConstant %uint 255
+    %float_0 = OpConstant %float 0
+  %float_100 = OpConstant %float 100
+  %v3float_0 = OpConstantComposite %v3float %float_0 %float_0 %float_0
+    %type_rq = OpTypeRayQueryKHR
+    %wrapper = OpTypeStruct %type_rq
+%ptr_wrapper = OpTypePointer Function %wrapper
+     %ptr_rq = OpTypePointer Function %type_rq
+    %type_as = OpTypeAccelerationStructureKHR
+     %ptr_as = OpTypePointer UniformConstant %type_as
+     %as_var = OpVariable %ptr_as UniformConstant
+       %main = OpFunction %void None %func
+ %main_label = OpLabel
+    %wrapped = OpVariable %ptr_wrapper Function
+  %ray_query = OpAccessChain %ptr_rq %wrapped %int_0
+         %as = OpLoad %type_as %as_var
+               OpRayQueryInitializeKHR %ray_query %as %uint_0 %uint_255 %v3float_0 %float_0 %v3float_0 %float_100
+               OpReturn
+               OpFunctionEnd
+)";
+  CompileSuccessfully(shader.c_str(), SPV_ENV_VULKAN_1_2);
+  ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_VULKAN_1_2));
+  EXPECT_THAT(getDiagnosticString(),
+              AnyVUID("VUID-StandaloneSpirv-None-04667"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("OpTypeStruct must not contain an invalid opaque "
+                        "type"));
+}
+
+TEST_F(ValidateRayQuery, RayQueryArrayInStruct) {
+  const std::string shader = R"(
+               OpCapability Shader
+               OpCapability RayQueryKHR
+               OpExtension "SPV_KHR_ray_query"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %main "main"
+               OpExecutionMode %main LocalSize 1 1 1
+       %void = OpTypeVoid
+       %func = OpTypeFunction %void
+       %uint = OpTypeInt 32 0
+     %uint_2 = OpConstant %uint 2
+    %type_rq = OpTypeRayQueryKHR
+    %arr2_rq = OpTypeArray %type_rq %uint_2
+    %wrapper = OpTypeStruct %arr2_rq
+       %main = OpFunction %void None %func
+ %main_label = OpLabel
+               OpReturn
+               OpFunctionEnd
+)";
+  CompileSuccessfully(shader.c_str(), SPV_ENV_VULKAN_1_2);
+  ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_VULKAN_1_2));
+  EXPECT_THAT(getDiagnosticString(),
+              AnyVUID("VUID-StandaloneSpirv-None-04667"));
+}
+
+TEST_F(ValidateRayQuery, RayQueryArrayGood) {
+  const std::string shader = R"(
+               OpCapability Shader
+               OpCapability RayQueryKHR
+               OpExtension "SPV_KHR_ray_query"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %main "main"
+               OpExecutionMode %main LocalSize 1 1 1
+       %void = OpTypeVoid
+       %func = OpTypeFunction %void
+       %uint = OpTypeInt 32 0
+     %uint_2 = OpConstant %uint 2
+    %type_rq = OpTypeRayQueryKHR
+    %arr2_rq = OpTypeArray %type_rq %uint_2
+%ptr_arr2_rq = OpTypePointer Function %arr2_rq
+       %main = OpFunction %void None %func
+ %main_label = OpLabel
+%ray_queries = OpVariable %ptr_arr2_rq Function
+               OpReturn
+               OpFunctionEnd
+)";
+  CompileSuccessfully(shader.c_str(), SPV_ENV_VULKAN_1_2);
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_2));
+}
+
 }  // namespace
 }  // namespace val
 }  // namespace spvtools
