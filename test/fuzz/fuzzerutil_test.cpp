@@ -20,6 +20,38 @@ namespace spvtools {
 namespace fuzz {
 namespace {
 
+TEST(FuzzerutilTest, Is32BitIntegerScalarType) {
+  const std::string shader = R"(
+               OpCapability Shader
+               OpCapability Int16
+               OpCapability Int64
+               OpMemoryModel Logical GLSL450
+          %1 = OpTypeInt 32 0
+          %2 = OpTypeInt 32 1
+          %3 = OpTypeInt 16 0
+          %4 = OpTypeInt 64 0
+          %5 = OpTypeFloat 32
+          %6 = OpTypeBool
+  )";
+
+  const auto env = SPV_ENV_UNIVERSAL_1_4;
+  const auto consumer = nullptr;
+  const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
+
+  EXPECT_TRUE(fuzzerutil::Is32BitIntegerScalarType(
+      context->get_type_mgr()->GetType(1)));
+  EXPECT_TRUE(fuzzerutil::Is32BitIntegerScalarType(
+      context->get_type_mgr()->GetType(2)));
+  EXPECT_FALSE(fuzzerutil::Is32BitIntegerScalarType(
+      context->get_type_mgr()->GetType(3)));
+  EXPECT_FALSE(fuzzerutil::Is32BitIntegerScalarType(
+      context->get_type_mgr()->GetType(4)));
+  EXPECT_FALSE(fuzzerutil::Is32BitIntegerScalarType(
+      context->get_type_mgr()->GetType(5)));
+  EXPECT_FALSE(fuzzerutil::Is32BitIntegerScalarType(
+      context->get_type_mgr()->GetType(6)));
+}
+
 TEST(FuzzerUtilMaybeFindBlockTest, BasicTest) {
   std::string shader = R"(
                OpCapability Shader
