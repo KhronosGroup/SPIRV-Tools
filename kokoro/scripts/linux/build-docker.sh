@@ -27,6 +27,7 @@ git config --global --add safe.directory '*'
 
 . /bin/using.sh # Declare the bash `using` function for configuring toolchains.
 
+using git-2.53.0
 using python-3.12
 
 if [ $COMPILER = "clang" ]; then
