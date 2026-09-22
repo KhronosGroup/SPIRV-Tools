@@ -96,6 +96,7 @@ set(SPIRV_TOOLS_OPT_SOURCES
   merge_return_pass.h
   modify_maximal_reconvergence.h
   module.h
+  nonwritable_propagation_pass.h
   null_pass.h
   passes.h
   pass.h
@@ -220,6 +221,7 @@ set(SPIRV_TOOLS_OPT_SOURCES
   merge_return_pass.cpp
   modify_maximal_reconvergence.cpp
   module.cpp
+  nonwritable_propagation_pass.cpp
   optimizer.cpp
   pass.cpp
   pass_manager.cpp
