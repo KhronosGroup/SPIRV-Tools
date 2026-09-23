@@ -952,8 +952,12 @@ bool MergeReturnPass::CreateSingleCaseSwitch(BasicBlock* merge_target) {
   for (auto pos = old_block->begin(); pos != old_block->end(); ++pos) {
     if (pos->GetShaderDebugOpcode() ==
         NonSemanticShaderDebugInfoDebugFunctionDefinition) {
-      start_block->AddInstruction(MakeUnique<Instruction>(*pos));
-      pos.Erase();
+      std::unique_ptr<Instruction> clone(pos->Clone(context()));
+      Instruction* moved_inst = clone.get();
+      start_block->AddInstruction(std::move(clone));
+      context()->AnalyzeDefUse(moved_inst);
+      context()->set_instr_block(moved_inst, start_block);
+      context()->KillInst(&*pos);
       break;
     }
   }
