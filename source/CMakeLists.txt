@@ -157,6 +157,7 @@ add_custom_command(OUTPUT ${SPIRV_TOOLS_BUILD_VERSION_INC}
    DEPENDS ${SPIRV_TOOLS_BUILD_VERSION_INC_GENERATOR}
            ${SPIRV_TOOLS_CHANGES_FILE}
    COMMENT "Update build-version.inc in the SPIRV-Tools build directory (if necessary).")
+add_custom_target(build_version DEPENDS ${SPIRV_TOOLS_BUILD_VERSION_INC})
 
 list(APPEND PCH_DEPENDS
 	${CORE_TABLES_HEADER_INC_FILE}
@@ -314,21 +315,6 @@ if (SPIRV_TOOLS_USE_MIMALLOC AND NOT SPIRV_TOOLS_BUILD_STATIC)
       ${CMAKE_CURRENT_SOURCE_DIR}/mimalloc.cpp)
 endif()
 
-# The software_version.cpp file includes build-version.inc.
-# Rebuild the software_version.cpp object file if it is older than
-# build-version.inc or whenever build-version.inc itself is out of
-# date.  In the latter case, rebuild build-version.inc first.
-# CMake is not smart enough to detect this dependency automatically.
-# Without this, the dependency detection system for #included files
-# does not kick in on a clean build for the following reason:  The
-# build will fail early because it doesn't know how to build the
-# missing source file build-version.inc. That occurs before the
-# preprocessor is run on software_version.cpp to detect the
-# #include dependency.
-set_source_files_properties(
-  ${CMAKE_CURRENT_SOURCE_DIR}/software_version.cpp
-  PROPERTIES OBJECT_DEPENDS "${SPIRV_TOOLS_BUILD_VERSION_INC}")
-
 spvtools_pch(SPIRV_SOURCES pch_source)
 
 # spirv_tools_default_target_options() sets the target options that are common
@@ -345,6 +331,18 @@ function(spirv_tools_default_target_options target)
   set_property(TARGET ${target} PROPERTY FOLDER "SPIRV-Tools libraries")
   spvtools_check_symbol_exports(${target})
   add_dependencies(${target} core_tables extinst_tables)
+  # The software_version.cpp file includes build-version.inc.
+  # Rebuild the software_version.cpp object file if it is older than
+  # build-version.inc or whenever build-version.inc itself is out of
+  # date.  In the latter case, rebuild build-version.inc first.
+  # CMake is not smart enough to detect this dependency automatically.
+  # Without this, the dependency detection system for #included files
+  # does not kick in on a clean build for the following reason:  The
+  # build will fail early because it doesn't know how to build the
+  # missing source file build-version.inc. That occurs before the
+  # preprocessor is run on software_version.cpp to detect the
+  # #include dependency.
+  add_dependencies(${target} build_version)
 endfunction()
 
 # Always build ${SPIRV_TOOLS}-shared. This is expected distro packages, and
