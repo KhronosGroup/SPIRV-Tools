@@ -1340,6 +1340,115 @@ INSTANTIATE_TEST_SUITE_P(
         // Nans are below because we cannot test for equality.
     })));
 
+// Check every finite encoding against an independently constructed FP32 value.
+// In particular, the all-ones exponent is finite in E4M3 and FP4/FP6.
+template <typename FloatType>
+void CheckFiniteSmallFloatCasts(unsigned max_bits, unsigned fraction_bits,
+                                int bias) {
+  using Target = HexFloat<FloatProxy<FloatType>>;
+  for (unsigned bits = 0; bits <= max_bits; ++bits) {
+    const unsigned exponent = bits >> fraction_bits;
+    const unsigned fraction = bits & ((1u << fraction_bits) - 1);
+    const float magnitude = std::ldexp(
+        float(exponent ? (1u << fraction_bits) + fraction : fraction),
+        (exponent ? int(exponent) : 1) - bias - int(fraction_bits));
+    for (bool negative : {false, true}) {
+      const unsigned expected = bits | (negative ? Target::sign_mask : 0);
+      for (auto round : {RD::kToZero, RD::kToPositiveInfinity,
+                         RD::kToNegativeInfinity, RD::kToNearestEven}) {
+        SCOPED_TRACE(expected);
+        SCOPED_TRACE(get_round_text(round));
+        HexFloat<FloatProxy<float>> source(negative ? -magnitude : magnitude);
+        Target result(0);
+        source.castTo(result, round);
+        EXPECT_EQ(expected, result.getBits());
+      }
+    }
+  }
+}
+
+TEST(HexFloatFiniteRange, SmallFloatExactCasts) {
+  CheckFiniteSmallFloatCasts<Float4_E2M1>(0x7, 1, 1);
+  CheckFiniteSmallFloatCasts<Float6_E2M3>(0x1f, 3, 1);
+  CheckFiniteSmallFloatCasts<Float6_E3M2>(0x1f, 2, 3);
+  CheckFiniteSmallFloatCasts<Float8_E4M3>(0x7e, 3, 7);
+  CheckFiniteSmallFloatCasts<Float8_E5M2>(0x7b, 2, 15);
+}
+
+// Overflow still needs handling when the destination cannot represent infinity.
+template <typename FloatType>
+void CheckSmallFloatSaturation(float overflow_value, unsigned max_bits) {
+  using Target = HexFloat<FloatProxy<FloatType>>;
+  for (float value : {overflow_value, std::numeric_limits<float>::infinity()}) {
+    for (bool negative : {false, true}) {
+      for (auto round : {RD::kToZero, RD::kToPositiveInfinity,
+                         RD::kToNegativeInfinity, RD::kToNearestEven}) {
+        SCOPED_TRACE(value);
+        SCOPED_TRACE(negative);
+        SCOPED_TRACE(get_round_text(round));
+        HexFloat<FloatProxy<float>> source(negative ? -value : value);
+        Target result(0);
+        source.castTo(result, round);
+        EXPECT_EQ(max_bits | (negative ? Target::sign_mask : 0),
+                  result.getBits());
+      }
+    }
+  }
+}
+
+TEST(HexFloatFiniteRange, SmallFloatOverflowAndInfinitySaturate) {
+  CheckSmallFloatSaturation<Float4_E2M1>(8.0f, 0x7);
+  CheckSmallFloatSaturation<Float6_E2M3>(8.0f, 0x1f);
+  CheckSmallFloatSaturation<Float6_E3M2>(32.0f, 0x1f);
+  CheckSmallFloatSaturation<Float8_E4M3>(512.0f, 0x7e);
+}
+
+TEST(HexFloatFiniteRange, E4M3RoundingBoundaries) {
+  for (bool negative : {false, true}) {
+    for (auto sample :
+         {std::make_pair(248.0f, 0x78u), std::make_pair(272.0f, 0x78u),
+          std::make_pair(432.0f, 0x7eu), std::make_pair(464.0f, 0x7eu),
+          std::make_pair(480.0f, 0x7eu), std::make_pair(512.0f, 0x7eu)}) {
+      HexFloat<FloatProxy<float>> source(negative ? -sample.first
+                                                  : sample.first);
+      HexFloat<FloatProxy<Float8_E4M3>> result(0);
+      source.castTo(result, RD::kToNearestEven);
+      EXPECT_EQ(sample.second | (negative ? 0x80u : 0), result.getBits())
+          << source.value().getAsFloat();
+    }
+    // Directed rounding beyond the largest finite value must saturate,
+    // including when it would otherwise produce the reserved NaN encoding.
+    for (auto round : {RD::kToZero, RD::kToPositiveInfinity,
+                       RD::kToNegativeInfinity, RD::kToNearestEven}) {
+      HexFloat<FloatProxy<float>> source(negative ? -449.0f : 449.0f);
+      HexFloat<FloatProxy<Float8_E4M3>> result(0);
+      source.castTo(result, round);
+      EXPECT_EQ(negative ? 0xfe : 0x7e, result.getBits());
+    }
+  }
+}
+
+TEST(HexFloatFiniteRange, E4M3DecimalUpperRange) {
+  for (unsigned i = 0; i <= 6; ++i) {
+    for (bool negative : {false, true}) {
+      const std::string literal =
+          (negative ? "-" : "") + std::to_string(256 + 32 * i);
+      std::istringstream input(literal);
+      HexFloat<FloatProxy<Float8_E4M3>> result(0);
+      input >> result;
+      EXPECT_FALSE(input.fail()) << literal;
+      EXPECT_EQ((0x78u + i) | (negative ? 0x80u : 0), result.getBits())
+          << literal;
+    }
+  }
+  for (const char* literal : {"449", "-449", "480", "-480"}) {
+    std::istringstream input(literal);
+    HexFloat<FloatProxy<Float8_E4M3>> result(0);
+    input >> result;
+    EXPECT_TRUE(input.fail()) << literal;
+  }
+}
+
 using HexFloatFP32ToE5M2Tests = ::testing::TestWithParam<DownCastTest>;
 
 TEST_P(HexFloatFP32ToE5M2Tests, NarrowingCasts) {

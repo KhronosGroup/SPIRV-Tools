@@ -1241,24 +1241,30 @@ class HexFloat {
       }
     }
 
-    bool is_nan = T(getBits()).isNan();
-    bool is_inf =
-        !is_nan &&
-        ((exponent + carried) > static_cast<int_type>(other_T::exponent_bias) ||
-         T(getBits()).isInfinity());
+    // The exponent bias is not necessarily the largest finite exponent:
+    // E4M3 and the finite-only FP4/FP6 formats use the all-ones exponent.
+    // Compare the rounded magnitude with the largest finite value, including
+    // its significand so that finite E4M3 inputs cannot round into NaN.
+    const other_T other_max_finite{
+        typename other_T::underlying_type{other_underlyingtraits::max()}};
+    const auto rounded_exponent = exponent + carried;
+    const auto other_max_finite_exponent = other_max_finite.getUnbiasedExponent();
+    const bool overflow =
+        rounded_exponent > other_max_finite_exponent ||
+        (rounded_exponent == other_max_finite_exponent &&
+         rounded_significand > other_max_finite.getSignificandBits());
+    const bool is_nan = T(getBits()).isNan();
+    const bool is_inf = T(getBits()).isInfinity();
 
-    // If we are Nan or Inf we should pass that through.
-    if (is_inf) {
-      if (other_traits::has_infinity)
-        other.set_value(typename other_T::underlying_type(
-            static_cast<typename other_T::uint_type>(
-                (negate ? other_T::sign_mask : 0) | other_T::exponent_mask)));
-      else  // if the type doesnt use infinity, set it to max value (E4M3)
-        other.set_value(typename other_T::underlying_type(
-            static_cast<typename other_T::uint_type>(
-                (negate ? other_T::sign_mask : 0) |
-                other_underlyingtraits::getBitsFromFloat(
-                    other_underlyingtraits::max()))));
+    // Handle source infinity and rounded overflow for every destination.
+    // has_infinity selects infinity or the largest finite magnitude.
+    if (!is_nan && (is_inf || overflow)) {
+      const auto magnitude = other_traits::has_infinity
+                                 ? other_T::exponent_mask
+                                 : other_max_finite.getBits();
+      other.set_value(typename other_T::underlying_type(
+          static_cast<typename other_T::uint_type>(
+              (negate ? other_T::sign_mask : 0) | magnitude)));
       return r;
     }
     if (is_nan) {
@@ -1294,7 +1300,7 @@ class HexFloat {
     // setFromSignUnbiasedExponentAndNormalizedSignificand will
     // zero out any underflowing value (but retain the sign).
     CastResult r2 = other.setFromSignUnbiasedExponentAndNormalizedSignificand(
-        negate, static_cast<other_int_type>(exponent), rounded_significand,
+        negate, static_cast<other_int_type>(rounded_exponent), rounded_significand,
         round_underflow_up);
     return r2 > r ? r2 : r;
   }
