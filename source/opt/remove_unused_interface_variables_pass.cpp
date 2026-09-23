@@ -90,6 +90,7 @@ class RemoveUnusedInterfaceVariablesContext {
 
 RemoveUnusedInterfaceVariablesPass::Status
 RemoveUnusedInterfaceVariablesPass::Process() {
+  if (preserve_interface_) return Status::SuccessWithoutChange;
   bool modified = false;
   for (auto& entry : get_module()->entry_points()) {
     RemoveUnusedInterfaceVariablesContext context(*this, entry);
