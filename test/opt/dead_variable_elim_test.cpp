@@ -293,6 +293,50 @@ OpFunctionEnd
   SinglePassRunAndCheck<DeadVariableElimination>(before, after, true, true);
 }
 
+TEST_F(DeadVariableElimTest, RemoveDeadFunctionLocalWithDeadStore) {
+  const std::string before =
+      R"(OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %main "main"
+OpExecutionMode %main LocalSize 1 1 1
+OpName %main "main"
+OpName %dead "dead"
+%void = OpTypeVoid
+%3 = OpTypeFunction %void
+%float = OpTypeFloat 32
+%_ptr_StorageBuffer_float = OpTypePointer StorageBuffer %float
+%buffer = OpVariable %_ptr_StorageBuffer_float StorageBuffer
+%_ptr_Function__ptr_StorageBuffer_float = OpTypePointer Function %_ptr_StorageBuffer_float
+%main = OpFunction %void None %3
+%entry = OpLabel
+%dead = OpVariable %_ptr_Function__ptr_StorageBuffer_float Function
+OpStore %dead %buffer
+OpReturn
+OpFunctionEnd
+)";
+
+  const std::string after =
+      R"(OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %main "main"
+OpExecutionMode %main LocalSize 1 1 1
+OpName %main "main"
+%void = OpTypeVoid
+%3 = OpTypeFunction %void
+%float = OpTypeFloat 32
+%_ptr_StorageBuffer_float = OpTypePointer StorageBuffer %float
+%buffer = OpVariable %_ptr_StorageBuffer_float StorageBuffer
+%_ptr_Function__ptr_StorageBuffer_float = OpTypePointer Function %_ptr_StorageBuffer_float
+%main = OpFunction %void None %3
+%entry = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
+  SinglePassRunAndCheck<DeadVariableElimination>(before, after, true, true);
+}
+
 }  // namespace
 }  // namespace opt
 }  // namespace spvtools
