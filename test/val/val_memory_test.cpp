@@ -3841,8 +3841,7 @@ OpFunctionEnd
       getDiagnosticString(),
       HasSubstr(
           "For Vulkan, OpTypeStruct variables containing OpTypeRuntimeArray "
-          "must have storage class of StorageBuffer, PhysicalStorageBuffer, or "
-          "Uniform.\n  %6 = "
+          "must have storage class of StorageBuffer or Uniform.\n  %6 = "
           "OpVariable %_ptr_Workgroup__struct_2 Workgroup\n"));
 }
 
@@ -3873,8 +3872,7 @@ OpFunctionEnd
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("For Vulkan, an OpTypeStruct variable containing an "
                         "OpTypeRuntimeArray must be decorated with Block if it "
-                        "has storage class StorageBuffer or "
-                        "PhysicalStorageBuffer.\n  %6 = OpVariable "
+                        "has storage class StorageBuffer.\n  %6 = OpVariable "
                         "%_ptr_StorageBuffer__struct_2 StorageBuffer\n"));
 }
 
