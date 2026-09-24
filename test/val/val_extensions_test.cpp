@@ -260,6 +260,20 @@ OpFunctionEnd)";
                         "version 1.3 or later."));
 }
 
+TEST_F(ValidateExtensionCapabilities, SpirvVersionARMCoopMatLayoutsTooOld) {
+  const std::string str =
+      "OpCapability Shader\n"
+      "OpCapability Linkage\n"
+      "OpExtension \"SPV_ARM_cooperative_matrix_layouts\"\n"
+      "OpMemoryModel Logical GLSL450";
+  CompileSuccessfully(str.c_str(), SPV_ENV_UNIVERSAL_1_5);
+  ASSERT_EQ(SPV_ERROR_WRONG_VERSION,
+            ValidateInstructions(SPV_ENV_UNIVERSAL_1_5));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("SPV_ARM_cooperative_matrix_layouts extension requires "
+                        "SPIR-V version 1.6 or later."));
+}
+
 TEST_F(ValidateExtensionCapabilities,
        DeclCapabilityFailureBlockMatchWIndowSAD) {
   const std::string str = R"(
