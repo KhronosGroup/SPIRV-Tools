@@ -1144,6 +1144,135 @@ TEST_F(ValidateSpvEXTDescriptorHeap, BufferPointerEXTStorageClass) {
                 "type with a Storage Class of Uniform or StorageBuffer."));
 }
 
+// https://gitlab.khronos.org/spirv/SPIR-V/-/work_items/949#note_631090
+TEST_F(ValidateSpvEXTDescriptorHeap, BufferPointerEXTHeapFunctionParameter) {
+  const std::string str = R"(
+               OpCapability Shader
+               OpCapability UntypedPointersKHR
+               OpCapability DescriptorHeapEXT
+               OpCapability VariablePointers
+               OpExtension "SPV_EXT_descriptor_heap"
+               OpExtension "SPV_KHR_untyped_pointers"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %main "main" %resource_heap %pc_var
+               OpExecutionMode %main LocalSize 1 1 1
+               OpDecorate %PC Block
+               OpMemberDecorate %PC 0 Offset 0
+               OpDecorate %resource_heap BuiltIn ResourceHeapEXT
+               OpDecorate %SSBO Block
+               OpMemberDecorate %SSBO 0 Offset 0
+               OpDecorateId %buffer_stride ArrayStrideIdEXT %buffer_size
+       %void = OpTypeVoid
+        %int = OpTypeInt 32 1
+       %uint = OpTypeInt 32 0
+      %int_0 = OpConstant %int 0
+     %uint_0 = OpConstant %uint 0
+     %uint_1 = OpConstant %uint 1
+         %PC = OpTypeStruct %uint
+     %ptr_pc = OpTypePointer PushConstant %PC
+     %pc_var = OpVariable %ptr_pc PushConstant
+%_ptr_PushConstant_uint = OpTypePointer PushConstant %uint
+       %SSBO = OpTypeStruct %uint
+%_ptr_UniformConstant = OpTypeUntypedPointerKHR UniformConstant
+%resource_heap = OpUntypedVariableKHR %_ptr_UniformConstant UniformConstant
+%_ptr_StorageBuffer = OpTypeUntypedPointerKHR StorageBuffer
+%type_buffer = OpTypeBufferEXT StorageBuffer
+%buffer_size = OpConstantSizeOfEXT %int %type_buffer
+%buffer_stride = OpTypeRuntimeArray %type_buffer
+  %main_type = OpTypeFunction %void
+  %heap_type = OpTypeFunction %uint %_ptr_UniformConstant %uint
+   %ptr_type = OpTypeFunction %uint %_ptr_UniformConstant
+%read_from_heap = OpFunction %uint None %heap_type
+ %param_heap = OpFunctionParameter %_ptr_UniformConstant
+%param_index = OpFunctionParameter %uint
+     %heap_l = OpLabel
+   %heap_gep = OpUntypedAccessChainKHR %_ptr_UniformConstant %buffer_stride %param_heap %param_index
+   %heap_buf = OpBufferPointerEXT %_ptr_StorageBuffer %heap_gep
+  %heap_data = OpUntypedAccessChainKHR %_ptr_StorageBuffer %SSBO %heap_buf %int_0
+ %heap_value = OpLoad %uint %heap_data
+               OpReturnValue %heap_value
+               OpFunctionEnd
+%read_from_heap_ptr = OpFunction %uint None %ptr_type
+  %param_ptr = OpFunctionParameter %_ptr_UniformConstant
+      %ptr_l = OpLabel
+    %ptr_buf = OpBufferPointerEXT %_ptr_StorageBuffer %param_ptr
+   %ptr_data = OpUntypedAccessChainKHR %_ptr_StorageBuffer %SSBO %ptr_buf %int_0
+  %ptr_value = OpLoad %uint %ptr_data
+               OpReturnValue %ptr_value
+               OpFunctionEnd
+       %main = OpFunction %void None %main_type
+     %main_l = OpLabel
+         %50 = OpAccessChain %_ptr_PushConstant_uint %pc_var %int_0
+   %pc_index = OpLoad %uint %50
+          %a = OpFunctionCall %uint %read_from_heap %resource_heap %uint_1
+ %ptr_buf_pc = OpUntypedAccessChainKHR %_ptr_UniformConstant %buffer_stride %resource_heap %pc_index
+          %b = OpFunctionCall %uint %read_from_heap_ptr %ptr_buf_pc
+        %sum = OpIAdd %uint %a %b
+  %ptr_buf_0 = OpUntypedAccessChainKHR %_ptr_UniformConstant %buffer_stride %resource_heap %uint_0
+      %buf_0 = OpBufferPointerEXT %_ptr_StorageBuffer %ptr_buf_0
+ %buf_0_data = OpUntypedAccessChainKHR %_ptr_StorageBuffer %SSBO %buf_0 %int_0
+               OpStore %buf_0_data %sum
+               OpReturn
+               OpFunctionEnd
+  )";
+  CompileSuccessfully(str.c_str(), SPV_ENV_VULKAN_1_3);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_3));
+}
+
+// https://gitlab.khronos.org/spirv/SPIR-V/-/work_items/949#note_631090
+TEST_F(ValidateSpvEXTDescriptorHeap, BufferPointerEXTNonHeapFunctionParameter) {
+  const std::string str = R"(
+               OpCapability Shader
+               OpCapability UntypedPointersKHR
+               OpCapability DescriptorHeapEXT
+               OpCapability VariablePointers
+               OpExtension "SPV_EXT_descriptor_heap"
+               OpExtension "SPV_KHR_untyped_pointers"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %main "main" %resource_heap
+               OpExecutionMode %main LocalSize 1 1 1
+               OpDecorate %resource_heap BuiltIn ResourceHeapEXT
+               OpDecorate %SSBO Block
+               OpMemberDecorate %SSBO 0 Offset 0
+               OpDecorateId %buffer_stride ArrayStrideIdEXT %buffer_size
+       %void = OpTypeVoid
+        %int = OpTypeInt 32 1
+       %uint = OpTypeInt 32 0
+      %int_0 = OpConstant %int 0
+     %uint_0 = OpConstant %uint 0
+       %SSBO = OpTypeStruct %uint
+%_ptr_UniformConstant = OpTypeUntypedPointerKHR UniformConstant
+%resource_heap = OpUntypedVariableKHR %_ptr_UniformConstant UniformConstant
+%_ptr_StorageBuffer = OpTypeUntypedPointerKHR StorageBuffer
+%type_buffer = OpTypeBufferEXT StorageBuffer
+%buffer_size = OpConstantSizeOfEXT %int %type_buffer
+%buffer_stride = OpTypeRuntimeArray %type_buffer
+  %main_type = OpTypeFunction %void
+   %foo_type = OpTypeFunction %uint %_ptr_StorageBuffer
+        %foo = OpFunction %uint None %foo_type
+      %param = OpFunctionParameter %_ptr_StorageBuffer
+      %foo_l = OpLabel
+        %buf = OpBufferPointerEXT %_ptr_StorageBuffer %param
+       %data = OpUntypedAccessChainKHR %_ptr_StorageBuffer %SSBO %buf %int_0
+      %value = OpLoad %uint %data
+               OpReturnValue %value
+               OpFunctionEnd
+       %main = OpFunction %void None %main_type
+     %main_l = OpLabel
+  %ptr_buf_0 = OpUntypedAccessChainKHR %_ptr_UniformConstant %buffer_stride %resource_heap %uint_0
+      %buf_0 = OpBufferPointerEXT %_ptr_StorageBuffer %ptr_buf_0
+          %x = OpFunctionCall %uint %foo %buf_0
+               OpReturn
+               OpFunctionEnd
+  )";
+  CompileSuccessfully(str.c_str(), SPV_ENV_VULKAN_1_3);
+  EXPECT_NE(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_3));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("OpBufferPointerEXT's buffer must be an untyped "
+                        "pointer into a variable declared with the "
+                        "ResourceHeapEXT built-in"));
+}
+
 TEST_F(ValidateSpvEXTDescriptorHeap, BufferPointerEXTLayout) {
   const std::string str = R"(
                OpCapability Shader
