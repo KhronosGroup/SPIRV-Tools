@@ -181,17 +181,6 @@ class ValidationState_t {
   /// Returns true if the id has been defined
   bool IsDefinedId(uint32_t id) const;
 
-  /// Increments the total number of instructions in the file.
-  void increment_total_instructions() { total_instructions_++; }
-
-  /// Increments the total number of functions in the file.
-  void increment_total_functions() { total_functions_++; }
-
-  /// Allocates internal storage. Note, calling this will invalidate any
-  /// pointers to |ordered_instructions_| or |module_functions_| and, hence,
-  /// should only be called at the beginning of validation.
-  void preallocateStorage();
-
   /// Returns the current layout section which is being processed
   ModuleLayoutSection current_layout_section() const;
 
@@ -1048,11 +1037,6 @@ class ValidationState_t {
 
   /// The version of the SPIR-V.
   uint32_t version_ = 0;
-
-  /// The total number of instructions in the binary.
-  size_t total_instructions_ = 0;
-  /// The total number of functions in the binary.
-  size_t total_functions_ = 0;
 
   /// IDs which have been forward declared but have not been defined
   std::unordered_set<uint32_t> unresolved_forward_ids_;
