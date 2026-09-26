@@ -1218,8 +1218,8 @@ class ValidationState_t {
   uint32_t shader_debug_info_set_id = 0;
 
   /// Maps ids to friendly names.
-  std::unique_ptr<spvtools::FriendlyNameMapper> friendly_mapper_;
-  spvtools::NameMapper name_mapper_;
+  mutable std::unique_ptr<spvtools::FriendlyNameMapper> friendly_mapper_;
+  mutable spvtools::NameMapper name_mapper_;
 
   /// Variables used to reduce the number of diagnostic messages.
   uint32_t num_of_warnings_;
