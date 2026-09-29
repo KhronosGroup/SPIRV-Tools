@@ -58,6 +58,7 @@ vars = {
   # Repo sources
   'chromium_git': 'https://chromium.googlesource.com',
   'github': 'https://github.com',
+  'gitlab': 'ssh://git@gitlab.khronos.org',
 
   # Building context
   'build_with_chromium': False,
