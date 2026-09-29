@@ -1657,6 +1657,43 @@ bool ValidationState_t::IsDescriptorType(uint32_t id) const {
   return inst && IsDescriptorType(inst->opcode());
 }
 
+bool ValidationState_t::IsConcreteType(uint32_t id) const {
+  const Instruction* type_inst = FindDef(id);
+  if (!type_inst) return false;
+
+  switch (type_inst->opcode()) {
+    // scalars
+    case spv::Op::OpTypeInt:
+    case spv::Op::OpTypeFloat:
+      return true;
+
+    // vectors/matrix/arrays - only if they are made of concrete types
+    // example: vector of boolean is not concrete.
+    case spv::Op::OpTypeVector:
+    case spv::Op::OpTypeVectorIdEXT:
+    case spv::Op::OpTypeMatrix:
+    case spv::Op::OpTypeArray:
+    case spv::Op::OpTypeRuntimeArray:
+      return IsConcreteType(type_inst->GetOperandAs<uint32_t>(1u));
+
+    case spv::Op::OpTypeStruct:
+      for (uint32_t i = 1; i < type_inst->operands().size(); ++i) {
+        if (!IsConcreteType(type_inst->GetOperandAs<uint32_t>(i))) {
+          return false;
+        }
+      }
+      return true;
+
+    case spv::Op::OpTypePointer:
+      return addressing_model() == spv::AddressingModel::Physical32 ||
+             addressing_model() == spv::AddressingModel::Physical64 ||
+             type_inst->GetOperandAs<spv::StorageClass>(1u) ==
+                 spv::StorageClass::PhysicalStorageBuffer;
+    default:
+      return false;
+  }
+}
+
 const Instruction* ValidationState_t::FindUntypedBaseVariable(
     const Instruction* inst) {
   bool found_heap_base = false;
