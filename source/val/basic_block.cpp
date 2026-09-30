@@ -95,11 +95,12 @@ bool BasicBlock::structurally_postdominates(const BasicBlock& other) const {
                                          other.structural_pdom_end(), this));
 }
 
-BasicBlock::DominatorIterator::DominatorIterator() : current_(nullptr) {}
+BasicBlock::DominatorIterator::DominatorIterator()
+    : current_(nullptr), dom_func_(nullptr) {}
 
 BasicBlock::DominatorIterator::DominatorIterator(
     const BasicBlock* block,
-    std::function<const BasicBlock*(const BasicBlock*)> dominator_func)
+    const BasicBlock* (*dominator_func)(const BasicBlock*))
     : current_(block), dom_func_(dominator_func) {}
 
 BasicBlock::DominatorIterator& BasicBlock::DominatorIterator::operator++() {

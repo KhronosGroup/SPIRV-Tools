@@ -207,9 +207,8 @@ class BasicBlock {
     /// @param block          The block which is referenced by the iterator
     /// @param dominator_func This function will be called to get the immediate
     ///                       (post)dominator of the current block
-    DominatorIterator(
-        const BasicBlock* block,
-        std::function<const BasicBlock*(const BasicBlock*)> dominator_func);
+    DominatorIterator(const BasicBlock* block,
+                      const BasicBlock* (*dominator_func)(const BasicBlock*));
 
     /// @brief Advances the iterator
     DominatorIterator& operator++();
@@ -222,7 +221,7 @@ class BasicBlock {
 
    private:
     const BasicBlock* current_;
-    std::function<const BasicBlock*(const BasicBlock*)> dom_func_;
+    const BasicBlock* (*dom_func_)(const BasicBlock*);
   };
 
   /// Returns a dominator iterator which points to the current block
