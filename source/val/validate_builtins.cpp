@@ -4514,6 +4514,18 @@ spv_result_t BuiltInsValidator::ValidateFragStencilRefAtReference(
                                    referenced_from_inst, execution_model);
       }
     }
+
+    for (const uint32_t entry_point : *entry_points_) {
+      const auto* modes = _.GetExecutionModes(entry_point);
+      if (!modes || !modes->count(spv::ExecutionMode::StencilRefReplacingEXT)) {
+        return _.diag(SPV_ERROR_INVALID_DATA, &referenced_from_inst)
+               << spvLogStringForEnv(_.context()->target_env)
+               << " spec requires StencilRefReplacingEXT execution mode to be "
+                  "declared when using BuiltIn FragStencilRefEXT. "
+               << GetReferenceDesc(decoration, built_in_inst, referenced_inst,
+                                   referenced_from_inst);
+      }
+    }
   }
 
   if (function_id_ == 0) {
