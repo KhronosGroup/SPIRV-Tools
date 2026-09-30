@@ -2299,15 +2299,28 @@ bool ValidationState_t::ContainsSizedIntOrFloatType(uint32_t id, spv::Op type,
 }
 
 bool ValidationState_t::ContainsLimitedUseIntOrFloatType(uint32_t id) const {
-  if ((!HasCapability(spv::Capability::Int16) &&
-       ContainsSizedIntOrFloatType(id, spv::Op::OpTypeInt, 16)) ||
-      (!HasCapability(spv::Capability::Int8) &&
-       ContainsSizedIntOrFloatType(id, spv::Op::OpTypeInt, 8)) ||
-      (!HasCapability(spv::Capability::Float16) &&
-       ContainsSizedIntOrFloatType(id, spv::Op::OpTypeFloat, 16))) {
-    return true;
-  }
-  return false;
+  const bool check_int16 = !HasCapability(spv::Capability::Int16);
+  const bool check_int8 = !HasCapability(spv::Capability::Int8);
+  const bool check_float16 = !HasCapability(spv::Capability::Float16);
+  if (!check_int16 && !check_int8 && !check_float16) return false;
+
+  // Used instead of ContainsSizedIntOrFloatType
+  // found it was measurably faster then calling 3 times
+  // (also its not a super complex function)
+  const auto f = [check_int16, check_int8,
+                  check_float16](const Instruction* inst) {
+    if (inst->opcode() == spv::Op::OpTypeInt) {
+      const uint32_t width = inst->GetOperandAs<uint32_t>(1u);
+      return (check_int16 && width == 16) || (check_int8 && width == 8);
+    }
+    if (inst->opcode() == spv::Op::OpTypeFloat) {
+      // Bfloat16 is a special type.
+      if (inst->words().size() > 3) return false;
+      return check_float16 && inst->GetOperandAs<uint32_t>(1u) == 16;
+    }
+    return false;
+  };
+  return ContainsType(id, f);
 }
 
 bool ValidationState_t::ContainsRuntimeArray(uint32_t id) const {
