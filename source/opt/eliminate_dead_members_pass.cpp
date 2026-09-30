@@ -720,6 +720,10 @@ void EliminateDeadMembersPass::MarkStructOperandsAsFullyUsed(
     Instruction* instruction = get_def_use_mgr()->GetDef(*id);
     if (instruction->type_id() != 0) {
       MarkTypeAsFullyUsed(instruction->type_id());
+    } else if (spvOpcodeGeneratesType(instruction->opcode())) {
+      // Some instructions take a type as an operand, such as the Message Type
+      // of OpAbortKHR or the Base Type of OpUntypedAccessChainKHR.
+      MarkTypeAsFullyUsed(instruction->result_id());
     }
   });
 }
