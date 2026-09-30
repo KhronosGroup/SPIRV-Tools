@@ -3727,6 +3727,119 @@ OpFunctionEnd
               HasSubstr("The type of Vector 2 must be a vector type"));
 }
 
+// Test OOB VectorShuffle with various combos of two Vectors.
+// The vectors may be standard OpVector or OpVectorIdEXT.
+TEST_F(ValidateComposites, VectorShuffleOutOfBounds) {
+  for (unsigned v1Len : {2U, 32U}) {
+    for (unsigned v2Len : {4U, 16U}) {
+      unsigned combLen = v1Len + v2Len;
+      for (unsigned idx : {4U, combLen}) {
+        std::ostringstream ss;
+        ss << R"(
+OpCapability Shader
+OpCapability LongVectorEXT
+OpExtension "SPV_EXT_long_vector"
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %main "main" %in0 %in1 %in2 %in3
+OpExecutionMode %main OriginUpperLeft
+OpDecorate %in0 Location 0
+OpDecorate %in1 Location 1
+OpDecorate %in2 Location 2
+OpDecorate %in3 Location 3
+%void = OpTypeVoid
+%func = OpTypeFunction %void
+%float = OpTypeFloat 32
+%uint = OpTypeInt 32 0
+%v2float = OpTypeVector %float 2
+%v4float = OpTypeVector %float 4
+%uint_16 = OpConstant %uint 16
+%uint_32 = OpConstant %uint 32
+%v16float = OpTypeVectorIdEXT %float %uint_16
+%v32float = OpTypeVectorIdEXT %float %uint_32
+%_ptr_Input_v2float = OpTypePointer Input %v2float
+%_ptr_Input_v4float = OpTypePointer Input %v4float
+%_ptr_Input_v16float = OpTypePointer Input %v16float
+%_ptr_Input_v32float = OpTypePointer Input %v32float
+%in0 = OpVariable %_ptr_Input_v2float Input
+%in1 = OpVariable %_ptr_Input_v4float Input
+%in2 = OpVariable %_ptr_Input_v16float Input
+%in3 = OpVariable %_ptr_Input_v32float Input
+%main = OpFunction %void None %func
+%label = OpLabel
+%v2 = OpLoad %v2float %in0
+%v4 = OpLoad %v4float %in1
+%v16 = OpLoad %v16float %in2
+%v32 = OpLoad %v32float %in3
+)";
+        ss << "%shuffle1 = OpVectorShuffle %v2float %v" << v1Len << " %v"
+           << v2Len << " " << idx << " 1";
+        ss << R"(
+OpReturn
+OpFunctionEnd
+)";
+        CompileSuccessfully(ss.str());
+        if (idx < combLen) {
+          // Valid index. Should succeed
+          ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
+        } else {
+          ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+          EXPECT_THAT(getDiagnosticString(),
+                      HasSubstr(std::string("out of bounds for combined "
+                                            "(Vector1 + Vector2) size of ") +
+                                std::to_string(combLen)));
+        }
+      }
+    }
+  }
+}
+
+// Confirm that OpVectorIdEXT with spec const length produce no OOB shuffle
+// errors.
+TEST_F(ValidateComposites, VectorShuffleSpecConst) {
+  // Variable suffixes used to test spec const sized vector in both places.
+  std::string vars[] = {"32", "S", "32"};
+  for (int i = 0; i < 2; i++) {
+    std::ostringstream ss;
+    ss << R"(
+OpCapability Shader
+OpCapability LongVectorEXT
+OpExtension "SPV_EXT_long_vector"
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %main "main" %in0 %in1
+OpExecutionMode %main OriginUpperLeft
+OpDecorate %in0 Location 0
+OpDecorate %in1 Location 1
+OpDecorate %spec SpecId 1
+%void = OpTypeVoid
+%func = OpTypeFunction %void
+%float = OpTypeFloat 32
+%uint = OpTypeInt 32 0
+%v2float = OpTypeVector %float 2
+%uint_32 = OpConstant %uint 32
+%spec = OpSpecConstant %uint 0
+%vSfloat = OpTypeVectorIdEXT %float %spec
+%v32float = OpTypeVectorIdEXT %float %uint_32
+%_ptr_Input_vSfloat = OpTypePointer Input %vSfloat
+%_ptr_Input_v32float = OpTypePointer Input %v32float
+%in0 = OpVariable %_ptr_Input_vSfloat Input
+%in1 = OpVariable %_ptr_Input_v32float Input
+%main = OpFunction %void None %func
+%label = OpLabel
+%vS = OpLoad %vSfloat %in0
+%v32 = OpLoad %v32float %in1
+)";
+    // Just some large index to confirm no check is being made.
+    ss << "%shuffle1 = OpVectorShuffle %v2float %v" << vars[i] << " %v"
+       << vars[i + 1] << " 1000 1";
+    ss << R"(
+OpReturn
+OpFunctionEnd
+)";
+    CompileSuccessfully(ss.str());
+    ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
+  }
+}
+
 }  // namespace
 }  // namespace val
 }  // namespace spvtools

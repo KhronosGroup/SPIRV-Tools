@@ -593,6 +593,20 @@ spv_result_t ValidateTranspose(ValidationState_t& _, const Instruction* inst) {
   return SPV_SUCCESS;
 }
 
+static uint32_t GetVectorLength(ValidationState_t& _,
+                                const Instruction* vec_type) {
+  uint32_t vec_component_count = 0xFFFFFFFF;
+
+  if (vec_type->opcode() == spv::Op::OpTypeVectorIdEXT) {
+    uint32_t vec_length_id = vec_type->GetOperandAs<uint32_t>(2);
+    _.GetConstantValueAs<unsigned>(vec_length_id, vec_component_count);
+  } else {
+    assert(vec_type->opcode() == spv::Op::OpTypeVector);
+    vec_component_count = vec_type->GetOperandAs<uint32_t>(2);
+  }
+  return vec_component_count;
+}
+
 spv_result_t ValidateVectorShuffle(ValidationState_t& _,
                                    const Instruction* inst,
                                    uint32_t operand_index = 2) {
@@ -641,15 +655,20 @@ spv_result_t ValidateVectorShuffle(ValidationState_t& _,
   }
 
   // All Component literals must either be FFFFFFFF or in [0, N - 1].
-  uint32_t vec1_component_count = vec1_type->GetOperandAs<uint32_t>(2);
-  uint32_t vec2_component_count = vec2_type->GetOperandAs<uint32_t>(2);
-  uint32_t N = vec1_component_count + vec2_component_count;
-  for (size_t i = first_literal_index; i < inst->operands().size(); ++i) {
-    uint32_t literal = inst->GetOperandAs<uint32_t>(i);
-    if (literal != 0xFFFFFFFF && literal >= N) {
-      return _.diag(SPV_ERROR_INVALID_ID, inst)
-             << "Component index " << literal << " is out of bounds for "
-             << "combined (Vector1 + Vector2) size of " << N << ".";
+  uint32_t vec1_component_count = GetVectorLength(_, vec1_type);
+  uint32_t vec2_component_count = GetVectorLength(_, vec2_type);
+
+  // If component counts are unavailable at validation time, skip check.
+  if (vec1_component_count != 0xFFFFFFFF &&
+      vec2_component_count != 0xFFFFFFFF) {
+    uint32_t N = vec1_component_count + vec2_component_count;
+    for (size_t i = first_literal_index; i < inst->operands().size(); ++i) {
+      uint32_t literal = inst->GetOperandAs<uint32_t>(i);
+      if (literal != 0xFFFFFFFF && literal >= N) {
+        return _.diag(SPV_ERROR_INVALID_ID, inst)
+               << "Component index " << literal << " is out of bounds for "
+               << "combined (Vector1 + Vector2) size of " << N << ".";
+      }
     }
   }
 
