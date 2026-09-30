@@ -3659,12 +3659,7 @@ spv_result_t ValidateExtInstDebugInfo(ValidationState_t& _,
             _.EvalInt32IfConst(inst->word(8));
         std::tie(is_int32, is_const_int32, column_end) =
             _.EvalInt32IfConst(inst->word(9));
-        if (line_start == 0) {
-          return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                 << GetExtInstName(_, inst)
-                 << ": operand Line Start (0) is not allowed, source lines "
-                    "start at Line 1";
-        } else if (line_end < line_start) {
+        if (line_end < line_start) {
           return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << GetExtInstName(_, inst) << ": operand Line End ("
                  << line_end << ") is less than Line Start (" << line_start
@@ -3687,24 +3682,28 @@ spv_result_t ValidateExtInstDebugInfo(ValidationState_t& _,
                    << " lines found in the DebugSource text";
           }
           if (line_start == line_end) {
-            const uint32_t line_length = line_lengths[line_end - 1];
-            if (column_end > line_length) {
-              return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                     << GetExtInstName(_, inst) << ": operand Column End ("
-                     << column_end << ") is larger then Line " << line_end
-                     << " column length of " << line_length
-                     << " found in the DebugSource text";
+            if (line_end != 0) {
+              const uint32_t line_length = line_lengths[line_end - 1];
+              if (column_end > line_length) {
+                return _.diag(SPV_ERROR_INVALID_DATA, inst)
+                       << GetExtInstName(_, inst) << ": operand Column End ("
+                       << column_end << ") is larger then Line " << line_end
+                       << " column length of " << line_length
+                       << " found in the DebugSource text";
+              }
             }
           } else {
-            uint32_t line_length = line_lengths[line_start - 1];
-            if (column_start > line_length) {
-              return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                     << GetExtInstName(_, inst) << ": operand Column Start ("
-                     << column_start << ") is larger then Line " << line_start
-                     << " column length of " << line_length
-                     << " found in the DebugSource text";
+            if (line_start != 0) {
+              const uint32_t line_length = line_lengths[line_start - 1];
+              if (column_start > line_length) {
+                return _.diag(SPV_ERROR_INVALID_DATA, inst)
+                       << GetExtInstName(_, inst) << ": operand Column Start ("
+                       << column_start << ") is larger then Line " << line_start
+                       << " column length of " << line_length
+                       << " found in the DebugSource text";
+              }
             }
-            line_length = line_lengths[line_end - 1];
+            const uint32_t line_length = line_lengths[line_end - 1];
             if (column_end > line_length) {
               return _.diag(SPV_ERROR_INVALID_DATA, inst)
                      << GetExtInstName(_, inst) << ": operand Column End ("

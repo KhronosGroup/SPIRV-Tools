@@ -5209,15 +5209,54 @@ TEST_F(ValidateVulkan100DebugInfo, DebugLineLineStartZero) {
 )";
 
   const std::string body = R"(
-%line1 = OpExtInst %void %DbgExt DebugLine %dbg_src %u32_0 %u32_1 %u32_0 %u32_0
+%line1 = OpExtInst %void %DbgExt DebugLine %dbg_src %u32_0 %u32_0 %u32_0 %u32_5
+)";
+
+  CompileSuccessfully(GenerateShaderCodeForDebugInfo(
+      src, "", dbg_inst_header, body, shader_extension_100, "Vertex"));
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+TEST_F(ValidateVulkan100DebugInfo, DebugLineLineStartZeroMultiline) {
+  const std::string src = R"(
+%src = OpString "simple.hlsl"
+%code = OpString "int main() { }"
+)";
+
+  const std::string dbg_inst_header = R"(
+%dbg_src = OpExtInst %void %DbgExt DebugSource %src %code
+)";
+
+  const std::string body = R"(
+%line1 = OpExtInst %void %DbgExt DebugLine %dbg_src %u32_0 %u32_1 %u32_32 %u32_5
+)";
+
+  CompileSuccessfully(GenerateShaderCodeForDebugInfo(
+      src, "", dbg_inst_header, body, shader_extension_100, "Vertex"));
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+TEST_F(ValidateVulkan100DebugInfo, DebugLineLineStartZeroColumnEndOutOfBounds) {
+  const std::string src = R"(
+%src = OpString "simple.hlsl"
+%code = OpString "1
+123"
+)";
+
+  const std::string dbg_inst_header = R"(
+%dbg_src = OpExtInst %void %DbgExt DebugSource %src %code
+)";
+
+  const std::string body = R"(
+%line1 = OpExtInst %void %DbgExt DebugLine %dbg_src %u32_0 %u32_1 %u32_0 %u32_3
 )";
 
   CompileSuccessfully(GenerateShaderCodeForDebugInfo(
       src, "", dbg_inst_header, body, shader_extension_100, "Vertex"));
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("DebugLine: operand Line Start (0) is not allowed, "
-                        "source lines start at Line 1"));
+              HasSubstr("DebugLine: operand Column End (3) is larger then Line "
+                        "1 column length of 2 found in the DebugSource text"));
 }
 
 TEST_F(ValidateVulkan100DebugInfo, DebugLineLineEndSmaller) {
