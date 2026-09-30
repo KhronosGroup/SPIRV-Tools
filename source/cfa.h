@@ -189,7 +189,9 @@ void CFA<BB>::DepthFirstTraversal(
   /// NOTE: work_list is the sequence of nodes from the root node to the node
   /// being processed in the traversal
   std::vector<block_info> work_list;
-  work_list.reserve(10);
+  // 64 is the sweet size for number of blocks from sample of 7000 Vulkan
+  // shaders from a real world apps from 2026
+  work_list.reserve(64);
 
   work_list.push_back({entry, std::begin(*successor_func(entry))});
   preorder(entry);
@@ -226,6 +228,7 @@ std::vector<std::pair<BB*, BB*>> CFA<BB>::CalculateDominators(
   const size_t undefined_dom = postorder.size();
 
   std::unordered_map<cbb_ptr, block_detail> idoms;
+  idoms.reserve(postorder.size());
   for (size_t i = 0; i < postorder.size(); i++) {
     idoms[postorder[i]] = {undefined_dom, i};
   }
