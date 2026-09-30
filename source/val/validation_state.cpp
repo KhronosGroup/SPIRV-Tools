@@ -250,11 +250,6 @@ ValidationState_t::ValidationState_t(const spv_const_context ctx,
   UpdateFeaturesBasedOnSpirvVersion(&features_, version_);
 
   name_mapper_ = spvtools::GetTrivialNameMapper();
-  if (options_->use_friendly_names) {
-    friendly_mapper_ = spvtools::MakeUnique<spvtools::FriendlyNameMapper>(
-        context_, words_, num_words_);
-    name_mapper_ = friendly_mapper_->GetNameMapper();
-  }
 }
 
 void ValidationState_t::preallocateStorage() {
@@ -286,6 +281,16 @@ void ValidationState_t::AssignNameToId(uint32_t id, std::string name) {
 }
 
 std::string ValidationState_t::getIdName(uint32_t id) const {
+  // Building the FriendlyNameMapper can adds about 20% extra time to run
+  // spirv-val. We lazily allocate it the first time as we assume most things
+  // running spirv-val will be valid SPIR-V and this is not needed for the
+  // average case.
+  if (options_->use_friendly_names && !friendly_mapper_) {
+    friendly_mapper_ = spvtools::MakeUnique<spvtools::FriendlyNameMapper>(
+        context_, words_, num_words_);
+    name_mapper_ = friendly_mapper_->GetNameMapper();
+  }
+
   const std::string id_name = name_mapper_(id);
 
   std::stringstream out;
