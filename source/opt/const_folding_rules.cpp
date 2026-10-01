@@ -182,6 +182,11 @@ ConstantFoldingRule FoldInsertWithConstants() {
         components = composite->AsCompositeConstant()->GetComponents();
       }
       const uint32_t index = inst->GetSingleWordInOperand(i);
+      // The validator cannot check the index when the array size is a spec
+      // constant, so refuse to fold if the index is out of bounds.
+      if (index >= components.size()) {
+        return nullptr;
+      }
       composite = components[index];
     }
 
