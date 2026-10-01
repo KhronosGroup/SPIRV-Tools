@@ -11,6 +11,7 @@ load(
     "incompatible_with",
 )
 load("@rules_python//python:defs.bzl", "py_binary")
+load("@rules_cc//cc:defs.bzl", "cc_binary", "cc_library", "cc_test")
 
 package(
     default_visibility = ["//visibility:private"],
@@ -39,11 +40,13 @@ py_binary(
         "utils/Table/Operand.py",
         "utils/Table/StringList.py",
     ],
+    legacy_create_init = False,
 )
 
 py_binary(
     name = "generate_language_headers",
     srcs = ["utils/generate_language_headers.py"],
+    legacy_create_init = False,
 )
 
 create_grammar_tables_target(
@@ -55,6 +58,8 @@ create_grammar_tables_target(
         ExtInst("nonsemantic.shader.debuginfo", prefix="SHDEBUG100_"),
         ExtInst("tosa.001000.1", target="spirv_ext_inst_tosa_001000_1", prefix="TOSA_"),
         ExtInst("arm.motion-engine.100", target="spirv_ext_inst_arm_motion_engine_100"),
+        ExtInst("nonsemantic.graph.debuginfo", target="spirv_ext_inst_non_semantic_graph_debuginfo_grammar_unified1"),
+        ExtInst("arm.experimental-ml-operations", target="spirv_ext_inst_arm_experimental_ml_operations"),
     ] + [ExtInst(e) for e in [
             "spv-amd-shader-explicit-vertex-parameter",
             "spv-amd-shader-trinary-minmax",
@@ -63,6 +68,7 @@ create_grammar_tables_target(
             "debuginfo",
             "nonsemantic.clspvreflection",
             "nonsemantic.vkspreflection",
+            "nonsemantic.debugprintf",
         ]
     ]
 )
@@ -85,6 +91,7 @@ generate_extinst_lang_headers(
 py_binary(
     name = "generate_registry_tables",
     srcs = ["utils/generate_registry_tables.py"],
+    legacy_create_init = False,
 )
 
 genrule(
@@ -99,6 +106,7 @@ genrule(
 py_binary(
     name = "update_build_version",
     srcs = ["utils/update_build_version.py"],
+    legacy_create_init = False,
 )
 
 genrule(

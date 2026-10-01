@@ -29,6 +29,9 @@ Pass::Status VectorDCE::Process() {
   for (Function& function : *get_module()) {
     modified |= VectorDCEFunction(&function);
   }
+  if (context()->id_overflow()) {
+    return Status::Failure;
+  }
   return (modified ? Status::SuccessWithChange : Status::SuccessWithoutChange);
 }
 
@@ -335,9 +338,12 @@ bool VectorDCE::RewriteInstructions(
     // If no element in the current instruction is used replace it with an
     // OpUndef.
     if (live_component->second.Empty()) {
+      uint32_t undef_id = this->Type2Undef(current_inst->type_id());
+      if (undef_id == 0) {
+        return;
+      }
       modified = true;
       MarkDebugValueUsesAsDead(current_inst, &dead_dbg_value);
-      uint32_t undef_id = this->Type2Undef(current_inst->type_id());
       context()->KillNamesAndDecorates(current_inst);
       context()->ReplaceAllUsesWith(current_inst->result_id(), undef_id);
       context()->KillInst(current_inst);
@@ -392,8 +398,11 @@ bool VectorDCE::RewriteInsertInstruction(
   utils::BitVector temp = live_components;
   temp.Clear(insert_index);
   if (temp.Empty()) {
-    context()->ForgetUses(current_inst);
     uint32_t undef_id = Type2Undef(current_inst->type_id());
+    if (undef_id == 0) {
+      return false;
+    }
+    context()->ForgetUses(current_inst);
     current_inst->SetInOperand(kInsertCompositeIdInIdx, {undef_id});
     context()->AnalyzeUses(current_inst);
     return true;

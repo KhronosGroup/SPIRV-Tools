@@ -48,6 +48,9 @@ Pass::Status FixStorageClass::Process() {
       }
     }
   });
+  if (context()->id_overflow()) {
+    return Status::Failure;
+  }
   return modified ? Status::SuccessWithChange : Status::SuccessWithoutChange;
 }
 
@@ -58,58 +61,59 @@ bool FixStorageClass::PropagateStorageClass(Instruction* inst,
     return false;
   }
 
-  if (IsPointerToStorageClass(inst, storage_class)) {
-    if (inst->opcode() == spv::Op::OpPhi) {
-      if (!seen->insert(inst->result_id()).second) {
-        return false;
-      }
+  if (inst->opcode() == spv::Op::OpPhi) {
+    if (!seen->insert(inst->result_id()).second) {
+      return false;
     }
+  }
 
-    bool modified = false;
+  bool modified = false;
+  if (IsPointerToStorageClass(inst, storage_class)) {
     std::vector<Instruction*> uses;
     get_def_use_mgr()->ForEachUser(
         inst, [&uses](Instruction* use) { uses.push_back(use); });
     for (Instruction* use : uses) {
       modified |= PropagateStorageClass(use, storage_class, seen);
     }
-
-    if (inst->opcode() == spv::Op::OpPhi) {
-      seen->erase(inst->result_id());
+  } else {
+    switch (inst->opcode()) {
+      case spv::Op::OpAccessChain:
+      case spv::Op::OpPtrAccessChain:
+      case spv::Op::OpInBoundsAccessChain:
+      case spv::Op::OpCopyObject:
+      case spv::Op::OpPhi:
+      case spv::Op::OpSelect:
+        FixInstructionStorageClass(inst, storage_class, seen);
+        modified = true;
+        break;
+      case spv::Op::OpFunctionCall:
+        // We cannot be sure of the actual connection between the storage class
+        // of the parameter and the storage class of the result, so we should
+        // not do anything.  If the result type needs to be fixed, the function
+        // call should be inlined.
+        break;
+      case spv::Op::OpImageTexelPointer:
+      case spv::Op::OpLoad:
+      case spv::Op::OpStore:
+      case spv::Op::OpCopyMemory:
+      case spv::Op::OpCopyMemorySized:
+      case spv::Op::OpVariable:
+      case spv::Op::OpBitcast:
+      case spv::Op::OpAllocateNodePayloadsAMDX:
+        // Nothing to change for these opcode.  The result type is the same
+        // regardless of the storage class of the operand.
+        break;
+      default:
+        assert(false &&
+               "Not expecting instruction to have a pointer result type.");
+        break;
     }
-    return modified;
   }
 
-  switch (inst->opcode()) {
-    case spv::Op::OpAccessChain:
-    case spv::Op::OpPtrAccessChain:
-    case spv::Op::OpInBoundsAccessChain:
-    case spv::Op::OpCopyObject:
-    case spv::Op::OpPhi:
-    case spv::Op::OpSelect:
-      FixInstructionStorageClass(inst, storage_class, seen);
-      return true;
-    case spv::Op::OpFunctionCall:
-      // We cannot be sure of the actual connection between the storage class
-      // of the parameter and the storage class of the result, so we should not
-      // do anything.  If the result type needs to be fixed, the function call
-      // should be inlined.
-      return false;
-    case spv::Op::OpImageTexelPointer:
-    case spv::Op::OpLoad:
-    case spv::Op::OpStore:
-    case spv::Op::OpCopyMemory:
-    case spv::Op::OpCopyMemorySized:
-    case spv::Op::OpVariable:
-    case spv::Op::OpBitcast:
-    case spv::Op::OpAllocateNodePayloadsAMDX:
-      // Nothing to change for these opcode.  The result type is the same
-      // regardless of the storage class of the operand.
-      return false;
-    default:
-      assert(false &&
-             "Not expecting instruction to have a pointer result type.");
-      return false;
+  if (inst->opcode() == spv::Op::OpPhi) {
+    seen->erase(inst->result_id());
   }
+  return modified;
 }
 
 void FixStorageClass::FixInstructionStorageClass(
@@ -136,6 +140,9 @@ void FixStorageClass::ChangeResultStorageClass(
   uint32_t pointee_type_id = result_type_inst->GetSingleWordInOperand(1);
   uint32_t new_result_type_id =
       type_mgr->FindPointerToType(pointee_type_id, storage_class);
+  if (new_result_type_id == 0) {
+    return;
+  }
   inst->SetResultType(new_result_type_id);
   context()->UpdateDefUse(inst);
 }
@@ -168,7 +175,7 @@ bool FixStorageClass::IsPointerToStorageClass(Instruction* inst,
 
 bool FixStorageClass::ChangeResultType(Instruction* inst,
                                        uint32_t new_type_id) {
-  if (inst->type_id() == new_type_id) {
+  if (new_type_id == 0 || inst->type_id() == new_type_id) {
     return false;
   }
 

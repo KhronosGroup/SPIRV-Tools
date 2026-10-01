@@ -181,17 +181,6 @@ class ValidationState_t {
   /// Returns true if the id has been defined
   bool IsDefinedId(uint32_t id) const;
 
-  /// Increments the total number of instructions in the file.
-  void increment_total_instructions() { total_instructions_++; }
-
-  /// Increments the total number of functions in the file.
-  void increment_total_functions() { total_functions_++; }
-
-  /// Allocates internal storage. Note, calling this will invalidate any
-  /// pointers to |ordered_instructions_| or |module_functions_| and, hence,
-  /// should only be called at the beginning of validation.
-  void preallocateStorage();
-
   /// Returns the current layout section which is being processed
   ModuleLayoutSection current_layout_section() const;
 
@@ -713,6 +702,11 @@ class ValidationState_t {
   bool IsFP8VectorType(uint32_t id) const;
   bool IsFP8CoopMatType(uint32_t id) const;
   bool IsFP8Type(uint32_t id) const;
+  bool IsOCPMicroscalingScalarType(uint32_t id) const;
+  bool IsOCPMicroscalingNonByteScalarType(uint32_t id) const;
+  bool IsOCPMicroscalingType(uint32_t id) const;
+  bool ContainsOCPMicroscalingType(uint32_t id) const;
+  bool ContainsOCPMicroscalingNonByteType(uint32_t id) const;
   bool IsFloatScalarType(uint32_t id, uint32_t width = 0) const;
   bool IsFloatArrayType(uint32_t id) const;
   bool IsFloatVectorType(uint32_t id) const;
@@ -722,6 +716,7 @@ class ValidationState_t {
   bool IsIntScalarType(uint32_t id, uint32_t width = 0) const;
   bool IsIntScalarTypeWithSignedness(uint32_t id, uint32_t signedness) const;
   bool IsIntVectorType(uint32_t id) const;
+  bool IsIntVectorType(uint32_t id, uint32_t width, uint32_t components) const;
   bool IsIntScalarOrVectorType(uint32_t id) const;
   bool IsUnsignedIntScalarType(uint32_t id) const;
   bool IsUnsignedIntVectorType(uint32_t id) const;
@@ -750,6 +745,7 @@ class ValidationState_t {
   bool IsTensorType(uint32_t id) const;
   bool IsDescriptorType(spv::Op opcode) const;
   bool IsDescriptorType(uint32_t id) const;
+  bool IsConcreteType(uint32_t id) const;
   // When |length| is not 0, return true only if the array length is equal to
   // |length| and the array length is not defined by a specialization constant.
   bool IsArrayType(uint32_t id, uint64_t length = 0) const;
@@ -932,6 +928,23 @@ class ValidationState_t {
     return SpvDecorationString(uint32_t(decoration));
   }
 
+  bool CheckForceOpacityMicromap2StateKHRCapabilityRequirement(
+      const Instruction* inst, uint32_t flag_operand) {
+    bool retval = true;
+    uint64_t flag_val = 0;
+    if (EvalConstantValUint64(inst->GetOperandAs<uint32_t>(flag_operand),
+                              &flag_val)) {
+      if ((flag_val & static_cast<uint64_t>(
+                          spv::RayFlagsMask::ForceOpacityMicromap2StateKHR)) !=
+          0) {
+        assert(HasCapability(spv::Capability::RayQueryKHR) ||
+               HasCapability(spv::Capability::RayTracingKHR));
+        retval = HasCapability(spv::Capability::RayTracingOpacityMicromapKHR);
+      }
+    }
+    return retval;
+  }
+
   // Returns whether type result_type_id and type m2 are cooperative matrices
   // with the same "shape" (matching scope, rows, cols). If any are
   // specialization constants, we assume they can match because we can't prove
@@ -939,7 +952,7 @@ class ValidationState_t {
   spv_result_t CooperativeMatrixShapesMatch(const Instruction* inst,
                                             uint32_t result_type_id,
                                             uint32_t m2, bool is_conversion,
-                                            bool swap_row_col = false);
+                                            bool swap_row_col);
 
   spv_result_t CooperativeVectorDimensionsMatch(const Instruction* inst,
                                                 uint32_t v1, uint32_t v2);
@@ -1004,6 +1017,10 @@ class ValidationState_t {
   // instruction Will create a new vector if DebugSource is not found
   std::vector<uint32_t>& GetDebugSourceLineLength(uint32_t id);
 
+  void RegisterShaderDebugInfo(uint32_t id) { shader_debug_info_set_id = id; }
+  uint32_t ShaderDebugInfoSet() const { return shader_debug_info_set_id; }
+  std::string InspectShaderDebugInfo(const Instruction& inst);
+
  private:
   ValidationState_t(const ValidationState_t&);
 
@@ -1021,11 +1038,6 @@ class ValidationState_t {
 
   /// The version of the SPIR-V.
   uint32_t version_ = 0;
-
-  /// The total number of instructions in the binary.
-  size_t total_instructions_ = 0;
-  /// The total number of functions in the binary.
-  size_t total_functions_ = 0;
 
   /// IDs which have been forward declared but have not been defined
   std::unordered_set<uint32_t> unresolved_forward_ids_;
@@ -1186,13 +1198,41 @@ class ValidationState_t {
   /// line side of it. (Also will have the DebugSourceContinued source included)
   std::unordered_map<uint32_t, std::vector<uint32_t>> debug_source_line_length_;
 
+  // Quick check if we have seen NonSemantic.Shader.DebugInfo.*
+  // to know to try and print out a source line on an error message
+  uint32_t shader_debug_info_set_id = 0;
+
   /// Maps ids to friendly names.
-  std::unique_ptr<spvtools::FriendlyNameMapper> friendly_mapper_;
-  spvtools::NameMapper name_mapper_;
+  mutable std::unique_ptr<spvtools::FriendlyNameMapper> friendly_mapper_;
+  mutable spvtools::NameMapper name_mapper_;
 
   /// Variables used to reduce the number of diagnostic messages.
   uint32_t num_of_warnings_;
   uint32_t max_num_of_warnings_;
+
+  struct DebugSourceInfo {
+    uint32_t line_start;
+    uint32_t line_end;
+    uint32_t column_start;
+    uint32_t column_end;
+  };
+  DebugSourceInfo GetDebugSourceInfo(const Instruction& inst);
+  void InspectDebugLine(std::ostringstream& ss, const Instruction& inst);
+  void InspectDebugGlobalVariable(std::ostringstream& ss,
+                                  const Instruction& inst);
+  void InspectDebugLocalVariable(std::ostringstream& ss, const Function& func,
+                                 const Instruction& inst);
+  void InspectFunctionCall(std::ostringstream& ss,
+                           const Instruction& function_call_inst);
+  void InspectLineAndFunctionDefinition(std::ostringstream& ss,
+                                        const Function& func,
+                                        const Instruction& inst);
+  void InspectEntryPoint(std::ostringstream& ss, const Instruction& inst);
+  void InspectDebugFunctionDefinition(std::ostringstream& ss,
+                                      const Instruction& function_inst);
+  void PrintShaderDebugInfoSource(std::ostringstream& ss,
+                                  const Instruction& debug_source,
+                                  const DebugSourceInfo& source_info);
 };
 
 }  // namespace val

@@ -359,6 +359,10 @@ bool IsCompositeType(const opt::analysis::Type* type) {
                   type->AsVector());
 }
 
+bool Is32BitIntegerScalarType(const opt::analysis::Type* type) {
+  return type && type->AsInteger() && type->AsInteger()->width() == 32;
+}
+
 std::vector<uint32_t> RepeatedFieldToVector(
     const google::protobuf::RepeatedField<uint32_t>& repeated_field) {
   std::vector<uint32_t> result;
@@ -433,6 +437,19 @@ uint32_t GetArraySize(const opt::Instruction& array_type_instruction,
     return 0;
   }
   return array_length_constant->GetU32();
+}
+
+bool HasStaticBoundForCompositeIndex(
+    const opt::Instruction& composite_type_inst) {
+  switch (composite_type_inst.opcode()) {
+    case spv::Op::OpTypeArray:
+    case spv::Op::OpTypeMatrix:
+    case spv::Op::OpTypeVector:
+    case spv::Op::OpTypeStruct:
+      return true;
+    default:
+      return false;
+  }
 }
 
 uint32_t GetBoundForCompositeIndex(const opt::Instruction& composite_type_inst,

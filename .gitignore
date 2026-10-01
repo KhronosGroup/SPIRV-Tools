@@ -6,6 +6,7 @@ android_test/app
 compile_commands.json
 /build*/
 /buildtools/
+/testing/
 /external/abseil_cpp/
 /external/googletest
 /external/SPIRV-Headers
@@ -27,6 +28,14 @@ bazel-spirv-tools
 bazel-SPIRV-Tools
 bazel-testlogs
 MODULE.bazel.lock
+
+# These are generated when locally testing the GN kokoro scripts
+standalone.gclient
+standalone.gclient_entries
+.gclient_previous_custom_vars
+.gclient_previous_sync_commits
+.gcs_entries
+.cipd
 
 # Vim
 [._]*.s[a-w][a-z]

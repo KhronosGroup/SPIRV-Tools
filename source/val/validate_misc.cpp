@@ -113,13 +113,19 @@ spv_result_t ValidateExpect(ValidationState_t& _, const Instruction* inst) {
 }
 
 spv_result_t ValidateAbort(ValidationState_t& _, const Instruction* inst) {
-  const auto message_type = _.FindDef(inst->GetOperandAs<uint32_t>(0u));
+  const uint32_t message_type_id = inst->GetOperandAs<uint32_t>(0u);
+  const auto message_type = _.FindDef(message_type_id);
   const auto source = _.FindDef(inst->GetOperandAs<uint32_t>(1u));
   const auto source_type = _.FindDef(source->type_id());
 
-  if (source_type == message_type) return SPV_SUCCESS;
+  if (!_.IsConcreteType(message_type_id)) {
+    return _.diag(SPV_ERROR_INVALID_ID, inst)
+           << "Message Type operand " << _.getIdName(message_type_id)
+           << " must be a concrete type";
+  }
 
-  if (!_.LogicallyMatch(source_type, message_type, false)) {
+  if (source_type != message_type &&
+      !_.LogicallyMatch(source_type, message_type, false)) {
     return _.diag(SPV_ERROR_INVALID_ID, inst)
            << "Type of Message operand does not logically match the type of "
               "the Message Type operand";
@@ -133,6 +139,7 @@ spv_result_t ValidateAbort(ValidationState_t& _, const Instruction* inst) {
 spv_result_t MiscPass(ValidationState_t& _, const Instruction* inst) {
   switch (inst->opcode()) {
     case spv::Op::OpUndef:
+    case spv::Op::OpPoisonKHR:
       if (auto error = ValidateUndef(_, inst)) return error;
       break;
     default:

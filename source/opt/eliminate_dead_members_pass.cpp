@@ -26,14 +26,12 @@ constexpr uint32_t kArrayElementTypeIdx = 0;
 }  // namespace
 
 Pass::Status EliminateDeadMembersPass::Process() {
-  if (!context()->get_feature_mgr()->HasCapability(spv::Capability::Shader))
+  if (!context()->get_feature_mgr()->HasCapability(spv::Capability::Shader)) {
     return Status::SuccessWithoutChange;
+  }
 
   FindLiveMembers();
-  if (RemoveDeadMembers()) {
-    return Status::SuccessWithChange;
-  }
-  return Status::SuccessWithoutChange;
+  return RemoveDeadMembers();
 }
 
 void EliminateDeadMembersPass::FindLiveMembers() {
@@ -283,7 +281,7 @@ void EliminateDeadMembersPass::MarkMembersAsLiveForArrayLength(
   used_members_[type_id].insert(inst->GetSingleWordInOperand(1));
 }
 
-bool EliminateDeadMembersPass::RemoveDeadMembers() {
+Pass::Status EliminateDeadMembersPass::RemoveDeadMembers() {
   bool modified = false;
 
   // First update all of the OpTypeStruct instructions.
@@ -298,7 +296,9 @@ bool EliminateDeadMembersPass::RemoveDeadMembers() {
   });
 
   // Now update all of the instructions that reference the OpTypeStructs.
-  get_module()->ForEachInst([&modified, this](Instruction* inst) {
+  Pass::Status status = Status::SuccessWithoutChange;
+  bool success = get_module()->WhileEachInst([&modified, &status,
+                                              this](Instruction* inst) {
     switch (inst->opcode()) {
       case spv::Op::OpMemberName:
         modified |= UpdateOpMemberNameOrDecorate(inst);
@@ -317,9 +317,17 @@ bool EliminateDeadMembersPass::RemoveDeadMembers() {
       case spv::Op::OpAccessChain:
       case spv::Op::OpInBoundsAccessChain:
       case spv::Op::OpPtrAccessChain:
-      case spv::Op::OpInBoundsPtrAccessChain:
-        modified |= UpdateAccessChain(inst);
+      case spv::Op::OpInBoundsPtrAccessChain: {
+        Pass::Status s = UpdateAccessChain(inst);
+        if (s == Status::Failure) {
+          status = Status::Failure;
+          return false;
+        }
+        if (s == Status::SuccessWithChange) {
+          modified = true;
+        }
         break;
+      }
       case spv::Op::OpCompositeExtract:
         modified |= UpdateCompsiteExtract(inst);
         break;
@@ -350,8 +358,13 @@ bool EliminateDeadMembersPass::RemoveDeadMembers() {
       default:
         break;
     }
+    return true;
   });
-  return modified;
+
+  if (!success || status == Status::Failure) {
+    return Status::Failure;
+  }
+  return modified ? Status::SuccessWithChange : Status::SuccessWithoutChange;
 }
 
 bool EliminateDeadMembersPass::UpdateOpTypeStruct(Instruction* inst) {
@@ -460,7 +473,7 @@ bool EliminateDeadMembersPass::UpdateConstantComposite(Instruction* inst) {
   return modified;
 }
 
-bool EliminateDeadMembersPass::UpdateAccessChain(Instruction* inst) {
+Pass::Status EliminateDeadMembersPass::UpdateAccessChain(Instruction* inst) {
   assert(inst->opcode() == spv::Op::OpAccessChain ||
          inst->opcode() == spv::Op::OpInBoundsAccessChain ||
          inst->opcode() == spv::Op::OpPtrAccessChain ||
@@ -501,8 +514,11 @@ bool EliminateDeadMembersPass::UpdateAccessChain(Instruction* inst) {
               context(), inst,
               IRContext::kAnalysisDefUse |
                   IRContext::kAnalysisInstrToBlockMapping);
-          uint32_t const_id =
-              ir_builder.GetUintConstant(new_member_idx)->result_id();
+          Instruction* const_inst = ir_builder.GetUintConstant(new_member_idx);
+          if (!const_inst) {
+            return Status::Failure;
+          }
+          uint32_t const_id = const_inst->result_id();
           new_operands.emplace_back(Operand({SPV_OPERAND_TYPE_ID, {const_id}}));
           modified = true;
         } else {
@@ -529,11 +545,11 @@ bool EliminateDeadMembersPass::UpdateAccessChain(Instruction* inst) {
   }
 
   if (!modified) {
-    return false;
+    return Status::SuccessWithoutChange;
   }
   inst->SetInOperands(std::move(new_operands));
   context()->UpdateDefUse(inst);
-  return true;
+  return Status::SuccessWithChange;
 }
 
 uint32_t EliminateDeadMembersPass::GetNewMemberIndex(uint32_t type_id,

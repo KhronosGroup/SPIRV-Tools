@@ -168,6 +168,9 @@ bool InlinePass::CloneAndMapLocals(
     }
 
     std::unique_ptr<Instruction> var_inst(callee_var_itr->Clone(context()));
+    if (!var_inst) {
+      return false;
+    }
     uint32_t newId = context()->TakeNextId();
     if (newId == 0) {
       return false;
@@ -250,6 +253,9 @@ bool InlinePass::CloneSameBlockOps(
         // Clone pre-call same-block ops, map result id.
         const Instruction* inInst = mapItr2->second;
         std::unique_ptr<Instruction> sb_inst(inInst->Clone(context()));
+        if (!sb_inst) {
+          return false;
+        }
         if (!CloneSameBlockOps(&sb_inst, postCallSB, preCallSB, block_ptr)) {
           return false;
         }
@@ -353,6 +359,9 @@ bool InlinePass::InlineSingleInstruction(
 
   // Copy callee instruction and remap all input Ids.
   std::unique_ptr<Instruction> cp_inst(inst->Clone(context()));
+  if (!cp_inst) {
+    return false;
+  }
   cp_inst->ForEachInId([&callee2caller](uint32_t* iid) {
     const auto mapItr = callee2caller.find(*iid);
     if (mapItr != callee2caller.end()) {
@@ -636,25 +645,37 @@ bool InlinePass::GenInlineCode(
     }
   }
 
-  calleeFn->WhileEachInst([&callee2caller, this](const Instruction* cpi) {
-    // Create set of callee result ids. Used to detect forward references
-    const uint32_t rid = cpi->result_id();
-    if (rid != 0 && callee2caller.find(rid) == callee2caller.end()) {
-      const uint32_t nid = context()->TakeNextId();
-      if (nid == 0) return false;
-      callee2caller[rid] = nid;
-    }
-    return true;
-  });
+  if (!calleeFn->WhileEachInst([&callee2caller, this](const Instruction* cpi) {
+        // Create set of callee result ids. Used to detect forward references
+        const uint32_t rid = cpi->result_id();
+        if (rid != 0 && callee2caller.find(rid) == callee2caller.end()) {
+          const uint32_t nid = context()->TakeNextId();
+          if (nid == 0) return false;
+          callee2caller[rid] = nid;
+        }
+        return true;
+      })) {
+    return false;
+  }
 
   // Inline DebugClare instructions in the callee's header.
+  bool header_dbg_failed = false;
   calleeFn->ForEachDebugInstructionsInHeader(
-      [&new_blk_ptr, &callee2caller, &inlined_at_ctx, this](Instruction* inst) {
-        InlineSingleInstruction(
-            callee2caller, new_blk_ptr.get(), inst,
-            context()->get_debug_info_mgr()->BuildDebugInlinedAtChain(
-                inst->GetDebugScope().GetInlinedAt(), &inlined_at_ctx));
+      [&new_blk_ptr, &callee2caller, &inlined_at_ctx, &header_dbg_failed,
+       this](Instruction* inst) {
+        if (header_dbg_failed) {
+          return;
+        }
+        if (!InlineSingleInstruction(
+                callee2caller, new_blk_ptr.get(), inst,
+                context()->get_debug_info_mgr()->BuildDebugInlinedAtChain(
+                    inst->GetDebugScope().GetInlinedAt(), &inlined_at_ctx))) {
+          header_dbg_failed = true;
+        }
       });
+  if (header_dbg_failed) {
+    return false;
+  }
 
   // Inline the entry block of the callee function.
   if (!InlineEntryBlock(callee2caller, &new_blk_ptr, calleeFn->begin(),

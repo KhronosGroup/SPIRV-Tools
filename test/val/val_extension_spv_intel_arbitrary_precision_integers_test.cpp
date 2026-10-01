@@ -15,14 +15,21 @@
 // Tests for SPV_INTEL_arbitrary_precision_integers extension
 
 #include <string>
+#include <vector>
 
 #include "gmock/gmock.h"
+#include "source/opcode.h"
+#include "source/util/string_utils.h"
+#include "test/unit_spirv.h"
 #include "test/val/val_fixtures.h"
 
 namespace spvtools {
 namespace val {
 namespace {
 
+using ::spvtest::Concatenate;
+using ::spvtest::MakeInstruction;
+using ::spvtest::ScopedContext;
 using ::testing::HasSubstr;
 
 using ValidateIntelArbitraryPrecisionIntegers = spvtest::ValidateBase<bool>;
@@ -171,6 +178,45 @@ TEST_F(ValidateIntelArbitraryPrecisionIntegers, ZeroBitIntegerRejected) {
   CompileSuccessfully(spirv);
   EXPECT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(), HasSubstr("OpTypeInt has 0 bits"));
+}
+
+// Built as a raw binary since the assembler rejects integer literals wider
+// than 64 bits.
+TEST_F(ValidateIntelArbitraryPrecisionIntegers,
+       WideIntegerConstantAsArrayLengthDoesNotCrash) {
+  const uint32_t kInt128Id = 1;
+  const uint32_t kConstId = 2;
+  const uint32_t kFloatId = 3;
+  const uint32_t kArrayId = 4;
+
+  std::vector<uint32_t> words = Concatenate({
+      {spv::MagicNumber, 0x10000, 0u, 5u /* id bound */, 0u},
+      MakeInstruction(spv::Op::OpCapability,
+                      {uint32_t(spv::Capability::Shader)}),
+      MakeInstruction(
+          spv::Op::OpCapability,
+          {uint32_t(spv::Capability::ArbitraryPrecisionIntegersINTEL)}),
+      MakeInstruction(spv::Op::OpCapability,
+                      {uint32_t(spv::Capability::Linkage)}),
+      MakeInstruction(
+          spv::Op::OpExtension,
+          utils::MakeVector("SPV_INTEL_arbitrary_precision_integers")),
+      MakeInstruction(spv::Op::OpMemoryModel,
+                      {uint32_t(spv::AddressingModel::Logical),
+                       uint32_t(spv::MemoryModel::GLSL450)}),
+      MakeInstruction(spv::Op::OpTypeInt, {kInt128Id, 128u, 0u}),
+      // A 128-bit OpConstant carries 4 literal words (16 bytes).
+      MakeInstruction(spv::Op::OpConstant,
+                      {kInt128Id, kConstId, 4u, 0u, 0u, 0u}),
+      MakeInstruction(spv::Op::OpTypeFloat, {kFloatId, 32u}),
+      MakeInstruction(spv::Op::OpTypeArray, {kArrayId, kFloatId, kConstId}),
+  });
+
+  spv_diagnostic diagnostic = nullptr;
+  spv_const_binary_t binary{words.data(), words.size()};
+  ScopedContext context;
+  EXPECT_EQ(SPV_SUCCESS, spvValidate(context.context, &binary, &diagnostic));
+  spvDiagnosticDestroy(diagnostic);
 }
 
 }  // namespace

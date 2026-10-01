@@ -776,6 +776,14 @@ TEST(HexFloatOperationTests,
             set_from_sign(true, -128, bits_set({0, 1, 4}), false));
 }
 
+template <typename other_T, typename T>
+typename other_T::uint_type getRoundedNormalizedSignificandIgnoreResult(
+    HexFloat<T> hf, round_direction dir, bool* carry_bit) {
+  typename other_T::uint_type significand = 0;
+  hf.template getRoundedNormalizedSignificand<other_T>(dir, &significand,
+                                                       carry_bit);
+  return significand;
+}
 TEST(HexFloatOperationTests, NonRounding) {
   // Rounding from 32-bit hex-float to 32-bit hex-float should be trivial,
   // except in the denorm case which is a bit more complex.
@@ -789,29 +797,31 @@ TEST(HexFloatOperationTests, NonRounding) {
 
   // Everything fits, so this should be straight-forward
   for (round_direction round : rounding) {
-    EXPECT_EQ(bits_set({}),
-              HF(0.f).getRoundedNormalizedSignificand<HF>(round, &carry_bit));
+    EXPECT_EQ(bits_set({}), getRoundedNormalizedSignificandIgnoreResult<HF>(
+                                HF(0.f), round, &carry_bit));
     EXPECT_FALSE(carry_bit);
 
     EXPECT_EQ(bits_set({0}),
-              HF(float_fractions({0, 1}))
-                  .getRoundedNormalizedSignificand<HF>(round, &carry_bit));
+              getRoundedNormalizedSignificandIgnoreResult<HF>(
+                  HF(float_fractions({0, 1})), round, &carry_bit));
     EXPECT_FALSE(carry_bit);
 
     EXPECT_EQ(bits_set({1, 3}),
-              HF(float_fractions({0, 2, 4}))
-                  .getRoundedNormalizedSignificand<HF>(round, &carry_bit));
+              getRoundedNormalizedSignificandIgnoreResult<HF>(
+                  HF(float_fractions({0, 2, 4})), round, &carry_bit));
     EXPECT_FALSE(carry_bit);
 
     EXPECT_EQ(
         bits_set({0, 1, 4}),
-        HF(static_cast<float>(-ldexp(float_fractions({0, 1, 2, 5}), -128)))
-            .getRoundedNormalizedSignificand<HF>(round, &carry_bit));
+        getRoundedNormalizedSignificandIgnoreResult<HF>(
+            HF(static_cast<float>(-ldexp(float_fractions({0, 1, 2, 5}), -128))),
+            round, &carry_bit));
     EXPECT_FALSE(carry_bit);
 
     EXPECT_EQ(bits_set({0, 1, 4, 22}),
-              HF(static_cast<float>(float_fractions({0, 1, 2, 5, 23})))
-                  .getRoundedNormalizedSignificand<HF>(round, &carry_bit));
+              getRoundedNormalizedSignificandIgnoreResult<HF>(
+                  HF(static_cast<float>(float_fractions({0, 1, 2, 5, 23}))),
+                  round, &carry_bit));
     EXPECT_FALSE(carry_bit);
   }
 }
@@ -832,8 +842,8 @@ TEST_P(HexFloatRoundTest, RoundDownToFP16) {
   HF input_value(GetParam().source_float);
   bool carry_bit = false;
   EXPECT_EQ(GetParam().expected_results.first,
-            input_value.getRoundedNormalizedSignificand<HF16>(GetParam().round,
-                                                              &carry_bit));
+            getRoundedNormalizedSignificandIgnoreResult<HF16>(
+                input_value, GetParam().round, &carry_bit));
   EXPECT_EQ(carry_bit, GetParam().expected_results.second);
 }
 
@@ -915,8 +925,8 @@ TEST_P(HexFloatRoundTestE4M3, RoundDownToFPE4M3) {
   HF input_value(GetParam().source_float);
   bool carry_bit = false;
   EXPECT_EQ(GetParam().expected_results.first,
-            input_value.getRoundedNormalizedSignificand<HFE4M3>(
-                GetParam().round, &carry_bit));
+            getRoundedNormalizedSignificandIgnoreResult<HFE4M3>(
+                input_value, GetParam().round, &carry_bit));
   EXPECT_EQ(carry_bit, GetParam().expected_results.second);
 }
 
@@ -997,8 +1007,8 @@ TEST_P(HexFloatRoundTestE5M2, RoundDownToFPE4M3) {
   HF input_value(GetParam().source_float);
   bool carry_bit = false;
   EXPECT_EQ(GetParam().expected_results.first,
-            input_value.getRoundedNormalizedSignificand<HFE5M2>(
-                GetParam().round, &carry_bit));
+            getRoundedNormalizedSignificandIgnoreResult<HFE5M2>(
+                input_value, GetParam().round, &carry_bit));
   EXPECT_EQ(carry_bit, GetParam().expected_results.second);
 }
 
@@ -1068,11 +1078,12 @@ TEST_P(HexFloatRoundUpSignificandTest, Widening) {
   for (round_direction round : rounding) {
     carry_bit = false;
     HF16 input_value(GetParam().source_half);
-    EXPECT_EQ(
-        GetParam().expected_result,
-        input_value.getRoundedNormalizedSignificand<HF>(round, &carry_bit))
+    EXPECT_EQ(GetParam().expected_result,
+              getRoundedNormalizedSignificandIgnoreResult<HF>(
+                  input_value, round, &carry_bit))
         << std::hex << "0x"
-        << input_value.getRoundedNormalizedSignificand<HF>(round, &carry_bit)
+        << getRoundedNormalizedSignificandIgnoreResult<HF>(input_value, round,
+                                                           &carry_bit)
         << "  0x" << GetParam().expected_result;
     EXPECT_FALSE(carry_bit);
   }

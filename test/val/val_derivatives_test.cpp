@@ -163,6 +163,8 @@ TEST_F(ValidateDerivatives, OpDPdxWrongExecutionModel) {
 TEST_F(ValidateDerivatives, NoExecutionModeGLCompute) {
   const std::string spirv = R"(
 OpCapability Shader
+OpCapability ComputeDerivativeGroupQuadsKHR
+OpExtension "SPV_KHR_compute_shader_derivatives"
 OpMemoryModel Logical GLSL450
 OpEntryPoint GLCompute %main "main"
 %void = OpTypeVoid

@@ -2179,8 +2179,42 @@ OpFunctionEnd
               AnyVUID("VUID-StandaloneSpirv-OpTypeFloat-10823"));
   EXPECT_THAT(
       getDiagnosticString(),
-      HasSubstr("FP8 E4M3/E5M2 OpVariable <id> '2[%2]' must not be declared "
-                "with a Storage Class of Input or Output.\n"));
+      HasSubstr("FP8 or OCP microscaling OpVariable <id> '2[%2]' must not be "
+                "declared with a Storage Class of Input or Output.\n"));
+}
+
+TEST_F(ValidateInterfacesTest,
+       InvalidOCPMicroscalingVariableWithInputOutputStorageClass) {
+  const std::string text = R"(
+OpCapability Shader
+OpCapability Float8UnsignedE8M0EXT
+OpExtension "SPV_EXT_ocp_microscaling_types"
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %main "main" %in %out
+OpExecutionMode %main OriginUpperLeft
+OpDecorate %in Location 0
+OpDecorate %out Location 0
+%void = OpTypeVoid
+%e8m0 = OpTypeFloat 8 Float8UnsignedE8M0EXT
+%in_ptr = OpTypePointer Input %e8m0
+%out_ptr = OpTypePointer Output %e8m0
+%in = OpVariable %in_ptr Input
+%out = OpVariable %out_ptr Output
+%void_fn = OpTypeFunction %void
+%main = OpFunction %void None %void_fn
+%entry = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(text, SPV_ENV_VULKAN_1_3);
+  ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_VULKAN_1_3));
+  EXPECT_THAT(getDiagnosticString(),
+              AnyVUID("VUID-StandaloneSpirv-OpTypeFloat-10823"));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("FP8 or OCP microscaling OpVariable <id> '2[%2]' must not be "
+                "declared with a Storage Class of Input or Output.\n"));
 }
 
 TEST_F(ValidateInterfacesTest,
@@ -2213,8 +2247,8 @@ OpFunctionEnd
               AnyVUID("VUID-StandaloneSpirv-OpTypeFloat-10823"));
   EXPECT_THAT(
       getDiagnosticString(),
-      HasSubstr("FP8 E4M3/E5M2 OpVariable <id> '2[%2]' must not be declared "
-                "with a Storage Class of Input or Output.\n"));
+      HasSubstr("FP8 or OCP microscaling OpVariable <id> '2[%2]' must not be "
+                "declared with a Storage Class of Input or Output.\n"));
 }
 
 TEST_F(ValidateInterfacesTest, VectorIdFragmentInputOutputPass) {

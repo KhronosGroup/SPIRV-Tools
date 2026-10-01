@@ -59,6 +59,9 @@ std::pair<Type*, std::unique_ptr<Pointer>> TypeManager::GetTypeAndPointerType(
 }
 
 uint32_t TypeManager::GetId(const Type* type) const {
+  if (type == nullptr) {
+    return 0;
+  }
   auto iter = type_to_id_.find(type);
   if (iter != type_to_id_.end()) {
     return (*iter).second;
@@ -248,11 +251,19 @@ uint32_t TypeManager::GetTypeInstruction(const Type* type) {
                {(type->AsInteger()->IsSigned() ? 1u : 0u)}}});
       break;
     case Type::kFloat:
-      // TODO: Handle FP encoding enums once actually used.
-      typeInst = MakeUnique<Instruction>(
-          context(), spv::Op::OpTypeFloat, 0, id,
-          std::initializer_list<Operand>{
-              {SPV_OPERAND_TYPE_LITERAL_INTEGER, {type->AsFloat()->width()}}});
+      if (type->AsFloat()->encoding() == spv::FPEncoding::Max) {
+        typeInst = MakeUnique<Instruction>(
+            context(), spv::Op::OpTypeFloat, 0, id,
+            std::initializer_list<Operand>{{SPV_OPERAND_TYPE_LITERAL_INTEGER,
+                                            {type->AsFloat()->width()}}});
+      } else {
+        typeInst = MakeUnique<Instruction>(
+            context(), spv::Op::OpTypeFloat, 0, id,
+            std::initializer_list<Operand>{
+                {SPV_OPERAND_TYPE_LITERAL_INTEGER, {type->AsFloat()->width()}},
+                {SPV_OPERAND_TYPE_FPENCODING,
+                 {static_cast<uint32_t>(type->AsFloat()->encoding())}}});
+      }
       break;
     case Type::kVector: {
       uint32_t subtype = GetTypeInstruction(type->AsVector()->element_type());

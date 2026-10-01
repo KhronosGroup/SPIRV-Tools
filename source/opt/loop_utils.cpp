@@ -598,7 +598,7 @@ Loop* LoopUtils::CloneLoop(
   for (BasicBlock* old_bb : ordered_loop_blocks) {
     // For each basic block in the loop, we clone it and register the mapping
     // between old and new ids.
-    BasicBlock* new_bb = old_bb->Clone(context_);
+    std::unique_ptr<BasicBlock> new_bb(old_bb->Clone(context_));
     if (!new_bb) return nullptr;
     new_bb->SetParent(&function_);
     uint32_t new_label_id = context_->TakeNextId();
@@ -607,14 +607,13 @@ Loop* LoopUtils::CloneLoop(
     }
     new_bb->GetLabelInst()->SetResultId(new_label_id);
     def_use_mgr->AnalyzeInstDef(new_bb->GetLabelInst());
-    context_->set_instr_block(new_bb->GetLabelInst(), new_bb);
-    cloning_result->cloned_bb_.emplace_back(new_bb);
+    context_->set_instr_block(new_bb->GetLabelInst(), new_bb.get());
 
-    cloning_result->old_to_new_bb_[old_bb->id()] = new_bb;
+    cloning_result->old_to_new_bb_[old_bb->id()] = new_bb.get();
     cloning_result->new_to_old_bb_[new_bb->id()] = old_bb;
     cloning_result->value_map_[old_bb->id()] = new_bb->id();
 
-    if (loop_->IsInsideLoop(old_bb)) new_loop->AddBasicBlock(new_bb);
+    if (loop_->IsInsideLoop(old_bb)) new_loop->AddBasicBlock(new_bb.get());
 
     for (auto new_inst = new_bb->begin(), old_inst = old_bb->begin();
          new_inst != new_bb->end(); ++new_inst, ++old_inst) {
@@ -632,6 +631,8 @@ Loop* LoopUtils::CloneLoop(
         def_use_mgr->AnalyzeInstDef(&*new_inst);
       }
     }
+
+    cloning_result->cloned_bb_.emplace_back(std::move(new_bb));
   }
 
   // All instructions (including all labels) have been cloned,

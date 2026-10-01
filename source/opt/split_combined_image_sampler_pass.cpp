@@ -73,6 +73,9 @@ Pass::Status SplitCombinedImageSamplerPass::Process() {
   def_use_mgr_ = nullptr;
   type_mgr_ = nullptr;
 
+  if (context()->id_overflow()) {
+    return Pass::Status::Failure;
+  }
   return Ok();
 }
 
@@ -505,6 +508,9 @@ spv_result_t SplitCombinedImageSamplerPass::RemapUses(
           auto* sampled_image =
               builder.AddSampledImage(used_type_id, use.image_part->result_id(),
                                       use.sampler_part->result_id());
+          if (!sampled_image) {
+            return SPV_ERROR_INTERNAL;
+          }
           use.user->SetOperand(use.index, {sampled_image->result_id()});
           def_use_mgr_->AnalyzeInstUse(use.user);
           break;
@@ -551,6 +557,9 @@ spv_result_t SplitCombinedImageSamplerPass::RemapFunctions() {
         // Replace this type.
         analysis::Function new_f_ty(f_ty->return_type(), new_params);
         const uint32_t new_f_ty_id = type_mgr_->GetTypeInstruction(&new_f_ty);
+        if (new_f_ty_id == 0) {
+          return SPV_ERROR_INTERNAL;
+        }
         std::unordered_set<Instruction*> users;
         def_use_mgr_->ForEachUse(
             &inst,
@@ -571,9 +580,10 @@ spv_result_t SplitCombinedImageSamplerPass::RemapFunctions() {
 
   // Rewite OpFunctionParameter in function definitions.
   for (Function& fn : *context()->module()) {
-    // Rewrite the function parameters and record their replacements.
+    // Rewrite the function parameters and record their replacements. A
+    // rewritten parameter is no longer owned by the function.
     struct Replacement {
-      Instruction* combined;
+      std::unique_ptr<Instruction> combined;
       Instruction* image;
       Instruction* sampler;
     };
@@ -592,7 +602,7 @@ spv_result_t SplitCombinedImageSamplerPass::RemapFunctions() {
           }
 
           // Replace this parameter with two new parameters.
-          auto* combined_inst = param.release();
+          std::unique_ptr<Instruction> combined_inst = std::move(param);
           auto* combined_type = def_use_mgr_->GetDef(combined_inst->type_id());
           auto [image_type, sampler_type] = SplitType(*combined_type);
           if (!image_type || !sampler_type) {
@@ -617,8 +627,8 @@ spv_result_t SplitCombinedImageSamplerPass::RemapFunctions() {
               context(), spv::Op::OpFunctionParameter,
               sampler_type->result_id(), sampler_param_id,
               Instruction::OperandList{});
-          replacements.push_back(
-              {combined_inst, image_param.get(), sampler_param.get()});
+          replacements.push_back({std::move(combined_inst), image_param.get(),
+                                  sampler_param.get()});
           appender = std::move(image_param);
           appender = std::move(sampler_param);
         };
@@ -632,7 +642,12 @@ spv_result_t SplitCombinedImageSamplerPass::RemapFunctions() {
       modified_ = true;
       def_use_mgr_->AnalyzeInstDefUse(r.image);
       def_use_mgr_->AnalyzeInstDefUse(r.sampler);
-      CHECK_STATUS(RemapUses(r.combined, r.image, r.sampler));
+      spv_result_t status = RemapUses(r.combined.get(), r.image, r.sampler);
+      if (status == SPV_SUCCESS) {
+        // |RemapUses| killed the combined instruction, which deleted it.
+        (void)r.combined.release();
+      }
+      CHECK_STATUS(status);
     }
   }
   return SPV_SUCCESS;

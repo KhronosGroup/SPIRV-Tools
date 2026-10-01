@@ -38,6 +38,7 @@ add_spvtools_unittest(TARGET val_abcde
        val_derivatives_test.cpp
        val_dot_product_test.cpp
        val_entry_point_test.cpp
+       val_explicit_layout_test.cpp
        val_explicit_reserved_test.cpp
        val_invalid_type_test.cpp
        val_extensions_test.cpp
@@ -86,6 +87,7 @@ add_spvtools_unittest(TARGET val_fghijklmnop
        val_interfaces_test.cpp
        val_layout_test.cpp
        val_literals_test.cpp
+       val_location_rollover_test.cpp
        val_logical_pointers_test.cpp
        val_logicals_test.cpp
        val_memory_test.cpp
@@ -108,6 +110,7 @@ add_spvtools_unittest(TARGET val_rstuvw
        val_ray_query_test.cpp
        val_ray_tracing_test.cpp
        val_ray_tracing_reorder_test.cpp
+       val_shader_debug_info_test.cpp
        val_small_type_uses_test.cpp
        val_ssa_test.cpp
        val_state_test.cpp

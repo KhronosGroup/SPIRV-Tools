@@ -103,7 +103,7 @@ void FuzzerPassAddAccessChains::Apply() {
         while (true) {
           auto subobject_type =
               GetIRContext()->get_def_use_mgr()->GetDef(subobject_type_id);
-          if (!spvOpcodeIsComposite(subobject_type->opcode())) {
+          if (!fuzzerutil::HasStaticBoundForCompositeIndex(*subobject_type)) {
             break;
           }
           if (!GetFuzzerContext()->ChoosePercentage(
@@ -111,25 +111,8 @@ void FuzzerPassAddAccessChains::Apply() {
                       ->GetChanceOfGoingDeeperWhenMakingAccessChain())) {
             break;
           }
-          uint32_t bound;
-          switch (subobject_type->opcode()) {
-            case spv::Op::OpTypeArray:
-              bound = fuzzerutil::GetArraySize(*subobject_type, GetIRContext());
-              break;
-            case spv::Op::OpTypeMatrix:
-            case spv::Op::OpTypeVector:
-              bound = subobject_type->GetSingleWordInOperand(1);
-              break;
-            case spv::Op::OpTypeStruct:
-              bound = fuzzerutil::GetNumberOfStructMembers(*subobject_type);
-              break;
-            default:
-              assert(false && "Not a composite type opcode.");
-              // Set the bound to a value in order to keep release compilers
-              // happy.
-              bound = 0;
-              break;
-          }
+          uint32_t bound = fuzzerutil::GetBoundForCompositeIndex(
+              *subobject_type, GetIRContext());
           if (bound == 0) {
             // It is possible for a composite type to legitimately have zero
             // sub-components, at least in the case of a struct, which

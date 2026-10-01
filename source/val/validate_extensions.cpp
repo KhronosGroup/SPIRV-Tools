@@ -26,13 +26,17 @@
 #include "source/latest_version_glsl_std_450_header.h"
 #include "source/latest_version_opencl_std_header.h"
 #include "source/opcode.h"
+#include "source/operand.h"
 #include "source/spirv_constant.h"
 #include "source/table2.h"
 #include "source/val/instruction.h"
 #include "source/val/validate.h"
 #include "source/val/validation_state.h"
 #include "spirv-tools/libspirv.h"
+#include "spirv/unified1/ArmExperimentalMLOperations.h"
 #include "spirv/unified1/NonSemanticClspvReflection.h"
+#include "spirv/unified1/NonSemanticDebugPrintf.h"
+#include "spirv/unified1/NonSemanticGraphDebugInfo.h"
 #include "spirv/unified1/NonSemanticShaderDebugInfo.h"
 
 namespace spvtools {
@@ -83,6 +87,55 @@ bool IsUint32Constant(ValidationState_t& _, uint32_t id) {
   return IsIntScalar(_, inst->type_id(), true, true);
 }
 
+bool IsGraphDebugInfoDebugGraph(const Instruction* inst) {
+  return spvIsExtendedInstruction(inst->opcode()) &&
+         inst->ext_inst_type() ==
+             SPV_EXT_INST_TYPE_NONSEMANTIC_GRAPH_DEBUGINFO &&
+         inst->word(4) == NonSemanticGraphDebugInfoDebugGraph;
+}
+
+bool IsTopLevelCompositeOfTensors(ValidationState_t& _, uint32_t type_id) {
+  const auto* type = _.FindDef(type_id);
+  if (!type) return false;
+
+  if (type->opcode() == spv::Op::OpTypeArray ||
+      type->opcode() == spv::Op::OpTypeRuntimeArray) {
+    const auto* element_type = _.FindDef(type->word(2));
+    return element_type && element_type->opcode() == spv::Op::OpTypeTensorARM;
+  }
+
+  if (type->opcode() == spv::Op::OpTypeStruct) {
+    for (uint32_t word_index = 2; word_index < type->words().size();
+         ++word_index) {
+      const auto* member_type = _.FindDef(type->word(word_index));
+      if (!member_type || member_type->opcode() != spv::Op::OpTypeTensorARM) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  return false;
+}
+
+bool IsInstructionInGraph(ValidationState_t& _, uint32_t inst_id,
+                          uint32_t graph_id) {
+  bool in_graph = false;
+  for (const auto& module_inst : _.ordered_instructions()) {
+    if (module_inst.opcode() == spv::Op::OpGraphARM) {
+      in_graph = module_inst.id() == graph_id;
+    }
+
+    if (in_graph && module_inst.id() == inst_id) return true;
+
+    if (in_graph && module_inst.opcode() == spv::Op::OpGraphEndARM) {
+      in_graph = false;
+    }
+  }
+
+  return false;
+}
+
 uint32_t GetUint32Constant(ValidationState_t& _, uint32_t id) {
   auto inst = _.FindDef(id);
   return inst->word(3);
@@ -110,6 +163,38 @@ std::string GetExtInstName(const ValidationState_t& _,
   ss << desc->name().data();
 
   return ss.str();
+}
+
+// Rejects an instruction whose result or any operand uses a BFloat16 or FP8
+// (E4M3/E5M2) type, i.e. an OpTypeFloat that is not IEEE 754 encoded.
+spv_result_t ValidateExtInstFloatEncoding(ValidationState_t& _,
+                                          const Instruction* inst) {
+  auto check = [&](uint32_t type_id) -> spv_result_t {
+    if (_.IsBfloat16Type(type_id)) {
+      return _.diag(SPV_ERROR_INVALID_DATA, inst)
+             << GetExtInstName(_, inst) << ": doesn't support BFloat16 type.";
+    }
+    if (_.IsFP8Type(type_id)) {
+      return _.diag(SPV_ERROR_INVALID_DATA, inst)
+             << GetExtInstName(_, inst)
+             << ": doesn't support FP8 E4M3/E5M2 types.";
+    }
+    return SPV_SUCCESS;
+  };
+
+  if (spv_result_t result = check(inst->type_id())) return result;
+
+  const uint32_t num_operands = static_cast<uint32_t>(inst->operands().size());
+  for (uint32_t operand_index = 4; operand_index < num_operands;
+       ++operand_index) {
+    // Some ext instructions take literal operands (e.g. OpenCL.std vloadn's
+    // component count); only <id> operands have a meaningful result type.
+    if (!spvIsIdType(inst->operand(operand_index).type)) continue;
+    if (spv_result_t result = check(_.GetOperandTypeId(inst, operand_index)))
+      return result;
+  }
+
+  return SPV_SUCCESS;
 }
 
 // Returns the declared NSDI version from the OpExtInstImport referenced by
@@ -345,9 +430,13 @@ spv_result_t ValidateOperandDebugType(ValidationState_t& _,
   // Check for common types.
   std::function<bool(CommonDebugInfoInstructions)> expectation =
       [&allow_template_param](CommonDebugInfoInstructions dbg_inst) {
+        // TODO - Should DebugTypeTemplateParameterPack be allowed?
         if (allow_template_param &&
             (dbg_inst == CommonDebugInfoDebugTypeTemplateParameter ||
              dbg_inst == CommonDebugInfoDebugTypeTemplateTemplateParameter)) {
+          return true;
+        } else if (dbg_inst == CommonDebugInfoDebugInfoNone) {
+          // DebugInfoNone is a safe "null" type that can be used
           return true;
         }
         return CommonDebugInfoDebugTypeBasic <= dbg_inst &&
@@ -1294,6 +1383,7 @@ spv_result_t ValidateExtension(ValidationState_t& _, const Instruction* inst) {
   if (_.version() < SPV_SPIRV_VERSION_WORD(1, 4)) {
     if (extension ==
             ExtensionToString(kSPV_KHR_workgroup_memory_explicit_layout) ||
+        extension == ExtensionToString(kSPV_KHR_opacity_micromap) ||
         extension == ExtensionToString(kSPV_EXT_mesh_shader) ||
         extension == ExtensionToString(kSPV_NV_shader_invocation_reorder) ||
         extension == ExtensionToString(kSPV_EXT_shader_invocation_reorder) ||
@@ -1349,6 +1439,56 @@ spv_result_t ValidateExtInstImport(ValidationState_t& _,
       return _.diag(SPV_ERROR_INVALID_DATA, inst)
              << "NonSemantic.Shader.DebugInfo import version " << ver
              << " is below the minimum supported version " << kNSDIMinVersion;
+    }
+
+    _.RegisterShaderDebugInfo(inst->id());
+  }
+
+  const std::string nsgdi_prefix = "NonSemantic.Graph.DebugInfo.";
+  if (name.find(nsgdi_prefix) == 0) {
+    auto version_string = name.substr(nsgdi_prefix.size());
+    if (version_string.empty()) {
+      return _.diag(SPV_ERROR_INVALID_DATA, inst)
+             << "NonSemantic.Graph.DebugInfo import does not encode the "
+                "version correctly";
+    }
+    char* end_ptr;
+    uint32_t ver = static_cast<uint32_t>(
+        std::strtoul(version_string.c_str(), &end_ptr, 10));
+    if (end_ptr && *end_ptr != '\0') {
+      return _.diag(SPV_ERROR_INVALID_DATA, inst)
+             << "NonSemantic.Graph.DebugInfo import does not encode the "
+                "version correctly";
+    }
+    if (ver == 0 || ver > NonSemanticGraphDebugInfoRevision) {
+      return _.diag(SPV_ERROR_INVALID_DATA, inst)
+             << "NonSemantic.Graph.DebugInfo import version " << ver
+             << " is not supported";
+    }
+    if (!_.HasExtension(kSPV_ARM_graph)) {
+      return _.diag(SPV_ERROR_INVALID_DATA, inst)
+             << "NonSemantic.Graph.DebugInfo requires SPV_ARM_graph";
+    }
+  }
+
+  const std::string arm_ml_ops_prefix = "Arm.ExperimentalMLOperations.";
+  if (name.find(arm_ml_ops_prefix) == 0) {
+    auto version_string = name.substr(arm_ml_ops_prefix.size());
+    if (version_string.empty()) {
+      return _.diag(SPV_ERROR_INVALID_DATA, inst)
+             << "Missing Arm.ExperimentalMLOperations import version";
+    }
+    char* end_ptr;
+    uint32_t ver = static_cast<uint32_t>(
+        std::strtoul(version_string.c_str(), &end_ptr, 10));
+    if (end_ptr && *end_ptr != '\0') {
+      return _.diag(SPV_ERROR_INVALID_DATA, inst)
+             << "Arm.ExperimentalMLOperations import does not encode the "
+                "version correctly";
+    }
+    if (ver == 0 || ver > ArmExperimentalMLOperationsRevision) {
+      return _.diag(SPV_ERROR_INVALID_DATA, inst)
+             << "Unknown Arm.ExperimentalMLOperations import version";
     }
   }
 
@@ -3519,12 +3659,7 @@ spv_result_t ValidateExtInstDebugInfo(ValidationState_t& _,
             _.EvalInt32IfConst(inst->word(8));
         std::tie(is_int32, is_const_int32, column_end) =
             _.EvalInt32IfConst(inst->word(9));
-        if (line_start == 0) {
-          return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                 << GetExtInstName(_, inst)
-                 << ": operand Line Start (0) is not allowed, source lines "
-                    "start at Line 1";
-        } else if (line_end < line_start) {
+        if (line_end < line_start) {
           return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << GetExtInstName(_, inst) << ": operand Line End ("
                  << line_end << ") is less than Line Start (" << line_start
@@ -3547,24 +3682,28 @@ spv_result_t ValidateExtInstDebugInfo(ValidationState_t& _,
                    << " lines found in the DebugSource text";
           }
           if (line_start == line_end) {
-            const uint32_t line_length = line_lengths[line_end - 1];
-            if (column_end > line_length) {
-              return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                     << GetExtInstName(_, inst) << ": operand Column End ("
-                     << column_end << ") is larger then Line " << line_end
-                     << " column length of " << line_length
-                     << " found in the DebugSource text";
+            if (line_end != 0) {
+              const uint32_t line_length = line_lengths[line_end - 1];
+              if (column_end > line_length) {
+                return _.diag(SPV_ERROR_INVALID_DATA, inst)
+                       << GetExtInstName(_, inst) << ": operand Column End ("
+                       << column_end << ") is larger then Line " << line_end
+                       << " column length of " << line_length
+                       << " found in the DebugSource text";
+              }
             }
           } else {
-            uint32_t line_length = line_lengths[line_start - 1];
-            if (column_start > line_length) {
-              return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                     << GetExtInstName(_, inst) << ": operand Column Start ("
-                     << column_start << ") is larger then Line " << line_start
-                     << " column length of " << line_length
-                     << " found in the DebugSource text";
+            if (line_start != 0) {
+              const uint32_t line_length = line_lengths[line_start - 1];
+              if (column_start > line_length) {
+                return _.diag(SPV_ERROR_INVALID_DATA, inst)
+                       << GetExtInstName(_, inst) << ": operand Column Start ("
+                       << column_start << ") is larger then Line " << line_start
+                       << " column length of " << line_length
+                       << " found in the DebugSource text";
+              }
             }
-            line_length = line_lengths[line_end - 1];
+            const uint32_t line_length = line_lengths[line_end - 1];
             if (column_end > line_length) {
               return _.diag(SPV_ERROR_INVALID_DATA, inst)
                      << GetExtInstName(_, inst) << ": operand Column End ("
@@ -4194,6 +4333,96 @@ spv_result_t ValidateExtInstDebugInfo(ValidationState_t& _,
   return SPV_SUCCESS;
 }
 
+spv_result_t ValidateExtInstGraphDebugInfo(ValidationState_t& _,
+                                           const Instruction* inst) {
+  if (!_.IsVoidType(inst->type_id())) {
+    return _.diag(SPV_ERROR_INVALID_DATA, inst)
+           << GetExtInstName(_, inst) << ": "
+           << "expected result type must be a result id of OpTypeVoid";
+  }
+
+  const auto ext_inst_key =
+      NonSemanticGraphDebugInfoInstructions(inst->word(4));
+  switch (ext_inst_key) {
+    case NonSemanticGraphDebugInfoDebugGraph: {
+      CHECK_OPERAND("Graph", spv::Op::OpGraphARM, 5);
+      CHECK_OPERAND("Name", spv::Op::OpString, 6);
+      break;
+    }
+
+    case NonSemanticGraphDebugInfoDebugOperation: {
+      const auto* debug_graph = _.FindDef(inst->word(5));
+      if (!debug_graph || !IsGraphDebugInfoDebugGraph(debug_graph)) {
+        return _.diag(SPV_ERROR_INVALID_DATA, inst)
+               << GetExtInstName(_, inst) << ": expected operand DebugGraph "
+               << "must be a result id of NonSemantic.Graph.DebugInfo "
+               << "DebugGraph";
+      }
+      CHECK_OPERAND("Name", spv::Op::OpString, 6);
+      if (inst->words().size() < 8) {
+        return _.diag(SPV_ERROR_INVALID_DATA, inst)
+               << GetExtInstName(_, inst) << ": expected operand "
+               << "Instructions must contain at least one instruction";
+      }
+
+      const uint32_t graph_id = debug_graph->word(5);
+      for (uint32_t word_index = 7; word_index < inst->words().size();
+           ++word_index) {
+        const uint32_t instruction_id = inst->word(word_index);
+        if (!IsInstructionInGraph(_, instruction_id, graph_id)) {
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
+                 << GetExtInstName(_, inst) << ": expected operand "
+                 << "Instructions must be result ids of instructions within "
+                 << "the graph described by DebugGraph";
+        }
+      }
+      break;
+    }
+
+    case NonSemanticGraphDebugInfoDebugTensor: {
+      const auto* tensor = _.FindDef(inst->word(5));
+      const uint32_t tensor_type_id = tensor ? tensor->type_id() : 0;
+      const auto* tensor_type = _.FindDef(tensor_type_id);
+      const bool is_tensor =
+          tensor_type && tensor_type->opcode() == spv::Op::OpTypeTensorARM;
+      const bool is_composite_tensor =
+          IsTopLevelCompositeOfTensors(_, tensor_type_id);
+      if (!is_tensor && !is_composite_tensor) {
+        return _.diag(SPV_ERROR_INVALID_DATA, inst)
+               << GetExtInstName(_, inst) << ": expected operand Tensor "
+               << "must be a value of OpTypeTensorARM or a composite type "
+               << "whose top-level constituents are OpTypeTensorARM";
+      }
+      CHECK_OPERAND("Name", spv::Op::OpString, 6);
+
+      const bool has_index = inst->words().size() > 7;
+      if (is_composite_tensor && !has_index) {
+        return _.diag(SPV_ERROR_INVALID_DATA, inst)
+               << GetExtInstName(_, inst) << ": expected operand Index "
+               << "must be present when Tensor has composite type";
+      }
+      if (has_index) {
+        if (!is_composite_tensor) {
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
+                 << GetExtInstName(_, inst) << ": expected operand Tensor "
+                 << "must have composite type when Index is present";
+        }
+        if (!IsUint32Constant(_, inst->word(7))) {
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
+                 << GetExtInstName(_, inst) << ": expected operand Index "
+                 << "must be a result id of 32-bit unsigned OpConstant";
+        }
+      }
+      break;
+    }
+
+    default:
+      break;
+  }
+
+  return SPV_SUCCESS;
+}
+
 spv_result_t ValidateExtInstNonsemanticClspvReflection(
     ValidationState_t& _, const Instruction* inst) {
   auto import_inst = _.FindDef(inst->GetOperandAs<uint32_t>(2));
@@ -4220,9 +4449,37 @@ spv_result_t ValidateExtInstNonsemanticClspvReflection(
   return ValidateClspvReflectionInstruction(_, inst, version);
 }
 
+spv_result_t ValidateExtInstNonSemanticDebugPrintf(ValidationState_t& _,
+                                                   const Instruction* inst) {
+  if (!_.IsVoidType(inst->type_id())) {
+    return _.diag(SPV_ERROR_INVALID_DATA, inst)
+           << "DebugPrintf: "
+           << "expected result type must be a result id of OpTypeVoid";
+  }
+
+  if (inst->word(4) == NonSemanticDebugPrintfDebugPrintf) {
+    const auto* format = _.FindDef(inst->word(5));
+    if (!format || format->opcode() != spv::Op::OpString) {
+      return _.diag(SPV_ERROR_INVALID_DATA, inst)
+             << "DebugPrintf: "
+             << "expected operand Format must be a result id of OpString";
+    }
+  }
+
+  return SPV_SUCCESS;
+}
+
 spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
   const spv_ext_inst_type_t ext_inst_type =
       spv_ext_inst_type_t(inst->ext_inst_type());
+
+  // GLSL.std.450 and OpenCL.std define a floating-point type as an OpTypeFloat
+  // using the IEEE 754 encoding, so they don't support BFloat16 or FP8 types.
+  if (ext_inst_type == SPV_EXT_INST_TYPE_GLSL_STD_450 ||
+      ext_inst_type == SPV_EXT_INST_TYPE_OPENCL_STD) {
+    if (spv_result_t result = ValidateExtInstFloatEncoding(_, inst))
+      return result;
+  }
 
   if (ext_inst_type == SPV_EXT_INST_TYPE_GLSL_STD_450) {
     return ValidateExtInstGlslStd450(_, inst);
@@ -4234,6 +4491,10 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
     return ValidateExtInstDebugInfo(_, inst);
   } else if (ext_inst_type == SPV_EXT_INST_TYPE_NONSEMANTIC_CLSPVREFLECTION) {
     return ValidateExtInstNonsemanticClspvReflection(_, inst);
+  } else if (ext_inst_type == SPV_EXT_INST_TYPE_NONSEMANTIC_GRAPH_DEBUGINFO) {
+    return ValidateExtInstGraphDebugInfo(_, inst);
+  } else if (ext_inst_type == SPV_EXT_INST_TYPE_NONSEMANTIC_DEBUGPRINTF) {
+    return ValidateExtInstNonSemanticDebugPrintf(_, inst);
   }
 
   return SPV_SUCCESS;

@@ -5118,6 +5118,104 @@ OpFunctionEnd
   EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
+TEST_F(ValidateCFG, MaximalReconvergenceInvocationRepack) {
+  const std::string text = R"(
+    OpCapability RayTracingKHR
+    OpExtension "SPV_KHR_ray_tracing"
+    OpExtension "SPV_KHR_maximal_reconvergence"
+    OpMemoryModel Logical GLSL450
+    OpEntryPoint CallableKHR %main "main"
+    OpExecutionMode %main MaximallyReconvergesKHR
+    %void = OpTypeVoid
+    %func = OpTypeFunction %void
+    %int = OpTypeInt 32 1
+    %uint = OpTypeInt 32 0
+    %uint_0 = OpConstant %uint 0
+    %data_ptr = OpTypePointer CallableDataKHR %int
+    %data = OpVariable %data_ptr CallableDataKHR
+    %helper = OpFunction %void None %func
+    %helper_entry = OpLabel
+    OpExecuteCallableKHR %uint_0 %data
+    OpReturn
+    OpFunctionEnd
+    %main = OpFunction %void None %func
+    %label = OpLabel
+    %call = OpFunctionCall %void %helper
+    OpReturn
+    OpFunctionEnd
+    )";
+
+  CompileSuccessfully(text, SPV_ENV_VULKAN_1_0);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_VULKAN_1_0));
+  EXPECT_THAT(getDiagnosticString(),
+              AnyVUID("VUID-StandaloneSpirv-MaximallyReconvergesKHR-09565"));
+}
+
+TEST_F(ValidateCFG, MaximalReconvergenceInvocationRepackDirectUse) {
+  const std::string text = R"(
+    OpCapability RayTracingKHR
+    OpExtension "SPV_KHR_ray_tracing"
+    OpExtension "SPV_KHR_maximal_reconvergence"
+    OpMemoryModel Logical GLSL450
+    OpEntryPoint CallableKHR %main "main"
+    OpExecutionMode %main MaximallyReconvergesKHR
+    %void = OpTypeVoid
+    %func = OpTypeFunction %void
+    %int = OpTypeInt 32 1
+    %uint = OpTypeInt 32 0
+    %uint_0 = OpConstant %uint 0
+    %data_ptr = OpTypePointer CallableDataKHR %int
+    %data = OpVariable %data_ptr CallableDataKHR
+    %main = OpFunction %void None %func
+    %label = OpLabel
+    OpExecuteCallableKHR %uint_0 %data
+    OpReturn
+    OpFunctionEnd
+  )";
+
+  CompileSuccessfully(text, SPV_ENV_VULKAN_1_0);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_VULKAN_1_0));
+  EXPECT_THAT(getDiagnosticString(),
+              AnyVUID("VUID-StandaloneSpirv-MaximallyReconvergesKHR-09565"));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("The MaximallyReconvergesKHR Execution Mode must not be "
+                "applied to an entry point if an invocation repack "
+                "instruction (OpExecuteCallableKHR) is statically "
+                "used"));
+}
+
+TEST_F(ValidateCFG, MaximalReconvergenceInvocationRepackInOtherEntryPoint) {
+  const std::string text = R"(
+    OpCapability RayTracingKHR
+    OpExtension "SPV_KHR_ray_tracing"
+    OpExtension "SPV_KHR_maximal_reconvergence"
+    OpMemoryModel Logical GLSL450
+    OpEntryPoint CallableKHR %main "main"
+    OpEntryPoint CallableKHR %other "other"
+    OpExecutionMode %main MaximallyReconvergesKHR
+    %void = OpTypeVoid
+    %func = OpTypeFunction %void
+    %int = OpTypeInt 32 1
+    %uint = OpTypeInt 32 0
+    %uint_0 = OpConstant %uint 0
+    %data_ptr = OpTypePointer CallableDataKHR %int
+    %data = OpVariable %data_ptr CallableDataKHR
+    %main = OpFunction %void None %func
+    %label = OpLabel
+    OpReturn
+    OpFunctionEnd
+    %other = OpFunction %void None %func
+    %other_label = OpLabel
+    OpExecuteCallableKHR %uint_0 %data
+    OpReturn
+    OpFunctionEnd
+    )";
+
+  CompileSuccessfully(text, SPV_ENV_VULKAN_1_0);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_0));
+}
+
 TEST_F(ValidateCFG, StructurallyUnreachableContinuePredecessor) {
   const std::string text = R"(
                OpCapability Shader

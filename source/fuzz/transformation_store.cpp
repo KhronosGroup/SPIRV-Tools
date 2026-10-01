@@ -51,6 +51,13 @@ bool TransformationStore::IsApplicable(
   if (pointer_type->opcode() != spv::Op::OpTypePointer) {
     return false;
   }
+  // Atomic stores can only operate on 32-bit integer scalars. Floating-point
+  // and 64-bit integer atomics require additional Vulkan capabilities.
+  if (message_.is_atomic() &&
+      !fuzzerutil::Is32BitIntegerScalarType(ir_context->get_type_mgr()->GetType(
+          fuzzerutil::GetPointeeTypeIdFromPointerType(pointer_type)))) {
+    return false;
+  }
 
   // The pointer must not be read only.
   if (pointer->IsReadOnlyPointer()) {

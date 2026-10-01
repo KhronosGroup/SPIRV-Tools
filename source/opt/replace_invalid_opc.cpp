@@ -43,6 +43,9 @@ Pass::Status ReplaceInvalidOpcodePass::Process() {
   for (Function& func : *get_module()) {
     modified |= RewriteFunction(&func, execution_model);
   }
+  if (context()->id_overflow()) {
+    return Status::Failure;
+  }
   return (modified ? Status::SuccessWithChange : Status::SuccessWithoutChange);
 }
 
@@ -166,6 +169,9 @@ void ReplaceInvalidOpcodePass::ReplaceInstruction(Instruction* inst,
                                                   uint32_t column_number) {
   if (inst->result_id() != 0) {
     uint32_t const_id = GetSpecialConstant(inst->type_id());
+    if (const_id == 0) {
+      return;
+    }
     context()->KillNamesAndDecorates(inst);
     context()->ReplaceAllUsesWith(inst->result_id(), const_id);
   }
@@ -189,6 +195,9 @@ uint32_t ReplaceInvalidOpcodePass::GetSpecialConstant(uint32_t type_id) {
   if (type->opcode() == spv::Op::OpTypeVector) {
     uint32_t component_const =
         GetSpecialConstant(type->GetSingleWordInOperand(0));
+    if (component_const == 0) {
+      return 0;
+    }
     std::vector<uint32_t> ids;
     for (uint32_t i = 0; i < type->GetSingleWordInOperand(1); ++i) {
       ids.push_back(component_const);
@@ -204,8 +213,14 @@ uint32_t ReplaceInvalidOpcodePass::GetSpecialConstant(uint32_t type_id) {
     special_const =
         const_mgr->GetConstant(type_mgr->GetType(type_id), literal_words);
   }
-  assert(special_const != nullptr);
-  return const_mgr->GetDefiningInstruction(special_const)->result_id();
+  if (special_const == nullptr) {
+    return 0;
+  }
+  Instruction* const_inst = const_mgr->GetDefiningInstruction(special_const);
+  if (const_inst == nullptr) {
+    return 0;
+  }
+  return const_inst->result_id();
 }
 
 std::string ReplaceInvalidOpcodePass::BuildWarningMessage(spv::Op opcode) {

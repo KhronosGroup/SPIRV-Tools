@@ -35,6 +35,8 @@ class TransformationLoad : public Transformation {
   // - |message_.fresh_id| must be fresh
   // - |message_.pointer_id| must be the id of a pointer
   // - |message_.is_atomic| must be true if want to work with OpAtomicLoad
+  // - If |message_.is_atomic| is true then the pointee type must be a 32-bit
+  //   integer scalar.
   // - If |is_atomic| is true then |message_memory_scope_id| must be the id of
   //   an OpConstant 32 bit integer instruction with the value
   //   spv::Scope::Invocation.

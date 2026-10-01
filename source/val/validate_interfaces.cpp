@@ -1,4 +1,5 @@
 // Copyright (c) 2018 Google LLC.
+// Copyright (C) 2026 Qualcomm Technologies, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -411,13 +412,16 @@ spv_result_t GetLocationsForVariable(
     uint32_t num_components = NumConsumedComponents(_, sub_type);
 
     for (uint32_t array_idx = 0; array_idx < array_size; ++array_idx) {
-      uint32_t array_location = location + (num_locations * array_idx);
-      uint32_t start = array_location * 4;
-      if (kMaxLocations <= start) {
+      uint64_t array_location_u64 =
+          static_cast<uint64_t>(location) +
+          (static_cast<uint64_t>(num_locations) * array_idx);
+      if (kMaxLocations <= array_location_u64 * 4) {
         // Too many locations, give up.
         break;
       }
 
+      uint32_t array_location = static_cast<uint32_t>(array_location_u64);
+      uint32_t start = array_location * 4;
       uint32_t end = (array_location + num_locations) * 4;
       if (num_components != 0) {
         start += component;
@@ -487,19 +491,22 @@ spv_result_t GetLocationsForVariable(
         component = member_components[i - 1];
       }
 
-      uint32_t start = location * 4;
-      if (kMaxLocations <= start) {
+      uint64_t start_u64 = static_cast<uint64_t>(location) * 4;
+      if (kMaxLocations <= start_u64) {
         // Too many locations, give up.
         continue;
       }
 
+      uint32_t start = static_cast<uint32_t>(start_u64);
       if (member->opcode() == spv::Op::OpTypeArray && num_components >= 1 &&
           num_components < 4) {
         // When an array has an element that takes less than a location in
         // size, calculate the used locations in a strided manner.
         for (uint32_t l = location; l < num_locations + location; ++l) {
           for (uint32_t c = component; c < component + num_components; ++c) {
-            uint32_t check = 4 * l + c;
+            uint64_t check_u64 = static_cast<uint64_t>(l) * 4 + c;
+            if (kMaxLocations <= check_u64) continue;
+            uint32_t check = static_cast<uint32_t>(check_u64);
             if (!locations->insert(check).second) {
               return _.diag(SPV_ERROR_INVALID_DATA, entry_point)
                      << (is_output ? _.VkErrorID(8722) : _.VkErrorID(8721))
@@ -566,6 +573,8 @@ spv_result_t ValidateLocations(ValidationState_t& _,
       output_locations_per_stream;
   std::unordered_map<uint32_t, std::unordered_set<uint32_t>>
       output_index1_locations_per_stream;
+  // For SPIR-V >= 1.4, TileImageEXT variables are always visible.
+  std::unordered_map<uint32_t, uint32_t> tile_image_locations;
   std::unordered_set<uint32_t> seen;
   for (uint32_t i = 3; i < entry_point->operands().size(); ++i) {
     auto interface_id = entry_point->GetOperandAs<uint32_t>(i);
@@ -574,12 +583,30 @@ spv_result_t ValidateLocations(ValidationState_t& _,
     auto storage_class =
         interface_var->GetOperandAs<spv::StorageClass>(sc_index);
     if (storage_class != spv::StorageClass::Input &&
-        storage_class != spv::StorageClass::Output) {
+        storage_class != spv::StorageClass::Output &&
+        storage_class != spv::StorageClass::TileImageEXT) {
       continue;
     }
     if (!seen.insert(interface_id).second) {
       // Pre-1.4 an interface variable could be listed multiple times in an
       // entry point. Validation for 1.4 or later is done elsewhere.
+      continue;
+    }
+
+    if (storage_class == spv::StorageClass::TileImageEXT) {
+      for (auto& dec : _.id_decorations(interface_var->id())) {
+        if (dec.dec_type() == spv::Decoration::Location) {
+          const auto result = tile_image_locations.emplace(dec.params()[0],
+                                                           interface_var->id());
+          if (!result.second) {
+            return _.diag(SPV_ERROR_INVALID_DATA, interface_var)
+                   << _.VkErrorID(8723)
+                   << "Variables with TileImageEXT Storage Class must not have "
+                      "conflicting Locations.";
+          }
+          break;
+        }
+      }
       continue;
     }
 
@@ -713,7 +740,13 @@ spv_result_t ValidateStorageClass(ValidationState_t& _,
                     if (inst->words().size() > 3) {
                       auto encoding = inst->GetOperandAs<spv::FPEncoding>(2);
                       if ((encoding == spv::FPEncoding::Float8E4M3EXT) ||
-                          (encoding == spv::FPEncoding::Float8E5M2EXT)) {
+                          (encoding == spv::FPEncoding::Float8E5M2EXT) ||
+                          (encoding == spv::FPEncoding::Float6E2M3EXT) ||
+                          (encoding == spv::FPEncoding::Float6E3M2EXT) ||
+                          (encoding == spv::FPEncoding::Float4E2M1EXT) ||
+                          (encoding ==
+                           spv::FPEncoding::Float8UnsignedE8M0EXT) ||
+                          (encoding == spv::FPEncoding::MXInt8EXT)) {
                         return true;
                       }
                     }
@@ -721,7 +754,8 @@ spv_result_t ValidateStorageClass(ValidationState_t& _,
                   return false;
                 })) {
           return _.diag(SPV_ERROR_INVALID_ID, interface_var)
-                 << _.VkErrorID(10823) << "FP8 E4M3/E5M2 OpVariable <id> "
+                 << _.VkErrorID(10823)
+                 << "FP8 or OCP microscaling OpVariable <id> "
                  << _.getIdName(interface_var->id()) << " must not be declared "
                  << "with a Storage Class of Input or Output.";
         }

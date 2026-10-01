@@ -1,6 +1,7 @@
 // Copyright (c) 2018 Google LLC.
 // Modifications Copyright (C) 2020 Advanced Micro Devices, Inc. All rights
 // reserved.
+// Copyright (C) 2026 Qualcomm Technologies, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -62,9 +63,9 @@ using ValidateVulkanCombineBuiltInArrayedVariable =
     spvtest::ValidateBase<std::tuple<const char*, const char*, const char*,
                                      const char*, const char*, TestResult>>;
 using ValidateVulkanCombineBuiltInExecutionModelDataTypeCapabilityExtensionResult =
-    spvtest::ValidateBase<
-        std::tuple<const char*, const char*, const char*, const char*,
-                   const char*, const char*, const char*, TestResult>>;
+    spvtest::ValidateBase<std::tuple<spv_target_env, const char*, const char*,
+                                     const char*, const char*, const char*,
+                                     const char*, const char*, TestResult>>;
 
 using ValidateGenericCombineBuiltInExecutionModelDataTypeCapabilityExtensionResult =
     spvtest::ValidateBase<std::tuple<spv_target_env, const char*, const char*,
@@ -87,6 +88,10 @@ CodeGenerator GetInMainCodeGenerator(const char* const built_in,
 
   if (capabilities) {
     generator.capabilities_ += capabilities;
+    if (std::string_view(capabilities).find("VulkanMemoryModel") !=
+        std::string_view::npos) {
+      generator.memory_model_ = "OpMemoryModel Logical VulkanKHR\n";
+    }
   }
   if (extensions) {
     generator.extensions_ += extensions;
@@ -187,22 +192,22 @@ TEST_P(ValidateVulkanCombineBuiltInExecutionModelDataTypeResult, InMain) {
 TEST_P(
     ValidateVulkanCombineBuiltInExecutionModelDataTypeCapabilityExtensionResult,
     InMain) {
-  const char* const built_in = std::get<0>(GetParam());
-  const char* const execution_model = std::get<1>(GetParam());
-  const char* const storage_class = std::get<2>(GetParam());
-  const char* const data_type = std::get<3>(GetParam());
-  const char* const capabilities = std::get<4>(GetParam());
-  const char* const extensions = std::get<5>(GetParam());
-  const char* const vuid = std::get<6>(GetParam());
-  const TestResult& test_result = std::get<7>(GetParam());
+  const spv_target_env env = std::get<0>(GetParam());
+  const char* const built_in = std::get<1>(GetParam());
+  const char* const execution_model = std::get<2>(GetParam());
+  const char* const storage_class = std::get<3>(GetParam());
+  const char* const data_type = std::get<4>(GetParam());
+  const char* const capabilities = std::get<5>(GetParam());
+  const char* const extensions = std::get<6>(GetParam());
+  const char* const vuid = std::get<7>(GetParam());
+  const TestResult& test_result = std::get<8>(GetParam());
 
   CodeGenerator generator =
       GetInMainCodeGenerator(built_in, execution_model, storage_class,
                              capabilities, extensions, data_type);
 
-  CompileSuccessfully(generator.Build(), SPV_ENV_VULKAN_1_0);
-  ASSERT_EQ(test_result.validation_result,
-            ValidateInstructions(SPV_ENV_VULKAN_1_0));
+  CompileSuccessfully(generator.Build(), env);
+  ASSERT_EQ(test_result.validation_result, ValidateInstructions(env));
   if (test_result.error_str) {
     EXPECT_THAT(getDiagnosticString(), HasSubstr(test_result.error_str));
   }
@@ -254,6 +259,10 @@ CodeGenerator GetInFunctionCodeGenerator(const char* const built_in,
 
   if (capabilities) {
     generator.capabilities_ += capabilities;
+    if (std::string_view(capabilities).find("VulkanMemoryModel") !=
+        std::string_view::npos) {
+      generator.memory_model_ = "OpMemoryModel Logical VulkanKHR\n";
+    }
   }
   if (extensions) {
     generator.extensions_ += extensions;
@@ -364,22 +373,22 @@ TEST_P(ValidateVulkanCombineBuiltInExecutionModelDataTypeResult, InFunction) {
 TEST_P(
     ValidateVulkanCombineBuiltInExecutionModelDataTypeCapabilityExtensionResult,
     InFunction) {
-  const char* const built_in = std::get<0>(GetParam());
-  const char* const execution_model = std::get<1>(GetParam());
-  const char* const storage_class = std::get<2>(GetParam());
-  const char* const data_type = std::get<3>(GetParam());
-  const char* const capabilities = std::get<4>(GetParam());
-  const char* const extensions = std::get<5>(GetParam());
-  const char* const vuid = std::get<6>(GetParam());
-  const TestResult& test_result = std::get<7>(GetParam());
+  const spv_target_env env = std::get<0>(GetParam());
+  const char* const built_in = std::get<1>(GetParam());
+  const char* const execution_model = std::get<2>(GetParam());
+  const char* const storage_class = std::get<3>(GetParam());
+  const char* const data_type = std::get<4>(GetParam());
+  const char* const capabilities = std::get<5>(GetParam());
+  const char* const extensions = std::get<6>(GetParam());
+  const char* const vuid = std::get<7>(GetParam());
+  const TestResult& test_result = std::get<8>(GetParam());
 
   CodeGenerator generator =
       GetInFunctionCodeGenerator(built_in, execution_model, storage_class,
                                  capabilities, extensions, data_type);
 
-  CompileSuccessfully(generator.Build(), SPV_ENV_VULKAN_1_0);
-  ASSERT_EQ(test_result.validation_result,
-            ValidateInstructions(SPV_ENV_VULKAN_1_0));
+  CompileSuccessfully(generator.Build(), env);
+  ASSERT_EQ(test_result.validation_result, ValidateInstructions(env));
   if (test_result.error_str) {
     EXPECT_THAT(getDiagnosticString(), HasSubstr(test_result.error_str));
   }
@@ -401,6 +410,10 @@ CodeGenerator GetVariableCodeGenerator(const char* const built_in,
 
   if (capabilities) {
     generator.capabilities_ += capabilities;
+    if (std::string_view(capabilities).find("VulkanMemoryModel") !=
+        std::string_view::npos) {
+      generator.memory_model_ = "OpMemoryModel Logical VulkanKHR\n";
+    }
   }
   if (extensions) {
     generator.extensions_ += extensions;
@@ -503,22 +516,22 @@ TEST_P(ValidateVulkanCombineBuiltInExecutionModelDataTypeResult, Variable) {
 TEST_P(
     ValidateVulkanCombineBuiltInExecutionModelDataTypeCapabilityExtensionResult,
     Variable) {
-  const char* const built_in = std::get<0>(GetParam());
-  const char* const execution_model = std::get<1>(GetParam());
-  const char* const storage_class = std::get<2>(GetParam());
-  const char* const data_type = std::get<3>(GetParam());
-  const char* const capabilities = std::get<4>(GetParam());
-  const char* const extensions = std::get<5>(GetParam());
-  const char* const vuid = std::get<6>(GetParam());
-  const TestResult& test_result = std::get<7>(GetParam());
+  const spv_target_env env = std::get<0>(GetParam());
+  const char* const built_in = std::get<1>(GetParam());
+  const char* const execution_model = std::get<2>(GetParam());
+  const char* const storage_class = std::get<3>(GetParam());
+  const char* const data_type = std::get<4>(GetParam());
+  const char* const capabilities = std::get<5>(GetParam());
+  const char* const extensions = std::get<6>(GetParam());
+  const char* const vuid = std::get<7>(GetParam());
+  const TestResult& test_result = std::get<8>(GetParam());
 
   CodeGenerator generator =
       GetVariableCodeGenerator(built_in, execution_model, storage_class,
                                capabilities, extensions, data_type);
 
-  CompileSuccessfully(generator.Build(), SPV_ENV_VULKAN_1_0);
-  ASSERT_EQ(test_result.validation_result,
-            ValidateInstructions(SPV_ENV_VULKAN_1_0));
+  CompileSuccessfully(generator.Build(), env);
+  ASSERT_EQ(test_result.validation_result, ValidateInstructions(env));
   if (test_result.error_str) {
     EXPECT_THAT(getDiagnosticString(), HasSubstr(test_result.error_str));
   }
@@ -1854,8 +1867,8 @@ INSTANTIATE_TEST_SUITE_P(
 INSTANTIATE_TEST_SUITE_P(
     BaseInstanceOrVertexSuccess,
     ValidateVulkanCombineBuiltInExecutionModelDataTypeCapabilityExtensionResult,
-    Combine(Values("BaseInstance", "BaseVertex"), Values("Vertex"),
-            Values("Input"), Values("%u32"),
+    Combine(Values(SPV_ENV_VULKAN_1_0), Values("BaseInstance", "BaseVertex"),
+            Values("Vertex"), Values("Input"), Values("%u32"),
             Values("OpCapability DrawParameters\n"),
             Values("OpExtension \"SPV_KHR_shader_draw_parameters\"\n"),
             Values(nullptr), Values(TestResult())));
@@ -1863,7 +1876,7 @@ INSTANTIATE_TEST_SUITE_P(
 INSTANTIATE_TEST_SUITE_P(
     BaseInstanceOrVertexInvalidExecutionModel,
     ValidateVulkanCombineBuiltInExecutionModelDataTypeCapabilityExtensionResult,
-    Combine(Values("BaseInstance", "BaseVertex"),
+    Combine(Values(SPV_ENV_VULKAN_1_0), Values("BaseInstance", "BaseVertex"),
             Values("Fragment", "GLCompute", "Geometry", "TessellationControl",
                    "TessellationEvaluation"),
             Values("Input"), Values("%u32"),
@@ -1877,8 +1890,8 @@ INSTANTIATE_TEST_SUITE_P(
 INSTANTIATE_TEST_SUITE_P(
     BaseInstanceOrVertexNotInput,
     ValidateVulkanCombineBuiltInExecutionModelDataTypeCapabilityExtensionResult,
-    Combine(Values("BaseInstance", "BaseVertex"), Values("Vertex"),
-            Values("Output"), Values("%u32"),
+    Combine(Values(SPV_ENV_VULKAN_1_0), Values("BaseInstance", "BaseVertex"),
+            Values("Vertex"), Values("Output"), Values("%u32"),
             Values("OpCapability DrawParameters\n"),
             Values("OpExtension \"SPV_KHR_shader_draw_parameters\"\n"),
             Values("VUID-BaseInstance-BaseInstance-04182 "
@@ -1889,8 +1902,8 @@ INSTANTIATE_TEST_SUITE_P(
 INSTANTIATE_TEST_SUITE_P(
     BaseInstanceOrVertexNotIntScalar,
     ValidateVulkanCombineBuiltInExecutionModelDataTypeCapabilityExtensionResult,
-    Combine(Values("BaseInstance", "BaseVertex"), Values("Vertex"),
-            Values("Input"), Values("%f32", "%u32vec3"),
+    Combine(Values(SPV_ENV_VULKAN_1_0), Values("BaseInstance", "BaseVertex"),
+            Values("Vertex"), Values("Input"), Values("%f32", "%u32vec3"),
             Values("OpCapability DrawParameters\n"),
             Values("OpExtension \"SPV_KHR_shader_draw_parameters\"\n"),
             Values("VUID-BaseInstance-BaseInstance-04183 "
@@ -1902,8 +1915,9 @@ INSTANTIATE_TEST_SUITE_P(
 INSTANTIATE_TEST_SUITE_P(
     DrawIndexSuccess,
     ValidateVulkanCombineBuiltInExecutionModelDataTypeCapabilityExtensionResult,
-    Combine(Values("DrawIndex"), Values("Vertex"), Values("Input"),
-            Values("%u32"), Values("OpCapability DrawParameters\n"),
+    Combine(Values(SPV_ENV_VULKAN_1_0), Values("DrawIndex"), Values("Vertex"),
+            Values("Input"), Values("%u32"),
+            Values("OpCapability DrawParameters\n"),
             Values("OpExtension \"SPV_KHR_shader_draw_parameters\"\n"),
             Values(nullptr), Values(TestResult())));
 
@@ -1911,8 +1925,9 @@ INSTANTIATE_TEST_SUITE_P(
     DrawIndexMeshSuccess,
     ValidateVulkanCombineBuiltInExecutionModelDataTypeCapabilityExtensionResult,
     Combine(
-        Values("DrawIndex"), Values("MeshNV", "TaskNV"), Values("Input"),
-        Values("%u32"), Values("OpCapability MeshShadingNV\n"),
+        Values(SPV_ENV_VULKAN_1_0), Values("DrawIndex"),
+        Values("MeshNV", "TaskNV"), Values("Input"), Values("%u32"),
+        Values("OpCapability MeshShadingNV\n"),
         Values("OpExtension \"SPV_KHR_shader_draw_parameters\"\nOpExtension "
                "\"SPV_NV_mesh_shader\"\n"),
         Values(nullptr), Values(TestResult())));
@@ -1921,7 +1936,7 @@ INSTANTIATE_TEST_SUITE_P(
     DrawIndexInvalidExecutionModel,
     ValidateVulkanCombineBuiltInExecutionModelDataTypeCapabilityExtensionResult,
     Combine(
-        Values("DrawIndex"),
+        Values(SPV_ENV_VULKAN_1_0), Values("DrawIndex"),
         Values("Fragment", "GLCompute", "Geometry", "TessellationControl",
                "TessellationEvaluation"),
         Values("Input"), Values("%u32"),
@@ -1936,8 +1951,9 @@ INSTANTIATE_TEST_SUITE_P(
 INSTANTIATE_TEST_SUITE_P(
     DrawIndexNotInput,
     ValidateVulkanCombineBuiltInExecutionModelDataTypeCapabilityExtensionResult,
-    Combine(Values("DrawIndex"), Values("Vertex"), Values("Output"),
-            Values("%u32"), Values("OpCapability DrawParameters\n"),
+    Combine(Values(SPV_ENV_VULKAN_1_0), Values("DrawIndex"), Values("Vertex"),
+            Values("Output"), Values("%u32"),
+            Values("OpCapability DrawParameters\n"),
             Values("OpExtension \"SPV_KHR_shader_draw_parameters\"\n"),
             Values("VUID-DrawIndex-DrawIndex-04208"),
             Values(TestResult(SPV_ERROR_INVALID_DATA, "Vulkan spec allows",
@@ -1946,8 +1962,9 @@ INSTANTIATE_TEST_SUITE_P(
 INSTANTIATE_TEST_SUITE_P(
     DrawIndexNotIntScalar,
     ValidateVulkanCombineBuiltInExecutionModelDataTypeCapabilityExtensionResult,
-    Combine(Values("DrawIndex"), Values("Vertex"), Values("Input"),
-            Values("%f32", "%u32vec3"), Values("OpCapability DrawParameters\n"),
+    Combine(Values(SPV_ENV_VULKAN_1_0), Values("DrawIndex"), Values("Vertex"),
+            Values("Input"), Values("%f32", "%u32vec3"),
+            Values("OpCapability DrawParameters\n"),
             Values("OpExtension \"SPV_KHR_shader_draw_parameters\"\n"),
             Values("VUID-DrawIndex-DrawIndex-04209"),
             Values(TestResult(SPV_ERROR_INVALID_DATA,
@@ -1957,7 +1974,7 @@ INSTANTIATE_TEST_SUITE_P(
 INSTANTIATE_TEST_SUITE_P(
     ViewIndexSuccess,
     ValidateVulkanCombineBuiltInExecutionModelDataTypeCapabilityExtensionResult,
-    Combine(Values("ViewIndex"),
+    Combine(Values(SPV_ENV_VULKAN_1_0), Values("ViewIndex"),
             Values("Fragment", "Vertex", "Geometry", "TessellationControl",
                    "TessellationEvaluation"),
             Values("Input"), Values("%u32"), Values("OpCapability MultiView\n"),
@@ -1967,8 +1984,9 @@ INSTANTIATE_TEST_SUITE_P(
 INSTANTIATE_TEST_SUITE_P(
     ViewIndexInvalidExecutionModel,
     ValidateVulkanCombineBuiltInExecutionModelDataTypeCapabilityExtensionResult,
-    Combine(Values("ViewIndex"), Values("GLCompute"), Values("Input"),
-            Values("%u32"), Values("OpCapability MultiView\n"),
+    Combine(Values(SPV_ENV_VULKAN_1_0), Values("ViewIndex"),
+            Values("GLCompute"), Values("Input"), Values("%u32"),
+            Values("OpCapability MultiView\n"),
             Values("OpExtension \"SPV_KHR_multiview\"\n"),
             Values("VUID-ViewIndex-ViewIndex-04401"),
             Values(TestResult(
@@ -1978,8 +1996,9 @@ INSTANTIATE_TEST_SUITE_P(
 INSTANTIATE_TEST_SUITE_P(
     ViewIndexNotInput,
     ValidateVulkanCombineBuiltInExecutionModelDataTypeCapabilityExtensionResult,
-    Combine(Values("ViewIndex"), Values("Vertex"), Values("Output"),
-            Values("%u32"), Values("OpCapability MultiView\n"),
+    Combine(Values(SPV_ENV_VULKAN_1_0), Values("ViewIndex"), Values("Vertex"),
+            Values("Output"), Values("%u32"),
+            Values("OpCapability MultiView\n"),
             Values("OpExtension \"SPV_KHR_multiview\"\n"),
             Values("VUID-ViewIndex-ViewIndex-04402"),
             Values(TestResult(SPV_ERROR_INVALID_DATA, "Vulkan spec allows",
@@ -1988,8 +2007,9 @@ INSTANTIATE_TEST_SUITE_P(
 INSTANTIATE_TEST_SUITE_P(
     ViewIndexNotIntScalar,
     ValidateVulkanCombineBuiltInExecutionModelDataTypeCapabilityExtensionResult,
-    Combine(Values("ViewIndex"), Values("Vertex"), Values("Input"),
-            Values("%f32", "%u32vec3"), Values("OpCapability MultiView\n"),
+    Combine(Values(SPV_ENV_VULKAN_1_0), Values("ViewIndex"), Values("Vertex"),
+            Values("Input"), Values("%f32", "%u32vec3"),
+            Values("OpCapability MultiView\n"),
             Values("OpExtension \"SPV_KHR_multiview\"\n"),
             Values("VUID-ViewIndex-ViewIndex-04403"),
             Values(TestResult(SPV_ERROR_INVALID_DATA,
@@ -1999,7 +2019,7 @@ INSTANTIATE_TEST_SUITE_P(
 INSTANTIATE_TEST_SUITE_P(
     DeviceIndexSuccess,
     ValidateVulkanCombineBuiltInExecutionModelDataTypeCapabilityExtensionResult,
-    Combine(Values("DeviceIndex"),
+    Combine(Values(SPV_ENV_VULKAN_1_0), Values("DeviceIndex"),
             Values("Fragment", "Vertex", "Geometry", "TessellationControl",
                    "TessellationEvaluation", "GLCompute"),
             Values("Input"), Values("%u32"),
@@ -2010,9 +2030,9 @@ INSTANTIATE_TEST_SUITE_P(
 INSTANTIATE_TEST_SUITE_P(
     DeviceIndexNotInput,
     ValidateVulkanCombineBuiltInExecutionModelDataTypeCapabilityExtensionResult,
-    Combine(Values("DeviceIndex"), Values("Fragment", "Vertex", "GLCompute"),
-            Values("Output"), Values("%u32"),
-            Values("OpCapability DeviceGroup\n"),
+    Combine(Values(SPV_ENV_VULKAN_1_0), Values("DeviceIndex"),
+            Values("Fragment", "Vertex", "GLCompute"), Values("Output"),
+            Values("%u32"), Values("OpCapability DeviceGroup\n"),
             Values("OpExtension \"SPV_KHR_device_group\"\n"),
             Values("VUID-DeviceIndex-DeviceIndex-04205"),
             Values(TestResult(SPV_ERROR_INVALID_DATA, "Vulkan spec allows",
@@ -2021,9 +2041,9 @@ INSTANTIATE_TEST_SUITE_P(
 INSTANTIATE_TEST_SUITE_P(
     DeviceIndexNotIntScalar,
     ValidateVulkanCombineBuiltInExecutionModelDataTypeCapabilityExtensionResult,
-    Combine(Values("DeviceIndex"), Values("Fragment", "Vertex", "GLCompute"),
-            Values("Input"), Values("%f32", "%u32vec3"),
-            Values("OpCapability DeviceGroup\n"),
+    Combine(Values(SPV_ENV_VULKAN_1_0), Values("DeviceIndex"),
+            Values("Fragment", "Vertex", "GLCompute"), Values("Input"),
+            Values("%f32", "%u32vec3"), Values("OpCapability DeviceGroup\n"),
             Values("OpExtension \"SPV_KHR_device_group\"\n"),
             Values("VUID-DeviceIndex-DeviceIndex-04206"),
             Values(TestResult(SPV_ERROR_INVALID_DATA,
@@ -2499,11 +2519,31 @@ INSTANTIATE_TEST_SUITE_P(
     RayTSuccess,
     ValidateGenericCombineBuiltInExecutionModelDataTypeCapabilityExtensionResult,
     Combine(Values(SPV_ENV_VULKAN_1_2), Values("RayTmaxKHR", "RayTminKHR"),
-            Values("AnyHitKHR", "ClosestHitKHR", "IntersectionKHR", "MissKHR"),
-            Values("Input"), Values("%f32"),
+            Values("AnyHitKHR", "ClosestHitKHR", "MissKHR"), Values("Input"),
+            Values("%f32"), Values("OpCapability RayTracingKHR\n"),
+            Values("OpExtension \"SPV_KHR_ray_tracing\"\n"), Values(nullptr),
+            Values(TestResult())));
+
+INSTANTIATE_TEST_SUITE_P(
+    RayTminIntersectionSuccess,
+    ValidateGenericCombineBuiltInExecutionModelDataTypeCapabilityExtensionResult,
+    Combine(Values(SPV_ENV_VULKAN_1_2), Values("RayTminKHR"),
+            Values("IntersectionKHR"), Values("Input"), Values("%f32"),
             Values("OpCapability RayTracingKHR\n"),
             Values("OpExtension \"SPV_KHR_ray_tracing\"\n"), Values(nullptr),
             Values(TestResult())));
+
+// VUID-StandaloneSpirv-VulkanMemoryModel-04678 singles out RayTmaxKHR in an
+// intersection shader, so it needs the Vulkan memory model to be valid here.
+INSTANTIATE_TEST_SUITE_P(
+    RayTmaxIntersectionSuccess,
+    ValidateGenericCombineBuiltInExecutionModelDataTypeCapabilityExtensionResult,
+    Combine(
+        Values(SPV_ENV_VULKAN_1_2), Values("RayTmaxKHR"),
+        Values("IntersectionKHR"), Values("Input"), Values("%f32"),
+        Values("OpCapability RayTracingKHR\nOpCapability VulkanMemoryModel\n"),
+        Values("OpExtension \"SPV_KHR_ray_tracing\"\n"), Values(nullptr),
+        Values(TestResult())));
 
 INSTANTIATE_TEST_SUITE_P(
     RayTNotExecutionMode,
@@ -2832,7 +2872,8 @@ INSTANTIATE_TEST_SUITE_P(
 INSTANTIATE_TEST_SUITE_P(
     SMBuiltinsInputSuccess,
     ValidateVulkanCombineBuiltInExecutionModelDataTypeCapabilityExtensionResult,
-    Combine(Values("SMCountNV", "SMIDNV", "WarpsPerSMNV", "WarpIDNV"),
+    Combine(Values(SPV_ENV_VULKAN_1_0),
+            Values("SMCountNV", "SMIDNV", "WarpsPerSMNV", "WarpIDNV"),
             Values("Vertex", "Fragment", "TessellationControl",
                    "TessellationEvaluation", "Geometry", "GLCompute"),
             Values("Input"), Values("%u32"),
@@ -2843,31 +2884,59 @@ INSTANTIATE_TEST_SUITE_P(
 INSTANTIATE_TEST_SUITE_P(
     SMBuiltinsInputMeshSuccess,
     ValidateVulkanCombineBuiltInExecutionModelDataTypeCapabilityExtensionResult,
-    Combine(
-        Values("SMCountNV", "SMIDNV", "WarpsPerSMNV", "WarpIDNV"),
-        Values("MeshNV", "TaskNV"), Values("Input"), Values("%u32"),
-        Values("OpCapability ShaderSMBuiltinsNV\nOpCapability MeshShadingNV\n"),
-        Values("OpExtension \"SPV_NV_shader_sm_builtins\"\nOpExtension "
-               "\"SPV_NV_mesh_shader\"\n"),
-        Values(nullptr), Values(TestResult())));
+    Combine(Values(SPV_ENV_VULKAN_1_0),
+            Values("SMCountNV", "SMIDNV", "WarpsPerSMNV", "WarpIDNV"),
+            Values("MeshNV", "TaskNV"), Values("Input"), Values("%u32"),
+            Values("OpCapability ShaderSMBuiltinsNV\nOpCapability "
+                   "MeshShadingNV\n"),
+            Values("OpExtension \"SPV_NV_shader_sm_builtins\"\nOpExtension "
+                   "\"SPV_NV_mesh_shader\"\n"),
+            Values(nullptr), Values(TestResult())));
 
 INSTANTIATE_TEST_SUITE_P(
     SMBuiltinsInputRaySuccess,
     ValidateVulkanCombineBuiltInExecutionModelDataTypeCapabilityExtensionResult,
-    Combine(
-        Values("SMCountNV", "SMIDNV", "WarpsPerSMNV", "WarpIDNV"),
-        Values("RayGenerationNV", "IntersectionNV", "AnyHitNV", "ClosestHitNV",
-               "MissNV", "CallableNV"),
-        Values("Input"), Values("%u32"),
-        Values("OpCapability ShaderSMBuiltinsNV\nOpCapability RayTracingNV\n"),
-        Values("OpExtension \"SPV_NV_shader_sm_builtins\"\nOpExtension "
-               "\"SPV_NV_ray_tracing\"\n"),
-        Values(nullptr), Values(TestResult())));
+    Combine(Values(SPV_ENV_VULKAN_1_0), Values("SMCountNV", "WarpsPerSMNV"),
+            Values("RayGenerationNV", "IntersectionNV", "AnyHitNV",
+                   "ClosestHitNV", "MissNV", "CallableNV"),
+            Values("Input"), Values("%u32"),
+            Values("OpCapability ShaderSMBuiltinsNV\nOpCapability "
+                   "RayTracingNV\n"),
+            Values("OpExtension \"SPV_NV_shader_sm_builtins\"\nOpExtension "
+                   "\"SPV_NV_ray_tracing\"\n"),
+            Values(nullptr), Values(TestResult())));
+
+// VUID-StandaloneSpirv-VulkanMemoryModel-04678 lists SMIDNV and WarpIDNV, but
+// not the any-hit shader, so those need the Vulkan memory model to be valid.
+INSTANTIATE_TEST_SUITE_P(
+    SMBuiltinsInputRayVolatileSuccess,
+    ValidateVulkanCombineBuiltInExecutionModelDataTypeCapabilityExtensionResult,
+    Combine(Values(SPV_ENV_VULKAN_1_2), Values("SMIDNV", "WarpIDNV"),
+            Values("RayGenerationNV", "IntersectionNV", "ClosestHitNV",
+                   "MissNV", "CallableNV"),
+            Values("Input"), Values("%u32"),
+            Values("OpCapability ShaderSMBuiltinsNV\nOpCapability "
+                   "RayTracingNV\nOpCapability VulkanMemoryModel\n"),
+            Values("OpExtension \"SPV_NV_shader_sm_builtins\"\nOpExtension "
+                   "\"SPV_NV_ray_tracing\"\n"),
+            Values(nullptr), Values(TestResult())));
+
+INSTANTIATE_TEST_SUITE_P(
+    SMBuiltinsInputAnyHitSuccess,
+    ValidateVulkanCombineBuiltInExecutionModelDataTypeCapabilityExtensionResult,
+    Combine(Values(SPV_ENV_VULKAN_1_0), Values("SMIDNV", "WarpIDNV"),
+            Values("AnyHitNV"), Values("Input"), Values("%u32"),
+            Values("OpCapability ShaderSMBuiltinsNV\nOpCapability "
+                   "RayTracingNV\n"),
+            Values("OpExtension \"SPV_NV_shader_sm_builtins\"\nOpExtension "
+                   "\"SPV_NV_ray_tracing\"\n"),
+            Values(nullptr), Values(TestResult())));
 
 INSTANTIATE_TEST_SUITE_P(
     SMBuiltinsNotInput,
     ValidateVulkanCombineBuiltInExecutionModelDataTypeCapabilityExtensionResult,
-    Combine(Values("SMCountNV", "SMIDNV", "WarpsPerSMNV", "WarpIDNV"),
+    Combine(Values(SPV_ENV_VULKAN_1_0),
+            Values("SMCountNV", "SMIDNV", "WarpsPerSMNV", "WarpIDNV"),
             Values("Vertex", "Fragment", "TessellationControl",
                    "TessellationEvaluation", "Geometry", "GLCompute"),
             Values("Output"), Values("%u32"),
@@ -2882,7 +2951,8 @@ INSTANTIATE_TEST_SUITE_P(
 INSTANTIATE_TEST_SUITE_P(
     SMBuiltinsNotIntScalar,
     ValidateVulkanCombineBuiltInExecutionModelDataTypeCapabilityExtensionResult,
-    Combine(Values("SMCountNV", "SMIDNV", "WarpsPerSMNV", "WarpIDNV"),
+    Combine(Values(SPV_ENV_VULKAN_1_0),
+            Values("SMCountNV", "SMIDNV", "WarpsPerSMNV", "WarpIDNV"),
             Values("Vertex", "Fragment", "TessellationControl",
                    "TessellationEvaluation", "Geometry", "GLCompute"),
             Values("Input"), Values("%f32", "%u32vec3"),
@@ -2896,7 +2966,8 @@ INSTANTIATE_TEST_SUITE_P(
 INSTANTIATE_TEST_SUITE_P(
     SMBuiltinsNotInt32,
     ValidateVulkanCombineBuiltInExecutionModelDataTypeCapabilityExtensionResult,
-    Combine(Values("SMCountNV", "SMIDNV", "WarpsPerSMNV", "WarpIDNV"),
+    Combine(Values(SPV_ENV_VULKAN_1_0),
+            Values("SMCountNV", "SMIDNV", "WarpsPerSMNV", "WarpIDNV"),
             Values("Vertex", "Fragment", "TessellationControl",
                    "TessellationEvaluation", "Geometry", "GLCompute"),
             Values("Input"), Values("%u64"),
@@ -2910,7 +2981,8 @@ INSTANTIATE_TEST_SUITE_P(
 INSTANTIATE_TEST_SUITE_P(
     ArmCoreBuiltinsInputSuccess,
     ValidateVulkanCombineBuiltInExecutionModelDataTypeCapabilityExtensionResult,
-    Combine(Values("CoreIDARM", "CoreCountARM", "CoreMaxIDARM", "WarpIDARM",
+    Combine(Values(SPV_ENV_VULKAN_1_0),
+            Values("CoreIDARM", "CoreCountARM", "CoreMaxIDARM", "WarpIDARM",
                    "WarpMaxIDARM"),
             Values("Vertex", "Fragment", "TessellationControl",
                    "TessellationEvaluation", "Geometry", "GLCompute"),
@@ -2922,7 +2994,8 @@ INSTANTIATE_TEST_SUITE_P(
 INSTANTIATE_TEST_SUITE_P(
     ArmCoreBuiltinsNotInput,
     ValidateVulkanCombineBuiltInExecutionModelDataTypeCapabilityExtensionResult,
-    Combine(Values("CoreIDARM", "CoreCountARM", "CoreMaxIDARM", "WarpIDARM",
+    Combine(Values(SPV_ENV_VULKAN_1_0),
+            Values("CoreIDARM", "CoreCountARM", "CoreMaxIDARM", "WarpIDARM",
                    "WarpMaxIDARM"),
             Values("Vertex", "Fragment", "TessellationControl",
                    "TessellationEvaluation", "Geometry", "GLCompute"),
@@ -2937,7 +3010,8 @@ INSTANTIATE_TEST_SUITE_P(
 INSTANTIATE_TEST_SUITE_P(
     ArmCoreBuiltinsNotIntScalar,
     ValidateVulkanCombineBuiltInExecutionModelDataTypeCapabilityExtensionResult,
-    Combine(Values("CoreIDARM", "CoreCountARM", "CoreMaxIDARM", "WarpIDARM",
+    Combine(Values(SPV_ENV_VULKAN_1_0),
+            Values("CoreIDARM", "CoreCountARM", "CoreMaxIDARM", "WarpIDARM",
                    "WarpMaxIDARM"),
             Values("Vertex", "Fragment", "TessellationControl",
                    "TessellationEvaluation", "Geometry", "GLCompute"),
@@ -2951,7 +3025,8 @@ INSTANTIATE_TEST_SUITE_P(
 INSTANTIATE_TEST_SUITE_P(
     ArmCoreBuiltinsNotInt32,
     ValidateVulkanCombineBuiltInExecutionModelDataTypeCapabilityExtensionResult,
-    Combine(Values("CoreIDARM", "CoreCountARM", "CoreMaxIDARM", "WarpIDARM",
+    Combine(Values(SPV_ENV_VULKAN_1_0),
+            Values("CoreIDARM", "CoreCountARM", "CoreMaxIDARM", "WarpIDARM",
                    "WarpMaxIDARM"),
             Values("Vertex", "Fragment", "TessellationControl",
                    "TessellationEvaluation", "Geometry", "GLCompute"),
@@ -3978,8 +4053,8 @@ OpDecorate %wg_var BuiltIn Position
 INSTANTIATE_TEST_SUITE_P(
     PrimitiveShadingRateOutputSuccess,
     ValidateVulkanCombineBuiltInExecutionModelDataTypeCapabilityExtensionResult,
-    Combine(Values("PrimitiveShadingRateKHR"), Values("Vertex", "Geometry"),
-            Values("Output"), Values("%u32"),
+    Combine(Values(SPV_ENV_VULKAN_1_0), Values("PrimitiveShadingRateKHR"),
+            Values("Vertex", "Geometry"), Values("Output"), Values("%u32"),
             Values("OpCapability FragmentShadingRateKHR\n"),
             Values("OpExtension \"SPV_KHR_fragment_shading_rate\"\n"),
             Values(nullptr), Values(TestResult())));
@@ -3987,8 +4062,8 @@ INSTANTIATE_TEST_SUITE_P(
 INSTANTIATE_TEST_SUITE_P(
     PrimitiveShadingRateMeshOutputSuccess,
     ValidateVulkanCombineBuiltInExecutionModelDataTypeCapabilityExtensionResult,
-    Combine(Values("PrimitiveShadingRateKHR"), Values("MeshNV"),
-            Values("Output"), Values("%u32"),
+    Combine(Values(SPV_ENV_VULKAN_1_0), Values("PrimitiveShadingRateKHR"),
+            Values("MeshNV"), Values("Output"), Values("%u32"),
             Values("OpCapability FragmentShadingRateKHR\nOpCapability "
                    "MeshShadingNV\n"),
             Values("OpExtension \"SPV_KHR_fragment_shading_rate\"\nOpExtension "
@@ -3999,8 +4074,9 @@ INSTANTIATE_TEST_SUITE_P(
     PrimitiveShadingRateInvalidExecutionModel,
     ValidateVulkanCombineBuiltInExecutionModelDataTypeCapabilityExtensionResult,
     Combine(
-        Values("PrimitiveShadingRateKHR"), Values("Fragment"), Values("Output"),
-        Values("%u32"), Values("OpCapability FragmentShadingRateKHR\n"),
+        Values(SPV_ENV_VULKAN_1_0), Values("PrimitiveShadingRateKHR"),
+        Values("Fragment"), Values("Output"), Values("%u32"),
+        Values("OpCapability FragmentShadingRateKHR\n"),
         Values("OpExtension \"SPV_KHR_fragment_shading_rate\"\n"),
         Values("VUID-PrimitiveShadingRateKHR-PrimitiveShadingRateKHR-04484 "),
         Values(TestResult(
@@ -4013,8 +4089,9 @@ INSTANTIATE_TEST_SUITE_P(
     PrimitiveShadingRateInvalidStorageClass,
     ValidateVulkanCombineBuiltInExecutionModelDataTypeCapabilityExtensionResult,
     Combine(
-        Values("PrimitiveShadingRateKHR"), Values("Vertex"), Values("Input"),
-        Values("%u32"), Values("OpCapability FragmentShadingRateKHR\n"),
+        Values(SPV_ENV_VULKAN_1_0), Values("PrimitiveShadingRateKHR"),
+        Values("Vertex"), Values("Input"), Values("%u32"),
+        Values("OpCapability FragmentShadingRateKHR\n"),
         Values("OpExtension \"SPV_KHR_fragment_shading_rate\"\n"),
         Values("VUID-PrimitiveShadingRateKHR-PrimitiveShadingRateKHR-04485 "),
         Values(TestResult(
@@ -4026,8 +4103,9 @@ INSTANTIATE_TEST_SUITE_P(
     PrimitiveShadingRateInvalidType,
     ValidateVulkanCombineBuiltInExecutionModelDataTypeCapabilityExtensionResult,
     Combine(
-        Values("PrimitiveShadingRateKHR"), Values("Vertex"), Values("Output"),
-        Values("%f32"), Values("OpCapability FragmentShadingRateKHR\n"),
+        Values(SPV_ENV_VULKAN_1_0), Values("PrimitiveShadingRateKHR"),
+        Values("Vertex"), Values("Output"), Values("%f32"),
+        Values("OpCapability FragmentShadingRateKHR\n"),
         Values("OpExtension \"SPV_KHR_fragment_shading_rate\"\n"),
         Values("VUID-PrimitiveShadingRateKHR-PrimitiveShadingRateKHR-04486 "),
         Values(TestResult(
@@ -4038,16 +4116,18 @@ INSTANTIATE_TEST_SUITE_P(
 INSTANTIATE_TEST_SUITE_P(
     ShadingRateInputSuccess,
     ValidateVulkanCombineBuiltInExecutionModelDataTypeCapabilityExtensionResult,
-    Combine(Values("ShadingRateKHR"), Values("Fragment"), Values("Input"),
-            Values("%u32"), Values("OpCapability FragmentShadingRateKHR\n"),
+    Combine(Values(SPV_ENV_VULKAN_1_0), Values("ShadingRateKHR"),
+            Values("Fragment"), Values("Input"), Values("%u32"),
+            Values("OpCapability FragmentShadingRateKHR\n"),
             Values("OpExtension \"SPV_KHR_fragment_shading_rate\"\n"),
             Values(nullptr), Values(TestResult())));
 
 INSTANTIATE_TEST_SUITE_P(
     ShadingRateInvalidExecutionModel,
     ValidateVulkanCombineBuiltInExecutionModelDataTypeCapabilityExtensionResult,
-    Combine(Values("ShadingRateKHR"), Values("Vertex"), Values("Input"),
-            Values("%u32"), Values("OpCapability FragmentShadingRateKHR\n"),
+    Combine(Values(SPV_ENV_VULKAN_1_0), Values("ShadingRateKHR"),
+            Values("Vertex"), Values("Input"), Values("%u32"),
+            Values("OpCapability FragmentShadingRateKHR\n"),
             Values("OpExtension \"SPV_KHR_fragment_shading_rate\"\n"),
             Values("VUID-ShadingRateKHR-ShadingRateKHR-04490 "),
             Values(TestResult(
@@ -4058,8 +4138,9 @@ INSTANTIATE_TEST_SUITE_P(
 INSTANTIATE_TEST_SUITE_P(
     ShadingRateInvalidStorageClass,
     ValidateVulkanCombineBuiltInExecutionModelDataTypeCapabilityExtensionResult,
-    Combine(Values("ShadingRateKHR"), Values("Fragment"), Values("Output"),
-            Values("%u32"), Values("OpCapability FragmentShadingRateKHR\n"),
+    Combine(Values(SPV_ENV_VULKAN_1_0), Values("ShadingRateKHR"),
+            Values("Fragment"), Values("Output"), Values("%u32"),
+            Values("OpCapability FragmentShadingRateKHR\n"),
             Values("OpExtension \"SPV_KHR_fragment_shading_rate\"\n"),
             Values("VUID-ShadingRateKHR-ShadingRateKHR-04491 "),
             Values(TestResult(
@@ -4071,8 +4152,9 @@ INSTANTIATE_TEST_SUITE_P(
     ShadingRateInvalidType,
     ValidateVulkanCombineBuiltInExecutionModelDataTypeCapabilityExtensionResult,
     Combine(
-        Values("ShadingRateKHR"), Values("Fragment"), Values("Input"),
-        Values("%f32"), Values("OpCapability FragmentShadingRateKHR\n"),
+        Values(SPV_ENV_VULKAN_1_0), Values("ShadingRateKHR"),
+        Values("Fragment"), Values("Input"), Values("%f32"),
+        Values("OpCapability FragmentShadingRateKHR\n"),
         Values("OpExtension \"SPV_KHR_fragment_shading_rate\"\n"),
         Values("VUID-ShadingRateKHR-ShadingRateKHR-04492 "),
         Values(TestResult(SPV_ERROR_INVALID_DATA,
@@ -4082,8 +4164,8 @@ INSTANTIATE_TEST_SUITE_P(
 INSTANTIATE_TEST_SUITE_P(
     FragInvocationCountInputSuccess,
     ValidateVulkanCombineBuiltInExecutionModelDataTypeCapabilityExtensionResult,
-    Combine(Values("FragInvocationCountEXT"), Values("Fragment"),
-            Values("Input"), Values("%u32"),
+    Combine(Values(SPV_ENV_VULKAN_1_0), Values("FragInvocationCountEXT"),
+            Values("Fragment"), Values("Input"), Values("%u32"),
             Values("OpCapability FragmentDensityEXT\n"),
             Values("OpExtension \"SPV_EXT_fragment_invocation_density\"\n"),
             Values(nullptr), Values(TestResult())));
@@ -4092,8 +4174,9 @@ INSTANTIATE_TEST_SUITE_P(
     FragInvocationCountInvalidExecutionModel,
     ValidateVulkanCombineBuiltInExecutionModelDataTypeCapabilityExtensionResult,
     Combine(
-        Values("FragInvocationCountEXT"), Values("Vertex"), Values("Input"),
-        Values("%u32"), Values("OpCapability FragmentDensityEXT\n"),
+        Values(SPV_ENV_VULKAN_1_0), Values("FragInvocationCountEXT"),
+        Values("Vertex"), Values("Input"), Values("%u32"),
+        Values("OpCapability FragmentDensityEXT\n"),
         Values("OpExtension \"SPV_EXT_fragment_invocation_density\"\n"),
         Values("VUID-FragInvocationCountEXT-FragInvocationCountEXT-04217"),
         Values(TestResult(SPV_ERROR_INVALID_DATA,
@@ -4103,8 +4186,8 @@ INSTANTIATE_TEST_SUITE_P(
 INSTANTIATE_TEST_SUITE_P(
     FragInvocationCountInvalidStorageClass,
     ValidateVulkanCombineBuiltInExecutionModelDataTypeCapabilityExtensionResult,
-    Combine(Values("FragInvocationCountEXT"), Values("Fragment"),
-            Values("Output"), Values("%u32"),
+    Combine(Values(SPV_ENV_VULKAN_1_0), Values("FragInvocationCountEXT"),
+            Values("Fragment"), Values("Output"), Values("%u32"),
             Values("OpCapability FragmentDensityEXT\n"),
             Values("OpExtension \"SPV_EXT_fragment_invocation_density\"\n"),
             Values("VUID-FragInvocationCountEXT-FragInvocationCountEXT-04218"),
@@ -4116,8 +4199,8 @@ INSTANTIATE_TEST_SUITE_P(
 INSTANTIATE_TEST_SUITE_P(
     FragInvocationCountInvalidType,
     ValidateVulkanCombineBuiltInExecutionModelDataTypeCapabilityExtensionResult,
-    Combine(Values("FragInvocationCountEXT"), Values("Fragment"),
-            Values("Input"), Values("%f32"),
+    Combine(Values(SPV_ENV_VULKAN_1_0), Values("FragInvocationCountEXT"),
+            Values("Fragment"), Values("Input"), Values("%f32"),
             Values("OpCapability FragmentDensityEXT\n"),
             Values("OpExtension \"SPV_EXT_fragment_invocation_density\"\n"),
             Values("VUID-FragInvocationCountEXT-FragInvocationCountEXT-04219"),
@@ -4129,16 +4212,18 @@ INSTANTIATE_TEST_SUITE_P(
 INSTANTIATE_TEST_SUITE_P(
     FragSizeInputSuccess,
     ValidateVulkanCombineBuiltInExecutionModelDataTypeCapabilityExtensionResult,
-    Combine(Values("FragSizeEXT"), Values("Fragment"), Values("Input"),
-            Values("%u32vec2"), Values("OpCapability FragmentDensityEXT\n"),
+    Combine(Values(SPV_ENV_VULKAN_1_0), Values("FragSizeEXT"),
+            Values("Fragment"), Values("Input"), Values("%u32vec2"),
+            Values("OpCapability FragmentDensityEXT\n"),
             Values("OpExtension \"SPV_EXT_fragment_invocation_density\"\n"),
             Values(nullptr), Values(TestResult())));
 
 INSTANTIATE_TEST_SUITE_P(
     FragSizeInvalidExecutionModel,
     ValidateVulkanCombineBuiltInExecutionModelDataTypeCapabilityExtensionResult,
-    Combine(Values("FragSizeEXT"), Values("Vertex"), Values("Input"),
-            Values("%u32vec2"), Values("OpCapability FragmentDensityEXT\n"),
+    Combine(Values(SPV_ENV_VULKAN_1_0), Values("FragSizeEXT"), Values("Vertex"),
+            Values("Input"), Values("%u32vec2"),
+            Values("OpCapability FragmentDensityEXT\n"),
             Values("OpExtension \"SPV_EXT_fragment_invocation_density\"\n"),
             Values("VUID-FragSizeEXT-FragSizeEXT-04220"),
             Values(TestResult(SPV_ERROR_INVALID_DATA,
@@ -4149,8 +4234,9 @@ INSTANTIATE_TEST_SUITE_P(
     FragSizeInvalidStorageClass,
     ValidateVulkanCombineBuiltInExecutionModelDataTypeCapabilityExtensionResult,
     Combine(
-        Values("FragSizeEXT"), Values("Fragment"), Values("Output"),
-        Values("%u32vec2"), Values("OpCapability FragmentDensityEXT\n"),
+        Values(SPV_ENV_VULKAN_1_0), Values("FragSizeEXT"), Values("Fragment"),
+        Values("Output"), Values("%u32vec2"),
+        Values("OpCapability FragmentDensityEXT\n"),
         Values("OpExtension \"SPV_EXT_fragment_invocation_density\"\n"),
         Values("VUID-FragSizeEXT-FragSizeEXT-04221"),
         Values(TestResult(SPV_ERROR_INVALID_DATA,
@@ -4160,8 +4246,9 @@ INSTANTIATE_TEST_SUITE_P(
 INSTANTIATE_TEST_SUITE_P(
     FragSizeInvalidType,
     ValidateVulkanCombineBuiltInExecutionModelDataTypeCapabilityExtensionResult,
-    Combine(Values("FragSizeEXT"), Values("Fragment"), Values("Input"),
-            Values("%u32vec3"), Values("OpCapability FragmentDensityEXT\n"),
+    Combine(Values(SPV_ENV_VULKAN_1_0), Values("FragSizeEXT"),
+            Values("Fragment"), Values("Input"), Values("%u32vec3"),
+            Values("OpCapability FragmentDensityEXT\n"),
             Values("OpExtension \"SPV_EXT_fragment_invocation_density\"\n"),
             Values("VUID-FragSizeEXT-FragSizeEXT-04222"),
             Values(TestResult(
@@ -4172,16 +4259,18 @@ INSTANTIATE_TEST_SUITE_P(
 INSTANTIATE_TEST_SUITE_P(
     FragStencilRefOutputSuccess,
     ValidateVulkanCombineBuiltInExecutionModelDataTypeCapabilityExtensionResult,
-    Combine(Values("FragStencilRefEXT"), Values("Fragment"), Values("Output"),
-            Values("%u32", "%u64"), Values("OpCapability StencilExportEXT\n"),
+    Combine(Values(SPV_ENV_VULKAN_1_0), Values("FragStencilRefEXT"),
+            Values("Fragment"), Values("Output"), Values("%u32", "%u64"),
+            Values("OpCapability StencilExportEXT\n"),
             Values("OpExtension \"SPV_EXT_shader_stencil_export\"\n"),
             Values(nullptr), Values(TestResult())));
 
 INSTANTIATE_TEST_SUITE_P(
     FragStencilRefInvalidExecutionModel,
     ValidateVulkanCombineBuiltInExecutionModelDataTypeCapabilityExtensionResult,
-    Combine(Values("FragStencilRefEXT"), Values("Vertex"), Values("Output"),
-            Values("%u32", "%u64"), Values("OpCapability StencilExportEXT\n"),
+    Combine(Values(SPV_ENV_VULKAN_1_0), Values("FragStencilRefEXT"),
+            Values("Vertex"), Values("Output"), Values("%u32", "%u64"),
+            Values("OpCapability StencilExportEXT\n"),
             Values("OpExtension \"SPV_EXT_shader_stencil_export\"\n"),
             Values("VUID-FragStencilRefEXT-FragStencilRefEXT-04223"),
             Values(TestResult(SPV_ERROR_INVALID_DATA,
@@ -4191,8 +4280,9 @@ INSTANTIATE_TEST_SUITE_P(
 INSTANTIATE_TEST_SUITE_P(
     FragStencilRefInvalidStorageClass,
     ValidateVulkanCombineBuiltInExecutionModelDataTypeCapabilityExtensionResult,
-    Combine(Values("FragStencilRefEXT"), Values("Fragment"), Values("Input"),
-            Values("%u32", "%u64"), Values("OpCapability StencilExportEXT\n"),
+    Combine(Values(SPV_ENV_VULKAN_1_0), Values("FragStencilRefEXT"),
+            Values("Fragment"), Values("Input"), Values("%u32", "%u64"),
+            Values("OpCapability StencilExportEXT\n"),
             Values("OpExtension \"SPV_EXT_shader_stencil_export\"\n"),
             Values("VUID-FragStencilRefEXT-FragStencilRefEXT-04224"),
             Values(TestResult(
@@ -4203,7 +4293,8 @@ INSTANTIATE_TEST_SUITE_P(
 INSTANTIATE_TEST_SUITE_P(
     FragStencilRefInvalidType,
     ValidateVulkanCombineBuiltInExecutionModelDataTypeCapabilityExtensionResult,
-    Combine(Values("FragStencilRefEXT"), Values("Fragment"), Values("Output"),
+    Combine(Values(SPV_ENV_VULKAN_1_0), Values("FragStencilRefEXT"),
+            Values("Fragment"), Values("Output"),
             Values("%f32", "%f64", "%u32vec2"),
             Values("OpCapability StencilExportEXT\n"),
             Values("OpExtension \"SPV_EXT_shader_stencil_export\"\n"),
@@ -4216,16 +4307,18 @@ INSTANTIATE_TEST_SUITE_P(
 INSTANTIATE_TEST_SUITE_P(
     FullyCoveredEXTInputSuccess,
     ValidateVulkanCombineBuiltInExecutionModelDataTypeCapabilityExtensionResult,
-    Combine(Values("FullyCoveredEXT"), Values("Fragment"), Values("Input"),
-            Values("%bool"), Values("OpCapability FragmentFullyCoveredEXT\n"),
+    Combine(Values(SPV_ENV_VULKAN_1_0), Values("FullyCoveredEXT"),
+            Values("Fragment"), Values("Input"), Values("%bool"),
+            Values("OpCapability FragmentFullyCoveredEXT\n"),
             Values("OpExtension \"SPV_EXT_fragment_fully_covered\"\n"),
             Values(nullptr), Values(TestResult())));
 
 INSTANTIATE_TEST_SUITE_P(
     FullyCoveredEXTInvalidExecutionModel,
     ValidateVulkanCombineBuiltInExecutionModelDataTypeCapabilityExtensionResult,
-    Combine(Values("FullyCoveredEXT"), Values("Vertex"), Values("Input"),
-            Values("%bool"), Values("OpCapability FragmentFullyCoveredEXT\n"),
+    Combine(Values(SPV_ENV_VULKAN_1_0), Values("FullyCoveredEXT"),
+            Values("Vertex"), Values("Input"), Values("%bool"),
+            Values("OpCapability FragmentFullyCoveredEXT\n"),
             Values("OpExtension \"SPV_EXT_fragment_fully_covered\"\n"),
             Values("VUID-FullyCoveredEXT-FullyCoveredEXT-04232"),
             Values(TestResult(SPV_ERROR_INVALID_DATA,
@@ -4235,8 +4328,9 @@ INSTANTIATE_TEST_SUITE_P(
 INSTANTIATE_TEST_SUITE_P(
     FullyCoveredEXTInvalidStorageClass,
     ValidateVulkanCombineBuiltInExecutionModelDataTypeCapabilityExtensionResult,
-    Combine(Values("FullyCoveredEXT"), Values("Fragment"), Values("Output"),
-            Values("%bool"), Values("OpCapability FragmentFullyCoveredEXT\n"),
+    Combine(Values(SPV_ENV_VULKAN_1_0), Values("FullyCoveredEXT"),
+            Values("Fragment"), Values("Output"), Values("%bool"),
+            Values("OpCapability FragmentFullyCoveredEXT\n"),
             Values("OpExtension \"SPV_EXT_fragment_fully_covered\"\n"),
             Values("VUID-FullyCoveredEXT-FullyCoveredEXT-04233"),
             Values(TestResult(
@@ -4247,8 +4341,9 @@ INSTANTIATE_TEST_SUITE_P(
 INSTANTIATE_TEST_SUITE_P(
     FullyCoveredEXTInvalidType,
     ValidateVulkanCombineBuiltInExecutionModelDataTypeCapabilityExtensionResult,
-    Combine(Values("FullyCoveredEXT"), Values("Fragment"), Values("Input"),
-            Values("%f32"), Values("OpCapability FragmentFullyCoveredEXT\n"),
+    Combine(Values(SPV_ENV_VULKAN_1_0), Values("FullyCoveredEXT"),
+            Values("Fragment"), Values("Input"), Values("%f32"),
+            Values("OpCapability FragmentFullyCoveredEXT\n"),
             Values("OpExtension \"SPV_EXT_fragment_fully_covered\"\n"),
             Values("VUID-FullyCoveredEXT-FullyCoveredEXT-04234"),
             Values(TestResult(
@@ -4260,6 +4355,7 @@ INSTANTIATE_TEST_SUITE_P(
     BaryCoordNotFragment,
     ValidateVulkanCombineBuiltInExecutionModelDataTypeCapabilityExtensionResult,
     Combine(
+        Values(SPV_ENV_VULKAN_1_0),
         Values("BaryCoordKHR", "BaryCoordNoPerspKHR"), Values("Vertex"),
         Values("Input"), Values("%f32vec3"),
         Values("OpCapability FragmentBarycentricKHR\n"),
@@ -4272,7 +4368,8 @@ INSTANTIATE_TEST_SUITE_P(
 INSTANTIATE_TEST_SUITE_P(
     BaryCoordNotInput,
     ValidateVulkanCombineBuiltInExecutionModelDataTypeCapabilityExtensionResult,
-    Combine(Values("BaryCoordKHR", "BaryCoordNoPerspKHR"), Values("Fragment"),
+    Combine(Values(SPV_ENV_VULKAN_1_0),
+            Values("BaryCoordKHR", "BaryCoordNoPerspKHR"), Values("Fragment"),
             Values("Output"), Values("%f32vec3"),
             Values("OpCapability FragmentBarycentricKHR\n"),
             Values("OpExtension \"SPV_KHR_fragment_shader_barycentric\"\n"),
@@ -4286,6 +4383,7 @@ INSTANTIATE_TEST_SUITE_P(
     BaryCoordNotFloatVector,
     ValidateVulkanCombineBuiltInExecutionModelDataTypeCapabilityExtensionResult,
     Combine(
+        Values(SPV_ENV_VULKAN_1_0),
         Values("BaryCoordKHR", "BaryCoordNoPerspKHR"), Values("Fragment"),
         Values("Output"), Values("%f32arr3", "%u32vec4"),
         Values("OpCapability FragmentBarycentricKHR\n"),
@@ -4299,6 +4397,7 @@ INSTANTIATE_TEST_SUITE_P(
     BaryCoordNotFloatVec3,
     ValidateVulkanCombineBuiltInExecutionModelDataTypeCapabilityExtensionResult,
     Combine(
+        Values(SPV_ENV_VULKAN_1_0),
         Values("BaryCoordKHR", "BaryCoordNoPerspKHR"), Values("Fragment"),
         Values("Output"), Values("%f32vec2"),
         Values("OpCapability FragmentBarycentricKHR\n"),
@@ -4312,6 +4411,7 @@ INSTANTIATE_TEST_SUITE_P(
     BaryCoordNotF32Vec3,
     ValidateVulkanCombineBuiltInExecutionModelDataTypeCapabilityExtensionResult,
     Combine(
+        Values(SPV_ENV_VULKAN_1_0),
         Values("BaryCoordKHR", "BaryCoordNoPerspKHR"), Values("Fragment"),
         Values("Output"), Values("%f64vec3"),
         Values("OpCapability FragmentBarycentricKHR\n"),
@@ -7241,6 +7341,741 @@ TEST_F(ValidateBuiltIns, HitTriangleVertexPositionType) {
   EXPECT_THAT(getDiagnosticString(),
               AnyVUID("VUID-HitTriangleVertexPositionsKHR-"
                       "HitTriangleVertexPositionsKHR-08749"));
+}
+
+TEST_F(ValidateBuiltIns, TileOffsetRequiresFragmentOrGLComputeExecutionModel) {
+  const std::string spirv = R"(
+               OpCapability Shader
+               OpExtension "SPV_QCOM_tile_shading"
+          %2 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Vertex %main "main" %gl_TileOffsetQCOM
+               OpExecutionMode %main OriginUpperLeft
+               OpDecorate %gl_TileOffsetQCOM BuiltIn TileOffsetQCOM
+               OpDecorate %gl_TileOffsetQCOM Flat
+       %void = OpTypeVoid
+          %4 = OpTypeFunction %void
+       %uint = OpTypeInt 32 0
+     %v2uint = OpTypeVector %uint 2
+%_ptr_Function_v2uint = OpTypePointer Function %v2uint
+%_ptr_Input_v2uint = OpTypePointer Input %v2uint
+%gl_TileOffsetQCOM = OpVariable %_ptr_Input_v2uint Input
+       %main = OpFunction %void None %4
+          %6 = OpLabel
+ %tileOffset = OpVariable %_ptr_Function_v2uint Function
+         %13 = OpLoad %v2uint %gl_TileOffsetQCOM
+               OpStore %tileOffset %13
+               OpReturn
+               OpFunctionEnd
+)";
+  CompileSuccessfully(spirv, SPV_ENV_VULKAN_1_4);
+  EXPECT_EQ(SPV_ERROR_INVALID_CAPABILITY,
+            ValidateInstructions(SPV_ENV_VULKAN_1_4));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("requires one of these capabilities: TileShadingQCOM"));
+}
+
+TEST_F(ValidateBuiltIns, TileOffsetRequiresInputStorageClass) {
+  const std::string spirv = R"(
+               OpCapability Shader
+               OpCapability TileShadingQCOM
+               OpExtension "SPV_QCOM_tile_shading"
+          %2 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %main "main" %gl_TileOffsetQCOM
+               OpExecutionMode %main OriginUpperLeft
+               OpDecorate %gl_TileOffsetQCOM BuiltIn TileOffsetQCOM
+       %void = OpTypeVoid
+          %4 = OpTypeFunction %void
+       %uint = OpTypeInt 32 0
+     %v2uint = OpTypeVector %uint 2
+%_ptr_Output_v2uint = OpTypePointer Output %v2uint
+%gl_TileOffsetQCOM = OpVariable %_ptr_Output_v2uint Output
+       %main = OpFunction %void None %4
+          %6 = OpLabel
+               OpReturn
+               OpFunctionEnd
+)";
+  CompileSuccessfully(spirv, SPV_ENV_VULKAN_1_4);
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_VULKAN_1_4));
+  EXPECT_THAT(getDiagnosticString(),
+              AnyVUID("VUID-TileOffsetQCOM-TileOffsetQCOM-10627"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Vulkan spec allows BuiltIn TileOffsetQCOM to be "
+                        "only used for variables with Input storage class."));
+}
+
+TEST_F(ValidateBuiltIns,
+       TileOffsetRequiresTwoComponent32BitUnsignedIntegerVector) {
+  const std::string spirv = R"(
+               OpCapability Shader
+               OpCapability TileShadingQCOM
+               OpExtension "SPV_QCOM_tile_shading"
+          %2 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %main "main" %gl_TileOffsetQCOM
+               OpExecutionMode %main OriginUpperLeft
+               OpDecorate %gl_TileOffsetQCOM BuiltIn TileOffsetQCOM
+               OpDecorate %gl_TileOffsetQCOM Flat
+       %void = OpTypeVoid
+          %4 = OpTypeFunction %void
+       %uint = OpTypeInt 32 0
+     %v3uint = OpTypeVector %uint 3
+%_ptr_Function_v3uint = OpTypePointer Function %v3uint
+%_ptr_Input_v3uint = OpTypePointer Input %v3uint
+%gl_TileOffsetQCOM = OpVariable %_ptr_Input_v3uint Input
+       %main = OpFunction %void None %4
+          %6 = OpLabel
+ %tileOffset = OpVariable %_ptr_Function_v3uint Function
+         %13 = OpLoad %v3uint %gl_TileOffsetQCOM
+               OpStore %tileOffset %13
+               OpReturn
+               OpFunctionEnd
+)";
+  CompileSuccessfully(spirv, SPV_ENV_VULKAN_1_4);
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_VULKAN_1_4));
+  EXPECT_THAT(getDiagnosticString(),
+              AnyVUID("VUID-TileOffsetQCOM-TileOffsetQCOM-10628"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("According to the Vulkan spec BuiltIn TileOffsetQCOM "
+                        "variable must be a 2-component 32-bit "
+                        "unsigned int vector."));
+}
+
+TEST_F(ValidateBuiltIns,
+       TileDimensionRequiresFragmentOrGLComputeExecutionModel) {
+  const std::string spirv = R"(
+               OpCapability Shader
+               OpExtension "SPV_QCOM_tile_shading"
+          %2 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Vertex %main "main" %gl_TileDimensionQCOM
+               OpExecutionMode %main OriginUpperLeft
+               OpDecorate %gl_TileDimensionQCOM BuiltIn TileDimensionQCOM
+               OpDecorate %gl_TileDimensionQCOM Flat
+       %void = OpTypeVoid
+          %4 = OpTypeFunction %void
+       %uint = OpTypeInt 32 0
+     %v3uint = OpTypeVector %uint 3
+%_ptr_Function_v3uint = OpTypePointer Function %v3uint
+%_ptr_Input_v3uint = OpTypePointer Input %v3uint
+%gl_TileDimensionQCOM = OpVariable %_ptr_Input_v3uint Input
+       %main = OpFunction %void None %4
+          %6 = OpLabel
+    %tileDim = OpVariable %_ptr_Function_v3uint Function
+         %13 = OpLoad %v3uint %gl_TileDimensionQCOM
+               OpStore %tileDim %13
+               OpReturn
+               OpFunctionEnd
+)";
+  CompileSuccessfully(spirv, SPV_ENV_VULKAN_1_4);
+  EXPECT_EQ(SPV_ERROR_INVALID_CAPABILITY,
+            ValidateInstructions(SPV_ENV_VULKAN_1_4));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("requires one of these capabilities: TileShadingQCOM"));
+}
+
+TEST_F(ValidateBuiltIns, TileDimensionRequiresInputStorageClass) {
+  const std::string spirv = R"(
+               OpCapability Shader
+               OpCapability TileShadingQCOM
+               OpExtension "SPV_QCOM_tile_shading"
+          %2 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %main "main" %gl_TileDimensionQCOM
+               OpExecutionMode %main OriginUpperLeft
+               OpDecorate %gl_TileDimensionQCOM BuiltIn TileDimensionQCOM
+       %void = OpTypeVoid
+          %4 = OpTypeFunction %void
+       %uint = OpTypeInt 32 0
+     %v3uint = OpTypeVector %uint 3
+%_ptr_Output_v3uint = OpTypePointer Output %v3uint
+%gl_TileDimensionQCOM = OpVariable %_ptr_Output_v3uint Output
+       %main = OpFunction %void None %4
+          %6 = OpLabel
+               OpReturn
+               OpFunctionEnd
+)";
+  CompileSuccessfully(spirv, SPV_ENV_VULKAN_1_4);
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_VULKAN_1_4));
+  EXPECT_THAT(getDiagnosticString(),
+              AnyVUID("VUID-TileDimensionQCOM-TileDimensionQCOM-10630"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Vulkan spec allows BuiltIn TileDimensionQCOM to be "
+                        "only used for variables with Input storage class."));
+}
+
+TEST_F(ValidateBuiltIns,
+       TileDimensionRequiresThreeComponent32BitUnsignedIntegerVector) {
+  const std::string spirv = R"(
+               OpCapability Shader
+               OpCapability TileShadingQCOM
+               OpExtension "SPV_QCOM_tile_shading"
+          %2 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %main "main" %gl_TileDimensionQCOM
+               OpExecutionMode %main OriginUpperLeft
+               OpDecorate %gl_TileDimensionQCOM BuiltIn TileDimensionQCOM
+               OpDecorate %gl_TileDimensionQCOM Flat
+       %void = OpTypeVoid
+          %4 = OpTypeFunction %void
+       %uint = OpTypeInt 32 0
+     %v2uint = OpTypeVector %uint 2
+%_ptr_Function_v2uint = OpTypePointer Function %v2uint
+%_ptr_Input_v2uint = OpTypePointer Input %v2uint
+%gl_TileDimensionQCOM = OpVariable %_ptr_Input_v2uint Input
+       %main = OpFunction %void None %4
+          %6 = OpLabel
+    %tileDim = OpVariable %_ptr_Function_v2uint Function
+         %13 = OpLoad %v2uint %gl_TileDimensionQCOM
+               OpStore %tileDim %13
+               OpReturn
+               OpFunctionEnd
+)";
+  CompileSuccessfully(spirv, SPV_ENV_VULKAN_1_4);
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_VULKAN_1_4));
+  EXPECT_THAT(getDiagnosticString(),
+              AnyVUID("VUID-TileDimensionQCOM-TileDimensionQCOM-10631"));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("According to the Vulkan spec BuiltIn TileDimensionQCOM "
+                "variable must be a 3-component 32-bit "
+                "unsigned int vector."));
+}
+
+TEST_F(ValidateBuiltIns,
+       TileApronSizeRequiresFragmentOrGLComputeExecutionModel) {
+  const std::string spirv = R"(
+               OpCapability Shader
+               OpExtension "SPV_QCOM_tile_shading"
+          %2 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Vertex %main "main" %gl_TileApronSizeQCOM
+               OpExecutionMode %main OriginUpperLeft
+               OpDecorate %gl_TileApronSizeQCOM BuiltIn TileApronSizeQCOM
+               OpDecorate %gl_TileApronSizeQCOM Flat
+       %void = OpTypeVoid
+          %4 = OpTypeFunction %void
+       %uint = OpTypeInt 32 0
+     %v2uint = OpTypeVector %uint 2
+%_ptr_Function_v2uint = OpTypePointer Function %v2uint
+%_ptr_Input_v2uint = OpTypePointer Input %v2uint
+%gl_TileApronSizeQCOM = OpVariable %_ptr_Input_v2uint Input
+       %main = OpFunction %void None %4
+          %6 = OpLabel
+  %apronSize = OpVariable %_ptr_Function_v2uint Function
+         %13 = OpLoad %v2uint %gl_TileApronSizeQCOM
+               OpStore %apronSize %13
+               OpReturn
+               OpFunctionEnd
+)";
+  CompileSuccessfully(spirv, SPV_ENV_VULKAN_1_4);
+  EXPECT_EQ(SPV_ERROR_INVALID_CAPABILITY,
+            ValidateInstructions(SPV_ENV_VULKAN_1_4));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("requires one of these capabilities: TileShadingQCOM"));
+}
+
+TEST_F(ValidateBuiltIns, TileApronSizeRequiresInputStorageClass) {
+  const std::string spirv = R"(
+               OpCapability Shader
+               OpCapability TileShadingQCOM
+               OpExtension "SPV_QCOM_tile_shading"
+          %2 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %main "main" %gl_TileApronSizeQCOM
+               OpExecutionMode %main OriginUpperLeft
+               OpDecorate %gl_TileApronSizeQCOM BuiltIn TileApronSizeQCOM
+       %void = OpTypeVoid
+          %4 = OpTypeFunction %void
+       %uint = OpTypeInt 32 0
+     %v2uint = OpTypeVector %uint 2
+%_ptr_Output_v2uint = OpTypePointer Output %v2uint
+%gl_TileApronSizeQCOM = OpVariable %_ptr_Output_v2uint Output
+       %main = OpFunction %void None %4
+          %6 = OpLabel
+               OpReturn
+               OpFunctionEnd
+)";
+  CompileSuccessfully(spirv, SPV_ENV_VULKAN_1_4);
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_VULKAN_1_4));
+  EXPECT_THAT(getDiagnosticString(),
+              AnyVUID("VUID-TileApronSizeQCOM-TileApronSizeQCOM-10633"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Vulkan spec allows BuiltIn TileApronSizeQCOM to be "
+                        "only used for variables with Input storage class."));
+}
+
+TEST_F(ValidateBuiltIns,
+       TileApronSizeRequiresTwoComponent32BitUnsignedIntegerVector) {
+  const std::string spirv = R"(
+               OpCapability Shader
+               OpCapability TileShadingQCOM
+               OpExtension "SPV_QCOM_tile_shading"
+          %2 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %main "main" %gl_TileApronSizeQCOM
+               OpExecutionMode %main OriginUpperLeft
+               OpDecorate %gl_TileApronSizeQCOM BuiltIn TileApronSizeQCOM
+               OpDecorate %gl_TileApronSizeQCOM Flat
+       %void = OpTypeVoid
+          %4 = OpTypeFunction %void
+       %uint = OpTypeInt 32 0
+     %v3uint = OpTypeVector %uint 3
+%_ptr_Input_v3uint = OpTypePointer Input %v3uint
+%gl_TileApronSizeQCOM = OpVariable %_ptr_Input_v3uint Input
+       %main = OpFunction %void None %4
+          %6 = OpLabel
+               OpReturn
+               OpFunctionEnd
+)";
+  CompileSuccessfully(spirv, SPV_ENV_VULKAN_1_4);
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_VULKAN_1_4));
+  EXPECT_THAT(getDiagnosticString(),
+              AnyVUID("VUID-TileApronSizeQCOM-TileApronSizeQCOM-10634"));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("According to the Vulkan spec BuiltIn TileApronSizeQCOM "
+                "variable must be a 2-component 32-bit "
+                "unsigned int vector."));
+}
+
+TEST_F(ValidateBuiltIns, VolatileSubgroupSizeMissingVolatileDecoration) {
+  const std::string text = R"(
+    OpCapability Shader
+    OpCapability RayTracingKHR
+    OpCapability GroupNonUniform
+    OpExtension "SPV_KHR_ray_tracing"
+    OpMemoryModel Logical GLSL450
+    OpEntryPoint RayGenerationKHR %main "main" %subgroup_size
+    OpDecorate %subgroup_size BuiltIn SubgroupSize
+    %void = OpTypeVoid
+    %voidfn = OpTypeFunction %void
+    %uint = OpTypeInt 32 0
+    %ptr = OpTypePointer Input %uint
+    %subgroup_size = OpVariable %ptr Input
+    %main = OpFunction %void None %voidfn
+    %entry = OpLabel
+    %val = OpLoad %uint %subgroup_size
+    OpReturn
+    OpFunctionEnd
+  )";
+
+  CompileSuccessfully(text, SPV_ENV_VULKAN_1_1);
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_VULKAN_1_1));
+  EXPECT_THAT(getDiagnosticString(),
+              AnyVUID("VUID-StandaloneSpirv-VulkanMemoryModel-04678"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("must also be decorated with Volatile"));
+}
+
+TEST_F(ValidateBuiltIns, VolatileSubgroupSizeWithVolatileDecorationGood) {
+  const std::string text = R"(
+    OpCapability Shader
+    OpCapability RayTracingKHR
+    OpCapability GroupNonUniform
+    OpExtension "SPV_KHR_ray_tracing"
+    OpMemoryModel Logical GLSL450
+    OpEntryPoint RayGenerationKHR %main "main" %subgroup_size
+    OpDecorate %subgroup_size BuiltIn SubgroupSize
+    OpDecorate %subgroup_size Volatile
+    %void = OpTypeVoid
+    %voidfn = OpTypeFunction %void
+    %uint = OpTypeInt 32 0
+    %ptr = OpTypePointer Input %uint
+    %subgroup_size = OpVariable %ptr Input
+    %main = OpFunction %void None %voidfn
+    %entry = OpLabel
+    %val = OpLoad %uint %subgroup_size
+    OpReturn
+    OpFunctionEnd
+  )";
+
+  CompileSuccessfully(text, SPV_ENV_VULKAN_1_1);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_1));
+}
+
+TEST_F(ValidateBuiltIns, VolatileSubgroupSizeIrrelevantStageGood) {
+  const std::string text = R"(
+    OpCapability Shader
+    OpCapability GroupNonUniform
+    OpMemoryModel Logical GLSL450
+    OpEntryPoint Fragment %main "main" %subgroup_size
+    OpExecutionMode %main OriginUpperLeft
+    OpDecorate %subgroup_size BuiltIn SubgroupSize
+    OpDecorate %subgroup_size Flat
+    %void = OpTypeVoid
+    %voidfn = OpTypeFunction %void
+    %uint = OpTypeInt 32 0
+    %ptr = OpTypePointer Input %uint
+    %subgroup_size = OpVariable %ptr Input
+    %main = OpFunction %void None %voidfn
+    %entry = OpLabel
+    %val = OpLoad %uint %subgroup_size
+    OpReturn
+    OpFunctionEnd
+  )";
+
+  CompileSuccessfully(text, SPV_ENV_VULKAN_1_1);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_1));
+}
+
+TEST_F(ValidateBuiltIns, VolatileSubgroupSizeLoadMissingVolatileAccess) {
+  const std::string text = R"(
+    OpCapability Shader
+    OpCapability RayTracingKHR
+    OpCapability GroupNonUniform
+    OpCapability VulkanMemoryModel
+    OpExtension "SPV_KHR_ray_tracing"
+    OpExtension "SPV_KHR_vulkan_memory_model"
+    OpMemoryModel Logical Vulkan
+    OpEntryPoint RayGenerationKHR %main "main" %subgroup_size
+    OpDecorate %subgroup_size BuiltIn SubgroupSize
+    %void = OpTypeVoid
+    %voidfn = OpTypeFunction %void
+    %uint = OpTypeInt 32 0
+    %ptr = OpTypePointer Input %uint
+    %subgroup_size = OpVariable %ptr Input
+    %main = OpFunction %void None %voidfn
+    %entry = OpLabel
+    %val = OpLoad %uint %subgroup_size
+    OpReturn
+    OpFunctionEnd
+  )";
+
+  CompileSuccessfully(text, SPV_ENV_VULKAN_1_1);
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_VULKAN_1_1));
+  EXPECT_THAT(getDiagnosticString(),
+              AnyVUID("VUID-StandaloneSpirv-VulkanMemoryModel-04679"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("OpLoad must use a Volatile memory access"));
+}
+
+TEST_F(ValidateBuiltIns, VolatileSubgroupSizeLoadWithVolatileAccessGood) {
+  const std::string text = R"(
+    OpCapability Shader
+    OpCapability RayTracingKHR
+    OpCapability GroupNonUniform
+    OpCapability VulkanMemoryModel
+    OpExtension "SPV_KHR_ray_tracing"
+    OpExtension "SPV_KHR_vulkan_memory_model"
+    OpMemoryModel Logical Vulkan
+    OpEntryPoint RayGenerationKHR %main "main" %subgroup_size
+    OpDecorate %subgroup_size BuiltIn SubgroupSize
+    %void = OpTypeVoid
+    %voidfn = OpTypeFunction %void
+    %uint = OpTypeInt 32 0
+    %ptr = OpTypePointer Input %uint
+    %subgroup_size = OpVariable %ptr Input
+    %main = OpFunction %void None %voidfn
+    %entry = OpLabel
+    %val = OpLoad %uint %subgroup_size Volatile
+    OpReturn
+    OpFunctionEnd
+  )";
+
+  CompileSuccessfully(text, SPV_ENV_VULKAN_1_1);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_1));
+}
+
+TEST_F(ValidateBuiltIns, VolatileRayTmaxOnlyRestrictedToIntersection) {
+  const std::string text = R"(
+    OpCapability Shader
+    OpCapability RayTracingKHR
+    OpExtension "SPV_KHR_ray_tracing"
+    OpMemoryModel Logical GLSL450
+    OpEntryPoint IntersectionKHR %main "main" %ray_tmax
+    OpDecorate %ray_tmax BuiltIn RayTmaxKHR
+    %void = OpTypeVoid
+    %voidfn = OpTypeFunction %void
+    %float = OpTypeFloat 32
+    %ptr = OpTypePointer Input %float
+    %ray_tmax = OpVariable %ptr Input
+    %main = OpFunction %void None %voidfn
+    %entry = OpLabel
+    %val = OpLoad %float %ray_tmax
+    OpReturn
+    OpFunctionEnd
+  )";
+
+  CompileSuccessfully(text, SPV_ENV_VULKAN_1_1);
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_VULKAN_1_1));
+  EXPECT_THAT(getDiagnosticString(),
+              AnyVUID("VUID-StandaloneSpirv-VulkanMemoryModel-04678"));
+}
+
+TEST_F(ValidateBuiltIns, VolatileSubgroupSizeCopyObjectLoad) {
+  const std::string text = R"(
+    OpCapability Shader
+    OpCapability RayTracingKHR
+    OpCapability GroupNonUniform
+    OpCapability VulkanMemoryModel
+    OpExtension "SPV_KHR_ray_tracing"
+    OpExtension "SPV_KHR_vulkan_memory_model"
+    OpMemoryModel Logical Vulkan
+    OpEntryPoint CallableKHR %main "main" %subgroup_size
+    OpDecorate %subgroup_size BuiltIn SubgroupSize
+    %void = OpTypeVoid
+    %voidfn = OpTypeFunction %void
+    %uint = OpTypeInt 32 0
+    %ptr = OpTypePointer Input %uint
+    %subgroup_size = OpVariable %ptr Input
+    %main = OpFunction %void None %voidfn
+    %entry = OpLabel
+    %copy = OpCopyObject %ptr %subgroup_size
+    %val = OpLoad %uint %copy
+    OpReturn
+    OpFunctionEnd
+  )";
+
+  CompileSuccessfully(text, SPV_ENV_VULKAN_1_1);
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_VULKAN_1_1));
+  EXPECT_THAT(getDiagnosticString(),
+              AnyVUID("VUID-StandaloneSpirv-VulkanMemoryModel-04679"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("OpLoad must use a Volatile memory access"));
+}
+
+TEST_F(ValidateBuiltIns, VolatileSubgroupSizeCopyObjectLoadGood) {
+  const std::string text = R"(
+    OpCapability Shader
+    OpCapability RayTracingKHR
+    OpCapability GroupNonUniform
+    OpCapability VulkanMemoryModel
+    OpExtension "SPV_KHR_ray_tracing"
+    OpExtension "SPV_KHR_vulkan_memory_model"
+    OpMemoryModel Logical Vulkan
+    OpEntryPoint CallableKHR %main "main" %subgroup_size
+    OpDecorate %subgroup_size BuiltIn SubgroupSize
+    %void = OpTypeVoid
+    %voidfn = OpTypeFunction %void
+    %uint = OpTypeInt 32 0
+    %ptr = OpTypePointer Input %uint
+    %subgroup_size = OpVariable %ptr Input
+    %main = OpFunction %void None %voidfn
+    %entry = OpLabel
+    %copy = OpCopyObject %ptr %subgroup_size
+    %val = OpLoad %uint %copy Volatile
+    OpReturn
+    OpFunctionEnd
+  )";
+
+  CompileSuccessfully(text, SPV_ENV_VULKAN_1_1);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_1));
+}
+
+TEST_F(ValidateBuiltIns, VolatileSubgroupEqMaskAccessChainLoad) {
+  const std::string text = R"(
+    OpCapability Shader
+    OpCapability RayTracingKHR
+    OpCapability GroupNonUniformBallot
+    OpCapability VulkanMemoryModel
+    OpExtension "SPV_KHR_ray_tracing"
+    OpExtension "SPV_KHR_vulkan_memory_model"
+    OpMemoryModel Logical Vulkan
+    OpEntryPoint MissKHR %main "main" %mask
+    OpDecorate %mask BuiltIn SubgroupEqMask
+    %void = OpTypeVoid
+    %voidfn = OpTypeFunction %void
+    %uint = OpTypeInt 32 0
+    %uint_0 = OpConstant %uint 0
+    %v4uint = OpTypeVector %uint 4
+    %ptr_vec = OpTypePointer Input %v4uint
+    %ptr_uint = OpTypePointer Input %uint
+    %mask = OpVariable %ptr_vec Input
+    %main = OpFunction %void None %voidfn
+    %entry = OpLabel
+    %gep = OpAccessChain %ptr_uint %mask %uint_0
+    %val = OpLoad %uint %gep
+    OpReturn
+    OpFunctionEnd
+  )";
+
+  CompileSuccessfully(text, SPV_ENV_VULKAN_1_1);
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_VULKAN_1_1));
+  EXPECT_THAT(getDiagnosticString(),
+              AnyVUID("VUID-StandaloneSpirv-VulkanMemoryModel-04679"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("OpLoad must use a Volatile memory access"));
+}
+
+TEST_F(ValidateBuiltIns, VolatileSubgroupEqMaskAccessChainLoadGood) {
+  const std::string text = R"(
+    OpCapability Shader
+    OpCapability RayTracingKHR
+    OpCapability GroupNonUniformBallot
+    OpCapability VulkanMemoryModel
+    OpExtension "SPV_KHR_ray_tracing"
+    OpExtension "SPV_KHR_vulkan_memory_model"
+    OpMemoryModel Logical Vulkan
+    OpEntryPoint MissKHR %main "main" %mask
+    OpDecorate %mask BuiltIn SubgroupEqMask
+    %void = OpTypeVoid
+    %voidfn = OpTypeFunction %void
+    %uint = OpTypeInt 32 0
+    %uint_0 = OpConstant %uint 0
+    %v4uint = OpTypeVector %uint 4
+    %ptr_vec = OpTypePointer Input %v4uint
+    %ptr_uint = OpTypePointer Input %uint
+    %mask = OpVariable %ptr_vec Input
+    %main = OpFunction %void None %voidfn
+    %entry = OpLabel
+    %gep = OpAccessChain %ptr_uint %mask %uint_0
+    %val = OpLoad %uint %gep Volatile
+    OpReturn
+    OpFunctionEnd
+  )";
+
+  CompileSuccessfully(text, SPV_ENV_VULKAN_1_1);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_1));
+}
+
+// The pointer can be forwarded any number of times before it is loaded.
+TEST_F(ValidateBuiltIns, VolatileSubgroupEqMaskCopyObjectAccessChainLoad) {
+  const std::string text = R"(
+    OpCapability Shader
+    OpCapability RayTracingKHR
+    OpCapability GroupNonUniformBallot
+    OpCapability VulkanMemoryModel
+    OpExtension "SPV_KHR_ray_tracing"
+    OpExtension "SPV_KHR_vulkan_memory_model"
+    OpMemoryModel Logical Vulkan
+    OpEntryPoint MissKHR %main "main" %mask
+    OpDecorate %mask BuiltIn SubgroupEqMask
+    %void = OpTypeVoid
+    %voidfn = OpTypeFunction %void
+    %uint = OpTypeInt 32 0
+    %uint_0 = OpConstant %uint 0
+    %v4uint = OpTypeVector %uint 4
+    %ptr_vec = OpTypePointer Input %v4uint
+    %ptr_uint = OpTypePointer Input %uint
+    %mask = OpVariable %ptr_vec Input
+    %main = OpFunction %void None %voidfn
+    %entry = OpLabel
+    %copy = OpCopyObject %ptr_vec %mask
+    %gep = OpAccessChain %ptr_uint %copy %uint_0
+    %copy_gep = OpCopyObject %ptr_uint %gep
+    %val = OpLoad %uint %copy_gep
+    OpReturn
+    OpFunctionEnd
+  )";
+
+  CompileSuccessfully(text, SPV_ENV_VULKAN_1_1);
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_VULKAN_1_1));
+  EXPECT_THAT(getDiagnosticString(),
+              AnyVUID("VUID-StandaloneSpirv-VulkanMemoryModel-04679"));
+}
+
+// The built-in id used as an OpAccessChain index is not the pointer being
+// loaded, so it must not be traced.
+TEST_F(ValidateBuiltIns, VolatileSubgroupSizeUsedAsIndexGood) {
+  const std::string text = R"(
+    OpCapability Shader
+    OpCapability RayTracingKHR
+    OpCapability GroupNonUniform
+    OpCapability VulkanMemoryModel
+    OpExtension "SPV_KHR_ray_tracing"
+    OpExtension "SPV_KHR_vulkan_memory_model"
+    OpMemoryModel Logical Vulkan
+    OpEntryPoint CallableKHR %main "main" %subgroup_size
+    OpDecorate %subgroup_size BuiltIn SubgroupSize
+    OpDecorate %array ArrayStride 4
+    OpDecorate %block Block
+    OpMemberDecorate %block 0 Offset 0
+    OpDecorate %ssbo DescriptorSet 0
+    OpDecorate %ssbo Binding 0
+    %void = OpTypeVoid
+    %voidfn = OpTypeFunction %void
+    %uint = OpTypeInt 32 0
+    %uint_4 = OpConstant %uint 4
+    %uint_0 = OpConstant %uint 0
+    %array = OpTypeArray %uint %uint_4
+    %block = OpTypeStruct %array
+    %ptr_block = OpTypePointer StorageBuffer %block
+    %ptr_uint_sb = OpTypePointer StorageBuffer %uint
+    %ssbo = OpVariable %ptr_block StorageBuffer
+    %ptr = OpTypePointer Input %uint
+    %subgroup_size = OpVariable %ptr Input
+    %main = OpFunction %void None %voidfn
+    %entry = OpLabel
+    %size = OpLoad %uint %subgroup_size Volatile
+    %gep = OpAccessChain %ptr_uint_sb %ssbo %uint_0 %size
+    %val = OpLoad %uint %gep
+    OpReturn
+    OpFunctionEnd
+  )";
+
+  CompileSuccessfully(text, SPV_ENV_VULKAN_1_1);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_1));
+}
+
+// The BuiltIn is on the struct member, but the Volatile decoration belongs on
+// the variable declared with it.
+TEST_F(ValidateBuiltIns, VolatileBlockMemberMissingVolatileDecoration) {
+  const std::string text = R"(
+    OpCapability Shader
+    OpCapability RayTracingKHR
+    OpCapability ShaderSMBuiltinsNV
+    OpExtension "SPV_KHR_ray_tracing"
+    OpExtension "SPV_NV_shader_sm_builtins"
+    OpMemoryModel Logical GLSL450
+    OpEntryPoint ClosestHitKHR %main "main" %var
+    OpDecorate %block Block
+    OpMemberDecorate %block 0 BuiltIn SMIDNV
+    %void = OpTypeVoid
+    %voidfn = OpTypeFunction %void
+    %uint = OpTypeInt 32 0
+    %uint_0 = OpConstant %uint 0
+    %block = OpTypeStruct %uint
+    %ptr_block = OpTypePointer Input %block
+    %ptr_uint = OpTypePointer Input %uint
+    %var = OpVariable %ptr_block Input
+    %main = OpFunction %void None %voidfn
+    %entry = OpLabel
+    %gep = OpAccessChain %ptr_uint %var %uint_0
+    %val = OpLoad %uint %gep
+    OpReturn
+    OpFunctionEnd
+  )";
+
+  CompileSuccessfully(text, SPV_ENV_VULKAN_1_1);
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_VULKAN_1_1));
+  EXPECT_THAT(getDiagnosticString(),
+              AnyVUID("VUID-StandaloneSpirv-VulkanMemoryModel-04678"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("must also be decorated with Volatile"));
+}
+
+TEST_F(ValidateBuiltIns, VolatileBlockMemberWithVolatileDecorationGood) {
+  const std::string text = R"(
+    OpCapability Shader
+    OpCapability RayTracingKHR
+    OpCapability ShaderSMBuiltinsNV
+    OpExtension "SPV_KHR_ray_tracing"
+    OpExtension "SPV_NV_shader_sm_builtins"
+    OpMemoryModel Logical GLSL450
+    OpEntryPoint ClosestHitKHR %main "main" %var
+    OpDecorate %block Block
+    OpDecorate %var Volatile
+    OpMemberDecorate %block 0 BuiltIn SMIDNV
+    %void = OpTypeVoid
+    %voidfn = OpTypeFunction %void
+    %uint = OpTypeInt 32 0
+    %uint_0 = OpConstant %uint 0
+    %block = OpTypeStruct %uint
+    %ptr_block = OpTypePointer Input %block
+    %ptr_uint = OpTypePointer Input %uint
+    %var = OpVariable %ptr_block Input
+    %main = OpFunction %void None %voidfn
+    %entry = OpLabel
+    %gep = OpAccessChain %ptr_uint %var %uint_0
+    %val = OpLoad %uint %gep
+    OpReturn
+    OpFunctionEnd
+  )";
+
+  CompileSuccessfully(text, SPV_ENV_VULKAN_1_1);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_1));
 }
 
 }  // namespace

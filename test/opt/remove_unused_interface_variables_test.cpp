@@ -195,6 +195,7 @@ TEST_F(RemoveUnusedInterfaceVariablesTest,
 ; CHECK:                       OpEntryPoint Fragment %1 "main" %2
                                OpExecutionMode %1 OriginUpperLeft
                                OpDecorate %2 BuiltIn ResourceHeapEXT
+                               OpDecorateId %_runtimearr_type_buffer_ext ArrayStrideIdEXT %buffer_size
                        %uint = OpTypeInt 32 0
                       %float = OpTypeFloat 32
                     %v4float = OpTypeVector %float 4
@@ -206,6 +207,7 @@ TEST_F(RemoveUnusedInterfaceVariablesTest,
           %type_buffer_image = OpTypeImage %float Buffer 2 0 0 1 Rgba32f
         %type_buffer_image_0 = OpTypeImage %float Buffer 2 0 0 2 Rgba32f
             %type_buffer_ext = OpTypeBufferEXT StorageBuffer
+                %buffer_size = OpConstantSizeOfEXT %uint %type_buffer_ext
 %_runtimearr_type_buffer_ext = OpTypeRuntimeArray %type_buffer_ext
                           %2 = OpUntypedVariableKHR %type_untyped_pointer UniformConstant
                           %1 = OpFunction %void None %10

@@ -491,6 +491,10 @@ uint32_t SSARewriter::GetPhiArgument(const PhiCandidate* phi_candidate,
     arg_id = phi_user->copy_of();
   }
 
+  if (pass_->context()->id_overflow()) {
+    return 0;
+  }
+
   assert(false &&
          "No Phi candidates in the copy-of chain are ready to be generated");
 
@@ -669,15 +673,23 @@ Pass::Status SSARewriter::RewriteFunctionIntoSSA(Function* fp) {
         return true;
       });
 
-  if (!succeeded) {
+  if (!succeeded || pass_->context()->id_overflow()) {
     return Pass::Status::Failure;
   }
 
   // Remove trivial Phis and add arguments to incomplete Phis.
   FinalizePhiCandidates();
 
+  if (pass_->context()->id_overflow()) {
+    return Pass::Status::Failure;
+  }
+
   // Finally, apply all the replacements in the IR.
   bool modified = ApplyReplacements();
+
+  if (pass_->context()->id_overflow()) {
+    return Pass::Status::Failure;
+  }
 
 #if SSA_REWRITE_DEBUGGING_LEVEL > 0
   std::cerr << "\n\n\nFunction after SSA rewrite:\n"
@@ -696,12 +708,12 @@ Pass::Status SSARewritePass::Process() {
     }
     status =
         CombineStatus(status, SSARewriter(this).RewriteFunctionIntoSSA(&fn));
+    if (status == Status::Failure || context()->id_overflow()) {
+      return Status::Failure;
+    }
     // Kill DebugDeclares for target variables.
     for (auto var_id : seen_target_vars_) {
       context()->get_debug_info_mgr()->KillDebugDeclares(var_id);
-    }
-    if (status == Status::Failure) {
-      break;
     }
   }
   return status;

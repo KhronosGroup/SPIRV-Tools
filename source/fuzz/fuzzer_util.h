@@ -124,6 +124,9 @@ bool CanMakeSynonymOf(opt::IRContext* ir_context,
 // struct or vector.
 bool IsCompositeType(const opt::analysis::Type* type);
 
+// Returns true if and only if the given type is a 32-bit integer scalar type.
+bool Is32BitIntegerScalarType(const opt::analysis::Type* type);
+
 // Returns a vector containing the same elements as |repeated_field|.
 std::vector<uint32_t> RepeatedFieldToVector(
     const google::protobuf::RepeatedField<uint32_t>& repeated_field);
@@ -161,6 +164,11 @@ uint32_t GetNumberOfStructMembers(
 // 0 if there is not a static size.
 uint32_t GetArraySize(const opt::Instruction& array_type_instruction,
                       opt::IRContext* context);
+
+// Returns true if and only if |composite_type_inst| has a statically known
+// bound for indexing.
+bool HasStaticBoundForCompositeIndex(
+    const opt::Instruction& composite_type_inst);
 
 // Returns the bound for indexing into a composite of type
 // |composite_type_inst|, i.e. the number of fields of a struct, the size of an

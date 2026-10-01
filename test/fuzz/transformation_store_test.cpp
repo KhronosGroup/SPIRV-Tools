@@ -470,6 +470,7 @@ TEST(TransformationStoreTest, SupportAtomicStore) {
          %19 = OpConstant %26 0
          %18 = OpConstant %9 1
          %12 = OpConstant %6 0
+         %22 = OpConstantComposite %8 %12
          %13 = OpTypePointer StorageBuffer %6
          %15 = OpConstant %6 4
          %16 = OpConstant %6 7
@@ -494,7 +495,15 @@ TEST(TransformationStoreTest, SupportAtomicStore) {
 
   transformation_context.GetFactManager()->AddFactValueOfPointeeIsIrrelevant(
       14);
+  transformation_context.GetFactManager()->AddFactValueOfPointeeIsIrrelevant(
+      11);
 
+  // Bad: atomic stores require an integer or floating-point scalar pointee
+  // type; id 11 points to a struct.
+  ASSERT_FALSE(TransformationStore(
+                   11, true, 15, 20, 22,
+                   MakeInstructionDescriptor(24, spv::Op::OpAccessChain, 0))
+                   .IsApplicable(context.get(), transformation_context));
   // Bad: id 100 of memory scope instruction does not exist.
   ASSERT_FALSE(TransformationStore(
                    14, true, 100, 20, 21,
@@ -603,6 +612,7 @@ TEST(TransformationStoreTest, SupportAtomicStore) {
          %19 = OpConstant %26 0
          %18 = OpConstant %9 1
          %12 = OpConstant %6 0
+         %22 = OpConstantComposite %8 %12
          %13 = OpTypePointer StorageBuffer %6
          %15 = OpConstant %6 4
          %16 = OpConstant %6 7

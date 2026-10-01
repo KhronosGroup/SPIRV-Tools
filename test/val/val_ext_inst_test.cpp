@@ -60,6 +60,7 @@ using ValidateOpenCLStdFractLike = spvtest::ValidateBase<std::string>;
 using ValidateOpenCLStdFrexpLike = spvtest::ValidateBase<std::string>;
 using ValidateOpenCLStdLdexpLike = spvtest::ValidateBase<std::string>;
 using ValidateOpenCLStdUpsampleLike = spvtest::ValidateBase<std::string>;
+using ValidateArmExperimentalMLOperations = spvtest::ValidateBase<bool>;
 using ValidateClspvReflection = spvtest::ValidateBase<bool>;
 
 // Returns number of components in Pack/Unpack extended instructions.
@@ -6363,6 +6364,108 @@ INSTANTIATE_TEST_SUITE_P(AllUpsampleLike, ValidateOpenCLStdUpsampleLike,
                              "s_upsample",
                          }));
 
+TEST_F(ValidateArmExperimentalMLOperations, ValidVersion) {
+  const std::string text = R"(
+OpCapability Shader
+OpCapability Linkage
+%1 = OpExtInstImport "Arm.ExperimentalMLOperations.1"
+OpMemoryModel Logical GLSL450
+)";
+
+  CompileSuccessfully(text);
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+TEST_F(ValidateArmExperimentalMLOperations, MissingVersion) {
+  const std::string text = R"(
+OpCapability Shader
+OpCapability Linkage
+%1 = OpExtInstImport "Arm.ExperimentalMLOperations."
+OpMemoryModel Logical GLSL450
+)";
+
+  CompileSuccessfully(text);
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Missing Arm.ExperimentalMLOperations import version"));
+}
+
+TEST_F(ValidateArmExperimentalMLOperations, BadVersion0) {
+  const std::string text = R"(
+OpCapability Shader
+OpCapability Linkage
+%1 = OpExtInstImport "Arm.ExperimentalMLOperations.0"
+OpMemoryModel Logical GLSL450
+)";
+
+  CompileSuccessfully(text);
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Unknown Arm.ExperimentalMLOperations import version"));
+}
+
+TEST_F(ValidateArmExperimentalMLOperations, BadVersionNotANumber) {
+  const std::string text = R"(
+OpCapability Shader
+OpCapability Linkage
+%1 = OpExtInstImport "Arm.ExperimentalMLOperations.1a"
+OpMemoryModel Logical GLSL450
+)";
+
+  CompileSuccessfully(text);
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Arm.ExperimentalMLOperations import does not encode "
+                        "the version correctly"));
+}
+
+TEST_F(ValidateArmExperimentalMLOperations, UnsupportedVersion) {
+  const std::string text = R"(
+OpCapability Shader
+OpCapability Linkage
+%1 = OpExtInstImport "Arm.ExperimentalMLOperations.2"
+OpMemoryModel Logical GLSL450
+)";
+
+  CompileSuccessfully(text);
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Unknown Arm.ExperimentalMLOperations import version"));
+}
+
+TEST_F(ValidateArmExperimentalMLOperations, ValidCallInstruction) {
+  const std::string text = R"(
+OpCapability Shader
+OpCapability VulkanMemoryModel
+OpCapability Int8
+OpCapability GraphARM
+OpCapability TensorsARM
+OpExtension "SPV_ARM_graph"
+OpExtension "SPV_ARM_tensors"
+%ext = OpExtInstImport "Arm.ExperimentalMLOperations.1"
+OpMemoryModel Logical Vulkan
+OpDecorate %var_tensor DescriptorSet 0
+OpDecorate %var_tensor Binding 0
+%uint = OpTypeInt 32 0
+%int8 = OpTypeInt 8 1
+%uint_0 = OpConstant %uint 0
+%uint_4 = OpConstant %uint 4
+%tensor = OpTypeTensorARM %int8 %uint_4
+%ptr_tensor = OpTypePointer UniformConstant %tensor
+%var_tensor = OpVariable %ptr_tensor UniformConstant
+%graph_type = OpTypeGraphARM 1 %tensor %tensor
+OpGraphEntryPointARM %graph "main" %var_tensor %var_tensor
+%graph = OpGraphARM %graph_type
+%input = OpGraphInputARM %tensor %uint_0
+%call = OpExtInst %tensor %ext CALL 42 %input
+OpGraphSetOutputARM %call %uint_0
+OpGraphEndARM
+)";
+
+  CompileSuccessfully(text, SPV_ENV_VULKAN_1_3);
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_3));
+}
+
 TEST_F(ValidateClspvReflection, RequiresNonSemanticExtension) {
   const std::string text = R"(
 OpCapability Shader
@@ -7963,6 +8066,82 @@ OpMemoryModel Logical GLSL450
 )";
   CompileSuccessfully(text);
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+TEST_F(ValidateExtInst, NonSemanticDebugPrintfGood) {
+  const std::string text = R"(
+OpCapability Shader
+OpExtension "SPV_KHR_non_semantic_info"
+%1 = OpExtInstImport "NonSemantic.DebugPrintf"
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %main "main"
+OpExecutionMode %main LocalSize 1 1 1
+%fmt = OpString "value: %d"
+%void = OpTypeVoid
+%4 = OpTypeFunction %void
+%int = OpTypeInt 32 1
+%int_1 = OpConstant %int 1
+%main = OpFunction %void None %4
+%6 = OpLabel
+%10 = OpExtInst %void %1 DebugPrintf %fmt %int_1
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(text);
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+TEST_F(ValidateExtInst, NonSemanticDebugPrintfFormat) {
+  const std::string text = R"(
+OpCapability Shader
+OpExtension "SPV_KHR_non_semantic_info"
+%9 = OpExtInstImport "NonSemantic.DebugPrintf"
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %main "main"
+OpExecutionMode %main LocalSize 1 1 1
+%void = OpTypeVoid
+%4 = OpTypeFunction %void
+%int = OpTypeInt 32 1
+%int_1 = OpConstant %int 1
+%main = OpFunction %void None %4
+%6 = OpLabel
+%10 = OpExtInst %void %9 DebugPrintf %int_1
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(text);
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("DebugPrintf: expected "
+                        "operand Format must be a result id of OpString"));
+}
+
+TEST_F(ValidateExtInst, NonSemanticDebugPrintfResultType) {
+  const std::string text = R"(
+OpCapability Shader
+OpExtension "SPV_KHR_non_semantic_info"
+%1 = OpExtInstImport "NonSemantic.DebugPrintf"
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %main "main"
+OpExecutionMode %main LocalSize 1 1 1
+%fmt = OpString "value: %d"
+%void = OpTypeVoid
+%4 = OpTypeFunction %void
+%int = OpTypeInt 32 1
+%main = OpFunction %void None %4
+%6 = OpLabel
+%10 = OpExtInst %int %1 DebugPrintf %fmt
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(text);
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("DebugPrintf: expected "
+                        "result type must be a result id of OpTypeVoid"));
 }
 
 }  // namespace

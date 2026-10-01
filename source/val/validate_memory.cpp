@@ -1,6 +1,7 @@
 // Copyright (c) 2018 Google LLC.
 // Modifications Copyright (C) 2020-2024 Advanced Micro Devices, Inc. All
 // rights reserved.
+// Copyright (C) 2026 Qualcomm Technologies, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -246,6 +247,8 @@ int MemoryAccessNumWords(uint32_t mask) {
   if (mask & uint32_t(spv::MemoryAccessMask::Aligned)) ++result;
   if (mask & uint32_t(spv::MemoryAccessMask::MakePointerAvailableKHR)) ++result;
   if (mask & uint32_t(spv::MemoryAccessMask::MakePointerVisibleKHR)) ++result;
+  if (mask & uint32_t(spv::MemoryAccessMask::AliasScopeINTELMask)) ++result;
+  if (mask & uint32_t(spv::MemoryAccessMask::NoAliasINTELMask)) ++result;
   return result;
 }
 
@@ -613,6 +616,15 @@ spv_result_t ValidateVariableStorageClass(ValidationState_t& _,
     return _.diag(SPV_ERROR_INVALID_ID, inst)
            << "PhysicalStorageBuffer must not be used with OpVariable.";
   }
+
+  if (storage_class == spv::StorageClass::TileAttachmentQCOM &&
+      !_.HasCapability(spv::Capability::TileShadingQCOM)) {
+    return _.diag(SPV_ERROR_INVALID_CAPABILITY, inst)
+           << _.VkErrorID(10689)
+           << "the TileAttachmentQCOM storage class variable requires "
+              "TileShadingQCOM capability enabled.";
+  }
+
   return SPV_SUCCESS;
 }
 
@@ -674,6 +686,7 @@ spv_result_t ValidateVariablePointer(ValidationState_t& _,
       }
     }
   }
+
   return SPV_SUCCESS;
 }
 
@@ -1064,6 +1077,25 @@ spv_result_t ValidateVariableShader(ValidationState_t& _,
              << sc_name << " storage class requires an additional capability";
     }
   }
+
+  if (_.ContainsOCPMicroscalingNonByteType(value_id)) {
+    auto underlying_type = value_type;
+    auto sc = storage_class;
+    while (underlying_type &&
+           underlying_type->opcode() == spv::Op::OpTypePointer) {
+      sc = underlying_type->GetOperandAs<spv::StorageClass>(1u);
+      underlying_type = _.FindDef(underlying_type->GetOperandAs<uint32_t>(2u));
+    }
+    if (sc != spv::StorageClass::Function && sc != spv::StorageClass::Private) {
+      std::string sc_name = _.grammar().lookupOperandName(
+          SPV_OPERAND_TYPE_STORAGE_CLASS, uint32_t(sc));
+      return _.diag(SPV_ERROR_INVALID_ID, inst)
+             << "Cannot allocate a variable containing a Float4EXT or "
+                "Float6EXT type in "
+             << sc_name << " storage class";
+    }
+  }
+
   return SPV_SUCCESS;
 }
 
@@ -1076,6 +1108,7 @@ spv_result_t ValidateVariableTileShadingQCOM(ValidationState_t& _,
       spv::Dim dim = static_cast<spv::Dim>(pointee_type->word(3));
       if (dim != spv::Dim::Dim2D) {
         return _.diag(SPV_ERROR_INVALID_DATA, inst)
+               << _.VkErrorID(10693)
                << "Any OpTypeImage variable in the TileAttachmentQCOM "
                   "Storage Class must "
                   "have 2D as its dimension";
@@ -1083,7 +1116,8 @@ spv_result_t ValidateVariableTileShadingQCOM(ValidationState_t& _,
       unsigned sampled = pointee_type->word(7);
       if (sampled != 1 && sampled != 2) {
         return _.diag(SPV_ERROR_INVALID_DATA, inst)
-               << "Any OpyTpeImage variable in the TileAttachmentQCOM "
+               << _.VkErrorID(10694)
+               << "Any OpTypeImage variable in the TileAttachmentQCOM "
                   "Storage Class must "
                   "have 1 or 2 as Image 'Sampled' parameter";
       }
@@ -1101,6 +1135,7 @@ spv_result_t ValidateVariableTileShadingQCOM(ValidationState_t& _,
               case spv::Op::OpImageQueryLevels:
               case spv::Op::OpImageQuerySamples:
                 return _.diag(SPV_ERROR_INVALID_DATA, inst)
+                       << _.VkErrorID(10697)
                        << "Any variable in the TileAttachmentQCOM Storage "
                           "Class must "
                           "not be consumed by an OpImageQuery* instruction";
@@ -1116,16 +1151,50 @@ spv_result_t ValidateVariableTileShadingQCOM(ValidationState_t& _,
   if (!(_.HasDecoration(inst->id(), spv::Decoration::DescriptorSet) &&
         _.HasDecoration(inst->id(), spv::Decoration::Binding))) {
     return _.diag(SPV_ERROR_INVALID_ID, inst)
+           << _.VkErrorID(10695)
            << "Any variable in the TileAttachmentQCOM Storage Class must "
               "be decorated with DescriptorSet and Binding";
   }
   if (_.HasDecoration(inst->id(), spv::Decoration::Component)) {
     return _.diag(SPV_ERROR_INVALID_ID, inst)
+           << _.VkErrorID(10696)
            << "Any variable in the TileAttachmentQCOM Storage Class must "
               "not be decorated with Component decoration";
   }
 
   return SPV_SUCCESS;
+}
+
+spv_result_t ValidateVariableTileImageEXT(ValidationState_t& _,
+                                          const Instruction* inst) {
+  bool is_valid_decl = true;
+
+  auto result_type = _.FindDef(inst->type_id());
+  if (result_type->opcode() == spv::Op::OpTypePointer) {
+    auto pointee_type = _.FindDef(result_type->GetOperandAs<uint32_t>(2));
+
+    while (pointee_type && pointee_type->opcode() == spv::Op::OpTypeArray) {
+      pointee_type = _.FindDef(pointee_type->GetOperandAs<uint32_t>(1));
+    }
+
+    if (pointee_type && pointee_type->opcode() == spv::Op::OpTypeImage) {
+      spv::Dim dim = static_cast<spv::Dim>(pointee_type->word(3));
+      if (dim != spv::Dim::TileImageDataEXT) {
+        is_valid_decl = false;
+      }
+    } else {
+      is_valid_decl = false;
+    }
+  }
+
+  if (!is_valid_decl) {
+    return _.diag(SPV_ERROR_INVALID_DATA, inst)
+           << _.VkErrorID(8724)
+           << "The TileImageEXT Storage Class must only be used for declaring "
+              "tile image variables";
+  } else {
+    return SPV_SUCCESS;
+  }
 }
 
 spv_result_t ValidateVariable(ValidationState_t& _, const Instruction* inst) {
@@ -1246,6 +1315,11 @@ spv_result_t ValidateVariable(ValidationState_t& _, const Instruction* inst) {
     if (auto error = ValidateVariableTileShadingQCOM(_, inst)) return error;
   }
 
+  if (_.HasCapability(spv::Capability::TileImageColorReadAccessEXT) &&
+      storage_class == spv::StorageClass::TileImageEXT) {
+    if (auto error = ValidateVariableTileImageEXT(_, inst)) return error;
+  }
+
   return SPV_SUCCESS;
 }
 
@@ -1338,50 +1412,65 @@ spv_result_t ValidateLoad(ValidationState_t& _, const Instruction* inst) {
 
   // EXT_descriptor_heap
   if (spvIsVulkanEnv(_.context()->target_env) &&
-      _.IsDescriptorHeapBaseVariable(_.FindDef(pointer_id))) {
-    auto descBaseVariable = _.FindUntypedBaseVariable(_.FindDef(pointer_id));
-    auto descBaseVariableId = descBaseVariable->id();
-    if (!_.HasDecoration(descBaseVariableId, spv::Decoration::DescriptorSet) &&
-        !_.HasDecoration(descBaseVariableId, spv::Decoration::Binding)) {
-      switch (result_type->opcode()) {
-        case spv::Op::OpTypeSampler:
-          if (!_.IsBuiltin(descBaseVariableId, spv::BuiltIn::SamplerHeapEXT)) {
-            return _.diag(SPV_ERROR_INVALID_ID, inst)
-                   << _.VkErrorID(11336)
-                   << "OpTypeSampler pointer instruction has no descriptor set "
-                   << "or binding and is not derived from a variable decorated "
-                      "with "
-                      "SamplerHeapEXT";
+      (result_type->opcode() == spv::Op::OpTypeSampler ||
+       result_type->opcode() == spv::Op::OpTypeImage ||
+       result_type->opcode() == spv::Op::OpTypeAccelerationStructureKHR)) {
+    if (_.IsDescriptorHeapBaseVariable(_.FindDef(pointer_id))) {
+      if (auto descBaseVariable =
+              _.FindUntypedBaseVariable(_.FindDef(pointer_id))) {
+        auto descBaseVariableId = descBaseVariable->id();
+        if (!_.HasDecoration(descBaseVariableId,
+                             spv::Decoration::DescriptorSet) &&
+            !_.HasDecoration(descBaseVariableId, spv::Decoration::Binding)) {
+          switch (result_type->opcode()) {
+            case spv::Op::OpTypeSampler:
+              if (!_.IsBuiltin(descBaseVariableId,
+                               spv::BuiltIn::SamplerHeapEXT)) {
+                return _.diag(SPV_ERROR_INVALID_ID, inst)
+                       << _.VkErrorID(11336)
+                       << "OpTypeSampler pointer instruction has no descriptor "
+                          "set "
+                       << "or binding and is not derived from a variable "
+                          "decorated "
+                          "with "
+                          "SamplerHeapEXT";
+              }
+              break;
+            case spv::Op::OpTypeImage:
+              if (!_.IsBuiltin(descBaseVariableId,
+                               spv::BuiltIn::ResourceHeapEXT)) {
+                return _.diag(SPV_ERROR_INVALID_ID, inst)
+                       << _.VkErrorID(11337)
+                       << "OpTypeImage pointer instruction has no descriptor "
+                          "set "
+                       << "or binding and is not derived from a variable "
+                          "decorated "
+                          "with "
+                          "ResourceHeapEXT";
+              }
+              break;
+            case spv::Op::OpTypeAccelerationStructureKHR:
+              uint32_t data_type;
+              spv::StorageClass sc;
+              if (_.GetPointerTypeInfo(descBaseVariable->type_id(), &data_type,
+                                       &sc) &&
+                  sc != spv::StorageClass::Private &&
+                  sc != spv::StorageClass::Function &&
+                  !_.IsBuiltin(descBaseVariableId,
+                               spv::BuiltIn::ResourceHeapEXT)) {
+                return _.diag(SPV_ERROR_INVALID_ID, inst)
+                       << _.VkErrorID(11339)
+                       << "OpTypeAccelerationStructureKHR pointer instruction "
+                          "has "
+                          "no "
+                       << "descriptor set or binding and is not derived from a "
+                          "variable decorated with ResourceHeapEXT";
+              }
+              break;
+            default:
+              break;
           }
-          break;
-        case spv::Op::OpTypeImage:
-          if (!_.IsBuiltin(descBaseVariableId, spv::BuiltIn::ResourceHeapEXT)) {
-            return _.diag(SPV_ERROR_INVALID_ID, inst)
-                   << _.VkErrorID(11337)
-                   << "OpTypeImage pointer instruction has no descriptor set "
-                   << "or binding and is not derived from a variable decorated "
-                      "with "
-                      "ResourceHeapEXT";
-          }
-          break;
-        case spv::Op::OpTypeAccelerationStructureKHR:
-          uint32_t data_type;
-          spv::StorageClass sc;
-          if (_.GetPointerTypeInfo(descBaseVariable->type_id(), &data_type,
-                                   &sc) &&
-              sc != spv::StorageClass::Private &&
-              sc != spv::StorageClass::Function &&
-              !_.IsBuiltin(descBaseVariableId, spv::BuiltIn::ResourceHeapEXT)) {
-            return _.diag(SPV_ERROR_INVALID_ID, inst)
-                   << _.VkErrorID(11339)
-                   << "OpTypeAccelerationStructureKHR pointer instruction has "
-                      "no "
-                   << "descriptor set or binding and is not derived from a "
-                      "variable decorated with ResourceHeapEXT";
-          }
-          break;
-        default:
-          break;
+        }
       }
     }
   }
@@ -2347,7 +2436,7 @@ spv_result_t ValidateArrayLength(ValidationState_t& state,
       return state.diag(SPV_ERROR_INVALID_ID, inst)
              << "Pointer must be an untyped pointer object";
     }
-  } else if (pointer_ty->opcode() != spv::Op::OpTypePointer) {
+  } else if (!pointer_ty || pointer_ty->opcode() != spv::Op::OpTypePointer) {
     return state.diag(SPV_ERROR_INVALID_ID, inst)
            << "The Structure's type in Op" << spvOpcodeString(opcode)
            << " <id> " << state.getIdName(inst->id())
@@ -2429,6 +2518,41 @@ spv_result_t ValidateCooperativeMatrixLength(ValidationState_t& state,
            << "The type in Op" << spvOpcodeString(opcode) << " <id> "
            << state.getIdName(type_id) << " must be OpTypeCooperativeMatrixNV.";
   }
+  return SPV_SUCCESS;
+}
+
+spv_result_t ValidateCooperativeMatrixGetCoordinateEXT(
+    ValidationState_t& state, const Instruction* inst) {
+  std::string instr_name = "OpCooperativeMatrixGetCoordinateEXT";
+
+  // Result type must be a uvec2
+  if (!state.IsIntVectorType(inst->type_id(), 32, 2)) {
+    return state.diag(SPV_ERROR_INVALID_ID, inst)
+           << instr_name << " Result Type <id> "
+           << state.getIdName(inst->type_id())
+           << " must be OpTypeVector with two 32-bit integer components.";
+  }
+
+  // Matrix operand must be a cooperative matrix
+  auto matrix_type_id =
+      state.FindDef(inst->GetOperandAs<uint32_t>(2))->type_id();
+  if (!state.IsCooperativeMatrixKHRType(matrix_type_id)) {
+    return state.diag(SPV_ERROR_INVALID_ID, inst)
+           << instr_name << " Matrix <id> "
+           << state.getIdName(inst->GetOperandAs<uint32_t>(2))
+           << " must be OpTypeCooperativeMatrixKHR.";
+  }
+
+  // Index operand must be a 32-bit int.
+  auto index_type_id =
+      state.FindDef(inst->GetOperandAs<uint32_t>(3))->type_id();
+  if (!state.IsIntScalarType(index_type_id, 32)) {
+    return state.diag(SPV_ERROR_INVALID_ID, inst)
+           << instr_name << " Index <id> "
+           << state.getIdName(inst->GetOperandAs<uint32_t>(3))
+           << " must be OpTypeInt with width 32.";
+  }
+
   return SPV_SUCCESS;
 }
 
@@ -2736,21 +2860,29 @@ spv_result_t ValidateCooperativeMatrixLoadStoreKHR(ValidationState_t& _,
 
 spv_result_t ValidateBufferPointerEXT(ValidationState_t& _,
                                       const Instruction* inst) {
-  const auto storage_class_ptr = _.FindDef(inst->GetOperandAs<uint32_t>(0));
+  const auto storage_class_ptr = _.FindDef(inst->type_id());
   if (storage_class_ptr->opcode() != spv::Op::OpTypeUntypedPointerKHR &&
       storage_class_ptr->opcode() != spv::Op::OpTypePointer) {
     return _.diag(SPV_ERROR_INVALID_ID, inst)
            << "OpBufferPointerEXT's Result Type should be "
            << "a pointer type.";
-  } else {
-    // Buffer operand
-    auto buffer =
-        _.FindUntypedBaseVariable(_.FindDef(inst->GetOperandAs<uint32_t>(2)));
-    if (!_.IsBuiltin(buffer->id(), spv::BuiltIn::ResourceHeapEXT)) {
-      return _.diag(SPV_ERROR_INVALID_ID, inst)
-             << "OpBufferPointerEXT's buffer must be an untyped pointer"
-             << " into a variable declared with the ResourceHeapEXT built-in";
-    }
+  }
+
+  auto sc = storage_class_ptr->GetOperandAs<spv::StorageClass>(1u);
+  if (sc != spv::StorageClass::StorageBuffer &&
+      sc != spv::StorageClass::Uniform) {
+    return _.diag(SPV_ERROR_INVALID_ID, inst)
+           << "OpBufferPointerEXT Result Type must be a pointer type "
+           << "with a Storage Class of Uniform or StorageBuffer.";
+  }
+
+  // Buffer operand
+  auto buffer =
+      _.FindUntypedBaseVariable(_.FindDef(inst->GetOperandAs<uint32_t>(2)));
+  if (!buffer || !_.IsBuiltin(buffer->id(), spv::BuiltIn::ResourceHeapEXT)) {
+    return _.diag(SPV_ERROR_INVALID_ID, inst)
+           << "OpBufferPointerEXT's buffer must be an untyped pointer"
+           << " into a variable declared with the ResourceHeapEXT built-in";
   }
   return SPV_SUCCESS;
 }
@@ -2763,6 +2895,9 @@ int TensorAddressingOperandsNumWords(spv::TensorAddressingOperandsMask mask) {
       spv::TensorAddressingOperandsMask::MaskNone)
     ++result;
   if ((mask & spv::TensorAddressingOperandsMask::DecodeFunc) !=
+      spv::TensorAddressingOperandsMask::MaskNone)
+    ++result;
+  if ((mask & spv::TensorAddressingOperandsMask::DecodeVectorFunc) !=
       spv::TensorAddressingOperandsMask::MaskNone)
     ++result;
   return result;
@@ -2893,32 +3028,74 @@ spv_result_t ValidateCooperativeMatrixLoadStoreTensorNV(
     tensor_operand_index++;
   }
 
-  if ((tensor_operands & spv::TensorAddressingOperandsMask::DecodeFunc) !=
-      spv::TensorAddressingOperandsMask::MaskNone) {
+  const bool has_decode_func =
+      (tensor_operands & spv::TensorAddressingOperandsMask::DecodeFunc) !=
+      spv::TensorAddressingOperandsMask::MaskNone;
+  const bool has_decode_vector_func =
+      (tensor_operands & spv::TensorAddressingOperandsMask::DecodeVectorFunc) !=
+      spv::TensorAddressingOperandsMask::MaskNone;
+
+  if (has_decode_func || has_decode_vector_func) {
     if (inst->opcode() == spv::Op::OpCooperativeMatrixStoreTensorNV) {
       return _.diag(SPV_ERROR_INVALID_ID, inst)
-             << "OpCooperativeMatrixStoreTensorNV does not support DecodeFunc.";
+             << "OpCooperativeMatrixStoreTensorNV does not support DecodeFunc "
+                "or DecodeVectorFunc.";
     }
-    const auto decode_func_id =
-        inst->GetOperandAs<uint32_t>(tensor_operand_index);
+  }
+
+  const auto component_type_index = 1;
+  const auto component_type_id =
+      matrix_type->GetOperandAs<uint32_t>(component_type_index);
+  const auto tensor_layout_type = _.FindDef(tensor_layout->type_id());
+
+  // Validate one decode-function operand (scalar DecodeFunc or vector
+  // DecodeVectorFunc). `expect_vector` selects which return-type rule to
+  // enforce.
+  auto validate_decode_function = [&](uint32_t decode_func_id,
+                                      const char* operand_name,
+                                      bool expect_vector) -> spv_result_t {
     const auto decode_func = _.FindDef(decode_func_id);
 
     if (!decode_func || decode_func->opcode() != spv::Op::OpFunction) {
       return _.diag(SPV_ERROR_INVALID_ID, inst)
-             << opname << " DecodeFunc <id> " << _.getIdName(decode_func_id)
-             << " is not a function.";
+             << opname << " " << operand_name << " <id> "
+             << _.getIdName(decode_func_id) << " is not a function.";
     }
-
-    const auto component_type_index = 1;
-    const auto component_type_id =
-        matrix_type->GetOperandAs<uint32_t>(component_type_index);
 
     const auto function_type =
         _.FindDef(decode_func->GetOperandAs<uint32_t>(3));
-    if (function_type->GetOperandAs<uint32_t>(1) != component_type_id) {
-      return _.diag(SPV_ERROR_INVALID_ID, inst)
-             << opname << " DecodeFunc <id> " << _.getIdName(decode_func_id)
-             << " return type must match matrix component type.";
+    const auto return_type_id = function_type->GetOperandAs<uint32_t>(1);
+    const auto return_type = _.FindDef(return_type_id);
+    const bool return_is_scalar_match = (return_type_id == component_type_id);
+    const bool return_is_vector = _.IsVectorType(return_type_id);
+    const uint32_t return_vec_component_type_id =
+        return_is_vector ? return_type->GetOperandAs<uint32_t>(1) : 0;
+
+    if (!expect_vector) {
+      if (!return_is_scalar_match) {
+        return _.diag(SPV_ERROR_INVALID_ID, inst)
+               << opname << " " << operand_name << " <id> "
+               << _.getIdName(decode_func_id)
+               << " return type must match matrix component type.";
+      }
+    } else {
+      if (!return_is_vector ||
+          return_vec_component_type_id != component_type_id) {
+        return _.diag(SPV_ERROR_INVALID_ID, inst)
+               << opname << " " << operand_name << " <id> "
+               << _.getIdName(decode_func_id)
+               << " return type must be a vector of the matrix component "
+                  "type.";
+      }
+      // GetDimension returns 0 for OpTypeVectorIdEXT whose count is a
+      // spec constant; skip the static check in that case.
+      const uint32_t v = _.GetDimension(return_type_id);
+      if (v != 0 && v != 2 && v != 4 && v != 8) {
+        return _.diag(SPV_ERROR_INVALID_ID, inst)
+               << opname << " " << operand_name << " <id> "
+               << _.getIdName(decode_func_id)
+               << " return vector length must be 2, 4, or 8.";
+      }
     }
 
     const auto decode_ptr_type_id = function_type->GetOperandAs<uint32_t>(2);
@@ -2928,21 +3105,20 @@ spv_result_t ValidateCooperativeMatrixLoadStoreTensorNV(
 
     if (decode_storage_class != spv::StorageClass::PhysicalStorageBuffer) {
       return _.diag(SPV_ERROR_INVALID_ID, inst)
-             << opname << " DecodeFunc <id> " << _.getIdName(decode_func_id)
+             << opname << " " << operand_name << " <id> "
+             << _.getIdName(decode_func_id)
              << " first parameter must be pointer to PhysicalStorageBuffer.";
     }
-
-    const auto tensor_layout_type = _.FindDef(tensor_layout->type_id());
 
     for (uint32_t param = 3; param < 5; ++param) {
       const auto param_type_id = function_type->GetOperandAs<uint32_t>(param);
       const auto param_type = _.FindDef(param_type_id);
       if (param_type->opcode() != spv::Op::OpTypeArray) {
         return _.diag(SPV_ERROR_INVALID_ID, inst)
-               << opname << " DecodeFunc <id> " << _.getIdName(decode_func_id)
+               << opname << " " << operand_name << " <id> "
+               << _.getIdName(decode_func_id)
                << " second/third parameter must be array of 32-bit integer "
-                  "with "
-               << " dimension equal to the tensor dimension.";
+                  "with dimension equal to the tensor dimension.";
       }
       const auto length_index = 2u;
       uint64_t array_length;
@@ -2955,14 +3131,41 @@ spv_result_t ValidateCooperativeMatrixLoadStoreTensorNV(
         if (_.EvalConstantValUint64(tensor_layout_dim_id, &dim_value)) {
           if (array_length != dim_value) {
             return _.diag(SPV_ERROR_INVALID_ID, inst)
-                   << opname << " DecodeFunc <id> "
+                   << opname << " " << operand_name << " <id> "
                    << _.getIdName(decode_func_id)
                    << " second/third parameter must be array of 32-bit integer "
-                      "with "
-                   << " dimension equal to the tensor dimension.";
+                      "with dimension equal to the tensor dimension.";
           }
         }
       }
+    }
+
+    return SPV_SUCCESS;
+  };
+
+  if (has_decode_func) {
+    const uint32_t decode_func_id =
+        inst->GetOperandAs<uint32_t>(tensor_operand_index);
+    if (auto error = validate_decode_function(decode_func_id, "DecodeFunc",
+                                              /*expect_vector=*/false)) {
+      return error;
+    }
+    tensor_operand_index++;
+  }
+
+  if (has_decode_vector_func) {
+    if (!has_decode_func) {
+      return _.diag(SPV_ERROR_INVALID_ID, inst)
+             << opname
+             << " DecodeVectorFunc requires DecodeFunc to also be specified.";
+    }
+
+    const uint32_t decode_vector_func_id =
+        inst->GetOperandAs<uint32_t>(tensor_operand_index);
+    if (auto error =
+            validate_decode_function(decode_vector_func_id, "DecodeVectorFunc",
+                                     /*expect_vector=*/true)) {
+      return error;
     }
 
     tensor_operand_index++;
@@ -3665,6 +3868,8 @@ spv_result_t MemoryPass(ValidationState_t& _, const Instruction* inst) {
       return ValidateCooperativeMatrixLength(_, inst, true);
     case spv::Op::OpCooperativeMatrixLengthNV:
       return ValidateCooperativeMatrixLength(_, inst, false);
+    case spv::Op::OpCooperativeMatrixGetCoordinateEXT:
+      return ValidateCooperativeMatrixGetCoordinateEXT(_, inst);
     case spv::Op::OpCooperativeMatrixLoadKHR:
     case spv::Op::OpCooperativeMatrixStoreKHR:
       return ValidateCooperativeMatrixLoadStoreKHR(_, inst);

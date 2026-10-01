@@ -289,8 +289,11 @@ Pass::Status InterfaceVariableScalarReplacement::ReplaceInterfaceVarWith(
       if (status == Status::Failure) {
         return Status::Failure;
       }
-      AddComponentsToCompositesForLoads(loads_to_component_values,
-                                        &loads_to_composites, 0);
+      if (AddComponentsToCompositesForLoads(loads_to_component_values,
+                                            &loads_to_composites,
+                                            0) == Status::Failure) {
+        return Status::Failure;
+      }
     }
   } else {
     Status status = ReplaceComponentsOfInterfaceVarWith(
@@ -383,12 +386,18 @@ InterfaceVariableScalarReplacement::ReplaceMultipleComponentsOfInterfaceVarWith(
 
     uint32_t depth_to_component =
         static_cast<uint32_t>(interface_var_component_indices.size());
-    AddComponentsToCompositesForLoads(
-        loads_for_access_chain_to_component_values,
-        loads_for_access_chain_to_composites, depth_to_component);
+    if (AddComponentsToCompositesForLoads(
+            loads_for_access_chain_to_component_values,
+            loads_for_access_chain_to_composites,
+            depth_to_component) == Status::Failure) {
+      return Status::Failure;
+    }
     if (extra_array_index) ++depth_to_component;
-    AddComponentsToCompositesForLoads(loads_to_component_values,
-                                      loads_to_composites, depth_to_component);
+    if (AddComponentsToCompositesForLoads(
+            loads_to_component_values, loads_to_composites,
+            depth_to_component) == Status::Failure) {
+      return Status::Failure;
+    }
   }
   return Status::SuccessWithChange;
 }
@@ -746,6 +755,9 @@ void InterfaceVariableScalarReplacement::
     ptr = CreateAccessChainToVar(component_type_id, scalar_var,
                                  access_chain_indices, insert_before,
                                  &component_type_id);
+    if (ptr == nullptr) {
+      return;
+    }
   }
 
   StoreComponentOfValueTo(component_type_id, value_id, component_indices, ptr,
@@ -803,7 +815,8 @@ InterfaceVariableScalarReplacement::CreateCompositeConstructForComponentOfLoad(
   return composite_construct;
 }
 
-void InterfaceVariableScalarReplacement::AddComponentsToCompositesForLoads(
+Pass::Status
+InterfaceVariableScalarReplacement::AddComponentsToCompositesForLoads(
     const std::unordered_map<Instruction*, Instruction*>&
         loads_to_component_values,
     std::unordered_map<Instruction*, Instruction*>* loads_to_composites,
@@ -818,8 +831,7 @@ void InterfaceVariableScalarReplacement::AddComponentsToCompositesForLoads(
       composite_construct =
           CreateCompositeConstructForComponentOfLoad(load, depth_to_component);
       if (composite_construct == nullptr) {
-        assert(false && "Could not create composite construct");
-        return;
+        return Pass::Status::Failure;
       }
       loads_to_composites->insert({load, composite_construct});
     } else {
@@ -829,6 +841,7 @@ void InterfaceVariableScalarReplacement::AddComponentsToCompositesForLoads(
         {SPV_OPERAND_TYPE_ID, {component_value->result_id()}});
     def_use_mgr->AnalyzeInstDefUse(composite_construct);
   }
+  return Pass::Status::SuccessWithChange;
 }
 
 uint32_t InterfaceVariableScalarReplacement::GetArrayType(
@@ -921,8 +934,10 @@ InterfaceVariableScalarReplacement::CreateScalarInterfaceVarsForReplacement(
   if (extra_array_length != 0) {
     type_id = GetArrayType(type_id, extra_array_length);
   }
-  uint32_t ptr_type_id =
-      context()->get_type_mgr()->FindPointerToType(type_id, storage_class);
+  uint32_t ptr_type_id = GetPointerType(type_id, storage_class);
+  if (ptr_type_id == 0) {
+    return std::nullopt;
+  }
   uint32_t id = TakeNextId();
   if (id == 0) {
     return std::nullopt;
@@ -949,6 +964,12 @@ Pass::Status InterfaceVariableScalarReplacement::Process() {
   for (Instruction& entry_point : get_module()->entry_points()) {
     status =
         CombineStatus(status, ReplaceInterfaceVarsWithScalars(entry_point));
+    if (status == Status::Failure) {
+      break;
+    }
+  }
+  if (context()->id_overflow()) {
+    return Status::Failure;
   }
   return status;
 }

@@ -600,6 +600,10 @@ The condition is interchanged to test < > <= >= == and peel before/after
 opportunities.
 */
 TEST_F(PeelingPassTest, MultiplePeelingPass) {
+  // Disable ID overflow testing as it would re-run the pass and accumulate
+  // extra entries in stats.peeled_loops_.
+  SetTestIdOverflow(false);
+
   const std::string text_head = R"(
                OpCapability Shader
           %1 = OpExtInstImport "GLSL.std.450"

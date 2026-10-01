@@ -35,7 +35,7 @@ class FixFuncCallArgumentsPass : public Pass {
                                                Instruction* operand_inst);
 
   // Fix function call |func_call_inst| non memory object arguments
-  bool FixFuncCallArguments(Instruction* func_call_inst);
+  Status FixFuncCallArguments(Instruction* func_call_inst);
 
   IRContext::Analysis GetPreservedAnalyses() override {
     return IRContext::kAnalysisTypes;
