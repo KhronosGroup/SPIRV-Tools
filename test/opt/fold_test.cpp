@@ -14990,7 +14990,22 @@ INSTANTIATE_TEST_SUITE_P(CompositeExtractOrInsertMatchingTest, MatchingInstructi
                OpReturn
                OpFunctionEnd
         )",
-        13, true)
+        13, true),
+    // Test case 32: Don't fold an insert into a constant when the index is out
+    // of bounds. The validator cannot check the index because the array size
+    // is a spec constant.
+    InstructionFoldingCase<bool>(
+        Header() + R"(
+ %uint_spec_3 = OpSpecConstant %uint 3
+     %arr_int = OpTypeArray %int %uint_spec_3
+   %arr_const = OpConstantComposite %arr_int %int_0 %int_1 %int_2
+        %main = OpFunction %void None %void_func
+           %4 = OpLabel
+           %5 = OpCompositeInsert %arr_int %int_10 %arr_const 99
+                OpReturn
+                OpFunctionEnd
+        )",
+        5, false)
 ));
 
 INSTANTIATE_TEST_SUITE_P(DotProductMatchingTest, MatchingInstructionFoldingTest,
