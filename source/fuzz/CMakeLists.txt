@@ -480,10 +480,10 @@ if(SPIRV_BUILD_FUZZER)
       endif()
 
       install(TARGETS ${SPIRV-Tools-fuzz-InstallTargets} EXPORT SPIRV-Tools-fuzzTargets)
-      export(EXPORT SPIRV-Tools-fuzzTargets FILE SPIRV-Tools-fuzzTarget.cmake)
+      export(EXPORT SPIRV-Tools-fuzzTargets FILE SPIRV-Tools-fuzzTargets.cmake)
 
       spvtools_config_package_dir(SPIRV-Tools-fuzz PACKAGE_DIR)
-      install(EXPORT SPIRV-Tools-fuzzTargets FILE SPIRV-Tools-fuzzTarget.cmake
+      install(EXPORT SPIRV-Tools-fuzzTargets FILE SPIRV-Tools-fuzzTargets.cmake
             DESTINATION ${PACKAGE_DIR})
 
       spvtools_generate_config_file(SPIRV-Tools-fuzz)
