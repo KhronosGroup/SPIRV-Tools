@@ -534,6 +534,163 @@ TEST_F(FoldSpecConstantOpAndCompositePassBasicTest,
 }
 
 TEST_F(FoldSpecConstantOpAndCompositePassBasicTest,
+       SelectVectorsWithScalarCondition) {
+  SetTargetEnv(SPV_ENV_UNIVERSAL_1_4);
+  const std::string test =
+      R"(
+               OpCapability Shader
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %1 "main"
+               OpExecutionMode %1 LocalSize 1 1 1
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+       %bool = OpTypeBool
+        %int = OpTypeInt 32 1
+      %v2int = OpTypeVector %int 2
+       %true = OpConstantTrue %bool
+      %false = OpConstantFalse %bool
+      %int_1 = OpConstant %int 1
+      %int_2 = OpConstant %int 2
+      %int_3 = OpConstant %int 3
+      %int_4 = OpConstant %int 4
+
+; Since SPIR-V 1.4, the condition of OpSelect may be a scalar even when the
+; objects are vectors, in which case it selects the whole object.
+; CHECK: OpConstantComposite %v2int %int_1 %int_2
+; CHECK: OpConstantComposite %v2int %int_3 %int_4
+; CHECK: [[sel_t:%\w+]] = OpConstantComposite %v2int %int_1 %int_2
+; CHECK: [[sel_f:%\w+]] = OpConstantComposite %v2int %int_3 %int_4
+; CHECK-NOT: OpSpecConstantOp
+; CHECK: OpIAdd %v2int [[sel_t]] [[sel_f]]
+          %a = OpConstantComposite %v2int %int_1 %int_2
+          %b = OpConstantComposite %v2int %int_3 %int_4
+      %sel_t = OpSpecConstantOp %v2int Select %true %a %b
+      %sel_f = OpSpecConstantOp %v2int Select %false %a %b
+          %1 = OpFunction %void None %3
+      %label = OpLabel
+        %add = OpIAdd %v2int %sel_t %sel_f
+               OpReturn
+               OpFunctionEnd
+)";
+
+  SinglePassRunAndMatch<FoldSpecConstantOpAndCompositePass>(test, true);
+}
+
+TEST_F(FoldSpecConstantOpAndCompositePassBasicTest,
+       SelectVectorsWithVectorCondition) {
+  SetTargetEnv(SPV_ENV_UNIVERSAL_1_4);
+  const std::string test =
+      R"(
+               OpCapability Shader
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %1 "main"
+               OpExecutionMode %1 LocalSize 1 1 1
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+       %bool = OpTypeBool
+     %v2bool = OpTypeVector %bool 2
+        %int = OpTypeInt 32 1
+      %v2int = OpTypeVector %int 2
+       %true = OpConstantTrue %bool
+      %false = OpConstantFalse %bool
+      %int_1 = OpConstant %int 1
+      %int_2 = OpConstant %int 2
+      %int_3 = OpConstant %int 3
+      %int_4 = OpConstant %int 4
+       %cond = OpConstantComposite %v2bool %true %false
+          %a = OpConstantComposite %v2int %int_1 %int_2
+          %b = OpConstantComposite %v2int %int_3 %int_4
+
+; A vector condition mixes the two objects per component.
+; CHECK: [[mix:%\w+]] = OpConstantComposite %v2int %int_1 %int_4
+; CHECK-NOT: OpSpecConstantOp
+; CHECK: OpIAdd %v2int [[mix]] [[mix]]
+        %sel = OpSpecConstantOp %v2int Select %cond %a %b
+          %1 = OpFunction %void None %3
+      %label = OpLabel
+        %add = OpIAdd %v2int %sel %sel
+               OpReturn
+               OpFunctionEnd
+)";
+
+  SinglePassRunAndMatch<FoldSpecConstantOpAndCompositePass>(test, true);
+}
+
+TEST_F(FoldSpecConstantOpAndCompositePassBasicTest,
+       SelectVectorIdOverflowWhileMaterializingNullComponent) {
+  SetTargetEnv(SPV_ENV_UNIVERSAL_1_4);
+  const std::string test = R"(
+               OpCapability Shader
+               OpMemoryModel Logical GLSL450
+       %bool = OpTypeBool
+     %v2bool = OpTypeVector %bool 2
+        %int = OpTypeInt 32 1
+      %v2int = OpTypeVector %int 2
+       %true = OpConstantTrue %bool
+      %false = OpConstantFalse %bool
+       %cond = OpConstantComposite %v2bool %true %false
+      %int_1 = OpConstant %int 1
+      %int_2 = OpConstant %int 2
+  %non_zero = OpConstantComposite %v2int %int_1 %int_2
+       %null = OpConstantNull %v2int
+        %sel = OpSpecConstantOp %v2int Select %cond %null %non_zero
+)";
+
+  std::string diagnostic;
+  SetMessageConsumer(
+      [&diagnostic](spv_message_level_t, const char*, const spv_position_t&,
+                    const char* message) { diagnostic = message; });
+  std::unique_ptr<IRContext> context = AssembleModule(test);
+  ASSERT_NE(context, nullptr);
+  context->set_max_id_bound(context->module()->id_bound());
+
+  FoldSpecConstantOpAndCompositePass pass;
+  EXPECT_EQ(pass.Run(context.get()), Pass::Status::Failure);
+  EXPECT_EQ(diagnostic, "ID overflow. Try running compact-ids.");
+}
+
+TEST_F(FoldSpecConstantOpAndCompositePassBasicTest,
+       SelectStructsWithScalarCondition) {
+  SetTargetEnv(SPV_ENV_UNIVERSAL_1_4);
+  const std::string test =
+      R"(
+               OpCapability Shader
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %1 "main"
+               OpExecutionMode %1 LocalSize 1 1 1
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+       %bool = OpTypeBool
+        %int = OpTypeInt 32 1
+     %struct = OpTypeStruct %int %int
+       %true = OpConstantTrue %bool
+      %false = OpConstantFalse %bool
+      %int_1 = OpConstant %int 1
+      %int_2 = OpConstant %int 2
+      %int_3 = OpConstant %int 3
+      %int_4 = OpConstant %int 4
+
+; Since SPIR-V 1.4, the result type of OpSelect may be a non-vector
+; composite, with a scalar condition selecting the whole object.
+; CHECK: OpConstantComposite [[struct:%\w+]] %int_1 %int_2
+; CHECK: OpConstantComposite [[struct]] %int_3 %int_4
+; CHECK: OpConstantComposite [[struct]] %int_1 %int_2
+; CHECK: OpConstantComposite [[struct]] %int_3 %int_4
+; CHECK-NOT: OpSpecConstantOp
+          %a = OpConstantComposite %struct %int_1 %int_2
+          %b = OpConstantComposite %struct %int_3 %int_4
+      %sel_t = OpSpecConstantOp %struct Select %true %a %b
+      %sel_f = OpSpecConstantOp %struct Select %false %a %b
+          %1 = OpFunction %void None %3
+      %label = OpLabel
+               OpReturn
+               OpFunctionEnd
+)";
+
+  SinglePassRunAndMatch<FoldSpecConstantOpAndCompositePass>(test, true);
+}
+
+TEST_F(FoldSpecConstantOpAndCompositePassBasicTest,
        CompositeInsertVectorKeepNull) {
   const std::string test =
       R"(
