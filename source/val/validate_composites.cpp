@@ -619,8 +619,11 @@ spv_result_t ValidateVectorShuffle(ValidationState_t& _,
 
   // Vector 1 and Vector 2 must both have vector types, with the same Component
   // Type as Result Type.
-  auto vec1_type = _.FindDef(_.GetOperandTypeId(inst, operand_index));
-  auto vec2_type = _.FindDef(_.GetOperandTypeId(inst, operand_index + 1));
+  auto vec1_type_id = _.GetOperandTypeId(inst, operand_index);
+  auto vec2_type_id = _.GetOperandTypeId(inst, operand_index + 1);
+
+  auto vec1_type = _.FindDef(vec1_type_id);
+  auto vec2_type = _.FindDef(vec2_type_id);
   if (!vec1_type || !_.IsVectorType(vec1_type->id())) {
     return _.diag(SPV_ERROR_INVALID_ID, inst)
            << "The type of Vector 1 must be a vector type.";
@@ -641,15 +644,19 @@ spv_result_t ValidateVectorShuffle(ValidationState_t& _,
   }
 
   // All Component literals must either be FFFFFFFF or in [0, N - 1].
-  uint32_t vec1_component_count = vec1_type->GetOperandAs<uint32_t>(2);
-  uint32_t vec2_component_count = vec2_type->GetOperandAs<uint32_t>(2);
-  uint32_t N = vec1_component_count + vec2_component_count;
-  for (size_t i = first_literal_index; i < inst->operands().size(); ++i) {
-    uint32_t literal = inst->GetOperandAs<uint32_t>(i);
-    if (literal != 0xFFFFFFFF && literal >= N) {
-      return _.diag(SPV_ERROR_INVALID_ID, inst)
-             << "Component index " << literal << " is out of bounds for "
-             << "combined (Vector1 + Vector2) size of " << N << ".";
+  uint32_t vec1_component_count = _.GetDimension(vec1_type_id);
+  uint32_t vec2_component_count = _.GetDimension(vec2_type_id);
+
+  // If component counts are unavailable at validation time, skip check.
+  if (vec1_component_count != 0 && vec2_component_count != 0) {
+    uint32_t N = vec1_component_count + vec2_component_count;
+    for (size_t i = first_literal_index; i < inst->operands().size(); ++i) {
+      uint32_t literal = inst->GetOperandAs<uint32_t>(i);
+      if (literal != 0xFFFFFFFF && literal >= N) {
+        return _.diag(SPV_ERROR_INVALID_ID, inst)
+               << "Component index " << literal << " is out of bounds for "
+               << "combined (Vector1 + Vector2) size of " << N << ".";
+      }
     }
   }
 
