@@ -806,8 +806,8 @@ spv_result_t CheckVulkanMemoryModelDeprecatedDecorations(
 
   std::string msg;
   std::ostringstream str(msg);
-  for (const auto& def : vstate.all_definitions()) {
-    const auto inst = def.second;
+  for (const Instruction* inst : vstate.all_definitions()) {
+    if (!inst) continue;
     const auto id = inst->id();
     for (const auto& dec : vstate.id_decorations(id)) {
       const auto member = dec.struct_member_index();

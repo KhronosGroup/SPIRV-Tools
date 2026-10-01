@@ -316,19 +316,17 @@ std::vector<uint32_t> ValidationState_t::UnresolvedForwardIds() const {
 }
 
 bool ValidationState_t::IsDefinedId(uint32_t id) const {
-  return all_definitions_.find(id) != std::end(all_definitions_);
+  return FindDef(id) != nullptr;
 }
 
 const Instruction* ValidationState_t::FindDef(uint32_t id) const {
-  auto it = all_definitions_.find(id);
-  if (it == all_definitions_.end()) return nullptr;
-  return it->second;
+  if (id >= all_definitions_.size()) return nullptr;
+  return all_definitions_[id];
 }
 
 Instruction* ValidationState_t::FindDef(uint32_t id) {
-  auto it = all_definitions_.find(id);
-  if (it == all_definitions_.end()) return nullptr;
-  return it->second;
+  if (id >= all_definitions_.size()) return nullptr;
+  return all_definitions_[id];
 }
 
 ModuleLayoutSection ValidationState_t::current_layout_section() const {
@@ -628,7 +626,13 @@ void ValidationState_t::RegisterDebugInstruction(const Instruction* inst) {
 }
 
 void ValidationState_t::RegisterInstruction(Instruction* inst) {
-  if (inst->id()) all_definitions_.insert(std::make_pair(inst->id(), inst));
+  if (inst->id()) {
+    // Should be bounded by the module's id bound (see LimitCheckIdBound)
+    if (inst->id() >= all_definitions_.size()) {
+      all_definitions_.resize(inst->id() + 1, nullptr);
+    }
+    all_definitions_[inst->id()] = inst;
+  }
 
   // Some validation checks are easier by getting all the consumers
   for (size_t i = 0; i < inst->operands().size(); ++i) {

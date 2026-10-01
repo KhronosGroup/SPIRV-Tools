@@ -564,8 +564,9 @@ class ValidationState_t {
     return ordered_instructions_;
   }
 
-  /// Returns a map of instructions mapped by their result id
-  const std::unordered_map<uint32_t, Instruction*>& all_definitions() const {
+  /// Returns all instructions with a result id, indexed by that id.
+  // Entries for ids that are not defined are nullptr.
+  const std::vector<Instruction*>& all_definitions() const {
     return all_definitions_;
   }
 
@@ -1074,8 +1075,8 @@ class ValidationState_t {
   /// List of all instructions in the order they appear in the binary
   std::vector<Instruction> ordered_instructions_;
 
-  /// Instructions that can be referenced by Ids
-  std::unordered_map<uint32_t, Instruction*> all_definitions_;
+  /// Instructions that can be referenced by Ids, indexed by result id
+  std::vector<Instruction*> all_definitions_;
 
   /// IDs that are entry points, ie, arguments to OpEntryPoint.
   std::vector<uint32_t> entry_points_;
