@@ -15,6 +15,7 @@
 // Tests for unique type declaration rules validator.
 
 #include <string>
+#include <tuple>
 
 #include "gmock/gmock.h"
 #include "test/unit_spirv.h"
@@ -26,6 +27,7 @@ namespace {
 
 using ::testing::HasSubstr;
 using ::testing::Not;
+using ::testing::Values;
 
 using ValidateArithmetics = spvtest::ValidateBase<bool>;
 
@@ -1864,6 +1866,86 @@ TEST_F(ValidateArithmetics, CoopMatKHRDimFail) {
   EXPECT_THAT(
       getDiagnosticString(),
       HasSubstr("Cooperative matrix 'N' mismatch: CooperativeMatrixMulAddKHR"));
+}
+
+TEST_F(ValidateArithmetics, CoopMatKHRMixedSignedComponentsSuccess) {
+  const std::string body = R"(
+%val1 = OpCooperativeMatrixMulAddKHR %s32matC %u32mat_A_1 %s32mat_B_1 %s32mat_C_1
+  MatrixBSignedComponentsKHR|MatrixCSignedComponentsKHR|MatrixResultSignedComponentsKHR
+)";
+
+  CompileSuccessfully(GenerateCoopMatKHRCode("", body).c_str(),
+                      SPV_ENV_UNIVERSAL_1_3);
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
+}
+
+TEST_F(ValidateArithmetics, CoopMatKHRSignedComponentsIgnoreIntSignedness) {
+  const std::string body = R"(
+%val1 = OpCooperativeMatrixMulAddKHR %u32matC %u32mat_A_1 %u32mat_B_1 %u32mat_C_1
+  MatrixASignedComponentsKHR|MatrixBSignedComponentsKHR|MatrixCSignedComponentsKHR|MatrixResultSignedComponentsKHR
+%val2 = OpCooperativeMatrixMulAddKHR %s32matC %s32mat_A_1 %s32mat_B_1 %s32mat_C_1
+)";
+
+  CompileSuccessfully(GenerateCoopMatKHRCode("", body).c_str(),
+                      SPV_ENV_UNIVERSAL_1_3);
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
+}
+
+using ValidateCoopMatKHRSignedComponents =
+    spvtest::ValidateBase<std::tuple<std::string, std::string>>;
+
+TEST_P(ValidateCoopMatKHRSignedComponents, NonIntegerFail) {
+  const std::string& operand = std::get<0>(GetParam());
+  const std::string& expected_name = std::get<1>(GetParam());
+  const std::string body = R"(
+%val1 = OpCooperativeMatrixMulAddKHR %f16matC %f16mat_A_1 %f16mat_B_1 %f16mat_C_1 )" +
+                           operand + "\n";
+
+  CompileSuccessfully(GenerateCoopMatKHRCode("", body).c_str(),
+                      SPV_ENV_UNIVERSAL_1_3);
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA,
+            ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Cooperative Matrix Operand " + expected_name +
+                        " can only be used when the component type of the "
+                        "corresponding matrix is an integer type, but found "));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("[%half]': CooperativeMatrixMulAddKHR"));
+}
+
+INSTANTIATE_TEST_SUITE_P(
+    CoopMatKHR, ValidateCoopMatKHRSignedComponents,
+    Values(std::make_tuple("MatrixASignedComponentsKHR",
+                           "MatrixASignedComponentsKHR"),
+           std::make_tuple("MatrixBSignedComponentsKHR",
+                           "MatrixBSignedComponentsKHR"),
+           std::make_tuple("MatrixCSignedComponentsKHR",
+                           "MatrixCSignedComponentsKHR"),
+           std::make_tuple("MatrixResultSignedComponentsKHR",
+                           "MatrixResultSignedComponentsKHR"),
+           std::make_tuple("MatrixASignedComponentsKHR|"
+                           "MatrixBSignedComponentsKHR|"
+                           "MatrixCSignedComponentsKHR|"
+                           "MatrixResultSignedComponentsKHR",
+                           "MatrixASignedComponentsKHR")));
+
+TEST_F(ValidateArithmetics, CoopMatKHRSignedComponentsOnFloatResultFail) {
+  const std::string body = R"(
+%val1 = OpCooperativeMatrixMulAddKHR %f32matC %s32mat_A_1 %s32mat_B_1 %s32mat_C_1
+  MatrixASignedComponentsKHR|MatrixBSignedComponentsKHR|MatrixCSignedComponentsKHR|MatrixResultSignedComponentsKHR
+)";
+
+  CompileSuccessfully(GenerateCoopMatKHRCode("", body).c_str(),
+                      SPV_ENV_UNIVERSAL_1_3);
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA,
+            ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Cooperative Matrix Operand "
+                        "MatrixResultSignedComponentsKHR can only be used when "
+                        "the component type of the corresponding matrix is an "
+                        "integer type, but found "));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("[%float]': CooperativeMatrixMulAddKHR"));
 }
 
 TEST_F(ValidateArithmetics, CoopMat2ReduceSuccess) {
