@@ -1,3 +1,5 @@
+ifdef NDK_ROOT
+
 LOCAL_PATH := $(call my-dir)
 SPVTOOLS_OUT_PATH=$(if $(call host-path-is-absolute,$(TARGET_OUT)),$(TARGET_OUT),$(abspath $(TARGET_OUT)))
 
@@ -331,3 +333,5 @@ LOCAL_CXXFLAGS:=-std=c++17 -fno-exceptions -fno-rtti -Werror
 LOCAL_STATIC_LIBRARIES:=SPIRV-Tools
 LOCAL_SRC_FILES:= $(SPVTOOLS_OPT_SRC_FILES)
 include $(BUILD_STATIC_LIBRARY)
+
+endif # NDK_ROOT
