@@ -2879,7 +2879,16 @@ spv_result_t ValidateBufferPointerEXT(ValidationState_t& _,
   // Buffer operand
   auto buffer =
       _.FindUntypedBaseVariable(_.FindDef(inst->GetOperandAs<uint32_t>(2)));
-  if (!buffer || !_.IsBuiltin(buffer->id(), spv::BuiltIn::ResourceHeapEXT)) {
+
+  // A pointer into the heap may be passed into a function.
+  const bool is_heap_parameter =
+      buffer && buffer->opcode() == spv::Op::OpFunctionParameter &&
+      _.GetIdOpcode(buffer->type_id()) == spv::Op::OpTypeUntypedPointerKHR &&
+      _.FindDef(buffer->type_id())->GetOperandAs<spv::StorageClass>(1u) ==
+          spv::StorageClass::UniformConstant;
+
+  if (!buffer || (!is_heap_parameter &&
+                  !_.IsBuiltin(buffer->id(), spv::BuiltIn::ResourceHeapEXT))) {
     return _.diag(SPV_ERROR_INVALID_ID, inst)
            << "OpBufferPointerEXT's buffer must be an untyped pointer"
            << " into a variable declared with the ResourceHeapEXT built-in";
