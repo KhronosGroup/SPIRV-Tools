@@ -76,7 +76,7 @@ vars = {
   'googletest_revision': 'bc548fd273c71150a3ae8b63a9c32ee9d38e1edb',
   # Use a recent protobuf, which can depend on abseil
   'protobuf_revision': '35cd01f9fe9afbeea38cc7b979a3b6bfcde82c03',
-  're2_revision': '972a15cedd008d846f1a39b2e88ce48d7f166cbd',
+  're2_revision': '2da0056814cf180480a19f5cf811e7e1c054bf6d',
   'spirv_headers_revision': 'cb42dec3830d3ac67fa449ecdc0c0f73d5e74498',
   'mimalloc_revision': '31d034d94cdb8e22f7d7ed55967f581a2d6e831d',
 
