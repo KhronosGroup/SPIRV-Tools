@@ -1388,7 +1388,23 @@ INSTANTIATE_TEST_SUITE_P(TestCase, IntegerInstructionFoldingTest,
             "%2 = OpBitcast %ubyte %float8e5m2_0x1_7p_0\n" +
             "OpReturn\n" +
             "OpFunctionEnd",
-        2, 0x3d)
+        2, 0x3d),
+    // Test case 102: Fold SAbs -24
+  InstructionFoldingCase<uint32_t>(
+      Header() + "%main = OpFunction %void None %void_func\n" +
+          "%main_lab = OpLabel\n" +
+          "%2 = OpExtInst %int %1 SAbs %int_n24\n" +
+          "OpReturn\n" +
+          "OpFunctionEnd",
+      2, 24),
+    // Test case 103: Fold SAbs 3
+  InstructionFoldingCase<uint32_t>(
+      Header() + "%main = OpFunction %void None %void_func\n" +
+          "%main_lab = OpLabel\n" +
+          "%2 = OpExtInst %int %1 SAbs %int_3\n" +
+          "OpReturn\n" +
+          "OpFunctionEnd",
+      2, 3)
 ));
 // clang-format on
 
@@ -3520,7 +3536,23 @@ INSTANTIATE_TEST_SUITE_P(FloatConstantFoldingTest, FloatInstructionFoldingTest,
             "%2 = OpExtInst %float %1 NClamp %float_nan %float_nan %float_nan\n" +
             "OpReturn\n" +
             "OpFunctionEnd",
-        2, std::numeric_limits<float>::quiet_NaN())
+        2, std::numeric_limits<float>::quiet_NaN()),
+    // Test case 67: FAbs 4.0
+    InstructionFoldingCase<float>(
+        HeaderWithNaN() + "%main = OpFunction %void None %void_func\n" +
+            "%main_lab = OpLabel\n" +
+            "%2 = OpExtInst %float %1 FAbs %float_4\n" +
+            "OpReturn\n" +
+            "OpFunctionEnd",
+        2, 4.0f),
+    // Test case 68: FAbs -1.0
+    InstructionFoldingCase<float>(
+        HeaderWithNaN() + "%main = OpFunction %void None %void_func\n" +
+            "%main_lab = OpLabel\n" +
+            "%2 = OpExtInst %float %1 FAbs %float_n1\n" +
+            "OpReturn\n" +
+            "OpFunctionEnd",
+        2, 1.0f)
 ));
 
 INSTANTIATE_TEST_SUITE_P(MinMaxZeroFoldingTest, FloatBitsInstructionFoldingTest,
