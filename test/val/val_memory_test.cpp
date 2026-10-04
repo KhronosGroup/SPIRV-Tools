@@ -6466,6 +6466,58 @@ OpFunctionEnd
   EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
+TEST_F(ValidateMemory, UntypedVariableLengthArray) {
+  const std::string spirv = R"(
+OpCapability Kernel
+OpCapability Addresses
+OpCapability Linkage
+OpCapability UntypedPointersKHR
+OpCapability VariableLengthArrayINTEL
+OpCapability UntypedVariableLengthArrayINTEL
+OpExtension "SPV_KHR_untyped_pointers"
+OpExtension "SPV_INTEL_variable_length_array"
+OpMemoryModel Physical32 OpenCL
+%void = OpTypeVoid
+%uint = OpTypeInt 32 0
+%float = OpTypeFloat 32
+%float_size = OpConstant %float 4
+%size = OpConstant %uint 4
+%ptr = OpTypeUntypedPointerKHR Function
+%private_ptr = OpTypeUntypedPointerKHR CrossWorkgroup
+%fn_type = OpTypeFunction %void
+%fn = OpFunction %void None %fn_type
+%entry = OpLabel
+%state = OpSaveMemoryINTEL %ptr
+%array = OpUntypedVariableLengthArrayINTEL %ptr %uint %size
+OpRestoreMemoryINTEL %state
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
+
+  const std::vector<std::pair<std::string, std::string>> invalid_operands{
+      {"%uint %uint %size", "Result Type"},
+      {"%private_ptr %uint %size", "Result Type"},
+      {"%ptr %size %size", "Element Type"},
+      {"%ptr %void %size", "Element Type"},
+      {"%ptr %uint %uint", "Length"},
+      {"%ptr %uint %float_size", "Length"}};
+  for (const auto& operands : invalid_operands) {
+    SCOPED_TRACE(operands.first);
+    std::string invalid_spirv = spirv;
+    const std::string original =
+        "%array = OpUntypedVariableLengthArrayINTEL %ptr %uint %size";
+    invalid_spirv.replace(
+        invalid_spirv.find(original), original.size(),
+        "%array = OpUntypedVariableLengthArrayINTEL " + operands.first);
+    CompileSuccessfully(invalid_spirv);
+    EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+    EXPECT_THAT(getDiagnosticString(), HasSubstr(operands.second));
+  }
+}
+
 TEST_F(ValidateMemory, UntypedVariableGood) {
   const std::string spirv = R"(
 OpCapability Shader
