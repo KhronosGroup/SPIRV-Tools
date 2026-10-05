@@ -3699,6 +3699,8 @@ std::string ValidationState_t::VkErrorID(uint32_t id,
       return VUID_WRAP(VUID-StandaloneSpirv-MemorySemantics-13556);
     case 13557:
       return VUID_WRAP(VUID-StandaloneSpirv-MemorySemantics-13557);
+    case 12464:
+      return VUID_WRAP(VUID-StandaloneSpirv-OpUndef-12464);
     case 12465:
       return VUID_WRAP(VUID-StandaloneSpirv-OpConvertFToU-12465);
     case 12466:
