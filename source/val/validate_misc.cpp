@@ -124,6 +124,12 @@ spv_result_t ValidateAbort(ValidationState_t& _, const Instruction* inst) {
            << " must be a concrete type";
   }
 
+  if (!source_type) {
+    return _.diag(SPV_ERROR_INVALID_ID, inst)
+           << "Message operand " << _.getIdName(source->id())
+           << " must be a value with a type";
+  }
+
   if (source_type != message_type &&
       !_.LogicallyMatch(source_type, message_type, false)) {
     return _.diag(SPV_ERROR_INVALID_ID, inst)
