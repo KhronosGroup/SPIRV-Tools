@@ -6280,6 +6280,61 @@ OpFunctionEnd
                         "class in Vulkan environment."));
 }
 
+TEST_F(ValidateMemory, PhysicalStorageBufferBool) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpCapability PhysicalStorageBufferAddresses
+OpExtension "SPV_KHR_physical_storage_buffer"
+OpMemoryModel PhysicalStorageBuffer64 GLSL450
+OpEntryPoint GLCompute %main "main"
+OpExecutionMode %main LocalSize 1 1 1
+%void = OpTypeVoid
+%void_fn = OpTypeFunction %void
+%bool = OpTypeBool
+%ptr = OpTypePointer PhysicalStorageBuffer %bool
+%main = OpFunction %void None %void_fn
+%label = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_5);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_UNIVERSAL_1_5));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("contains an OpTypeBool, which must not be used with "
+                        "the PhysicalStorageBuffer Storage Class"));
+}
+
+TEST_F(ValidateMemory, VulkanPhysicalStorageBufferBoolInStruct) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpCapability PhysicalStorageBufferAddresses
+OpExtension "SPV_KHR_physical_storage_buffer"
+OpMemoryModel PhysicalStorageBuffer64 GLSL450
+OpEntryPoint GLCompute %main "main"
+OpExecutionMode %main LocalSize 1 1 1
+OpDecorate %runtime_array ArrayStride 4
+OpMemberDecorate %block 0 Offset 0
+OpDecorate %block Block
+%void = OpTypeVoid
+%void_fn = OpTypeFunction %void
+%bool = OpTypeBool
+%runtime_array = OpTypeRuntimeArray %bool
+%block = OpTypeStruct %runtime_array
+%ptr = OpTypePointer PhysicalStorageBuffer %block
+%main = OpFunction %void None %void_fn
+%label = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_VULKAN_1_3);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_VULKAN_1_3));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("contains an OpTypeBool, which must not be used with "
+                        "the PhysicalStorageBuffer Storage Class"));
+}
+
 TEST_F(ValidateMemory, PhysicalStorageBufferPtrEqual) {
   const std::string spirv = R"(
 OpCapability Shader
