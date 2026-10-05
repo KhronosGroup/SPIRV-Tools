@@ -2123,6 +2123,13 @@ spv_result_t ValidateExtInstGlslStd450(ValidationState_t& _,
                << GetExtInstName(_, inst) << ": "
                << "expected operand Eta to be a float scalar";
       }
+
+      if (_.GetComponentType(result_type) != eta_type) {
+        return _.diag(SPV_ERROR_INVALID_DATA, inst)
+               << GetExtInstName(_, inst) << ": "
+               << "expected operand Eta to have the same component type as "
+                  "Result Type";
+      }
       break;
     }
 
