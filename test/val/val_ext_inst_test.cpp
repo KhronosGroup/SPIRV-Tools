@@ -1566,8 +1566,8 @@ TEST_F(ValidateExtInst, GlslStd450LdexpFloatExp) {
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("GLSL.std.450 Ldexp: "
-                        "expected operand Exp to be a 32-bit int scalar "
-                        "or vector type"));
+                        "expected operand Exp to be an int scalar or vector "
+                        "type"));
 }
 
 TEST_F(ValidateExtInst, GlslStd450LdexpExpWrongSize) {
@@ -1592,8 +1592,8 @@ TEST_F(ValidateExtInst, GlslStd450LdexpExpNoType) {
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("GLSL.std.450 Ldexp: "
-                        "expected operand Exp to be a 32-bit int scalar "
-                        "or vector type"));
+                        "expected operand Exp to be an int scalar or vector "
+                        "type"));
 }
 
 TEST_F(ValidateExtInst, GlslStd450FrexpStructSuccess) {
