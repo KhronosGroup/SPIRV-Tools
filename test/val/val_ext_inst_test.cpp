@@ -2381,7 +2381,8 @@ TEST_F(ValidateExtInst, GlslStd450CrossYWrongType) {
 TEST_F(ValidateExtInst, GlslStd450RefractSuccess) {
   const std::string body = R"(
 %val1 = OpExtInst %f32 %extinst Refract %f32_1 %f32_1 %f32_1
-%val2 = OpExtInst %f32vec2 %extinst Refract %f32vec2_01 %f32vec2_01 %f16_1
+%val2 = OpExtInst %f16vec2 %extinst Refract %f16vec2_01 %f16vec2_01 %f16_1
+%val3 = OpExtInst %f64vec2 %extinst Refract %f64vec2_01 %f64vec2_01 %f64_1
 )";
 
   CompileSuccessfully(GenerateShaderCode(body));
@@ -2446,8 +2447,24 @@ TEST_F(ValidateExtInst, GlslStd450RefractFloat64Eta) {
 )";
 
   CompileSuccessfully(GenerateShaderCode(body));
-  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(), Eq(""));
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("GLSL.std.450 Refract: "
+                        "expected operand Eta to have the same component "
+                        "type as Result Type"));
+}
+
+TEST_F(ValidateExtInst, GlslStd450RefractFloat16Eta) {
+  const std::string body = R"(
+%val1 = OpExtInst %f32vec2 %extinst Refract %f32vec2_01 %f32vec2_01 %f16_1
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body));
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("GLSL.std.450 Refract: "
+                        "expected operand Eta to have the same component "
+                        "type as Result Type"));
 }
 
 TEST_F(ValidateExtInst, GlslStd450RefractVectorEta) {
