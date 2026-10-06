@@ -146,6 +146,29 @@ TEST_F(ValidateSpvKHRAbort, MismatchedOperandTypes) {
                         "the type of the Message Type operand"));
 }
 
+TEST_F(ValidateSpvKHRAbort, MessageOperandIsType) {
+  const std::string str = R"(
+            OpCapability Shader
+            OpCapability AbortKHR
+            OpExtension "SPV_KHR_abort"
+            OpMemoryModel Logical Simple
+            OpEntryPoint GLCompute %main "main"
+
+%void     = OpTypeVoid
+%void_fn  = OpTypeFunction %void
+%uint32_t = OpTypeInt 32 0
+%main     = OpFunction %void None %void_fn
+%entry    = OpLabel
+            OpAbortKHR %uint32_t %uint32_t
+            OpFunctionEnd
+)";
+  CompileSuccessfully(str.c_str());
+  EXPECT_NE(SPV_SUCCESS, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Message operand '4[%uint]' must be a value with a "
+                        "type"));
+}
+
 TEST_F(ValidateSpvKHRAbort, ValidCompositeOperandTypes) {
   const std::string str = R"(
              OpCapability Shader
