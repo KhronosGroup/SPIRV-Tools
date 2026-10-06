@@ -121,6 +121,7 @@ bool InstructionCanHaveTypeOperand(const Instruction* inst) {
       spv::Op::OpCooperativeMatrixLengthNV,
       spv::Op::OpCooperativeMatrixLengthKHR,
       spv::Op::OpUntypedArrayLengthKHR,
+      spv::Op::OpUntypedVariableLengthArrayINTEL,
       spv::Op::OpFunction,
       spv::Op::OpAsmINTEL,
       spv::Op::OpConstantSizeOfEXT,

@@ -1197,6 +1197,28 @@ spv_result_t ValidateVariableTileImageEXT(ValidationState_t& _,
   }
 }
 
+spv_result_t ValidateUntypedVariableLengthArray(ValidationState_t& _,
+                                                const Instruction* inst) {
+  const auto result_type = _.FindDef(inst->type_id());
+  if (!result_type ||
+      result_type->opcode() != spv::Op::OpTypeUntypedPointerKHR ||
+      result_type->GetOperandAs<spv::StorageClass>(1u) !=
+          spv::StorageClass::Function) {
+    return _.diag(SPV_ERROR_INVALID_ID, inst)
+           << "Result Type must be an untyped pointer with Function storage "
+              "class";
+  }
+  if (!_.IsConcreteType(inst->GetOperandAs<uint32_t>(2u))) {
+    return _.diag(SPV_ERROR_INVALID_ID, inst)
+           << "Element Type must be a concrete type";
+  }
+  if (!_.IsIntScalarType(_.GetTypeId(inst->GetOperandAs<uint32_t>(3u)))) {
+    return _.diag(SPV_ERROR_INVALID_ID, inst)
+           << "Length must have a scalar integer type";
+  }
+  return SPV_SUCCESS;
+}
+
 spv_result_t ValidateVariable(ValidationState_t& _, const Instruction* inst) {
   const bool untyped_pointer = inst->opcode() == spv::Op::OpUntypedVariableKHR;
 
@@ -3834,6 +3856,8 @@ spv_result_t ValidatePredicatedStoreINTEL(ValidationState_t& _,
 
 spv_result_t MemoryPass(ValidationState_t& _, const Instruction* inst) {
   switch (inst->opcode()) {
+    case spv::Op::OpUntypedVariableLengthArrayINTEL:
+      return ValidateUntypedVariableLengthArray(_, inst);
     case spv::Op::OpVariable:
     case spv::Op::OpUntypedVariableKHR:
       return ValidateVariable(_, inst);
