@@ -348,6 +348,30 @@ TEST_F(ValidateMisc, UndefVoid) {
               HasSubstr("Cannot create undefined values with void type"));
 }
 
+TEST_F(ValidateMisc, VulkanUndefSampler) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %main "main"
+OpExecutionMode %main LocalSize 1 1 1
+%void = OpTypeVoid
+%void_fn = OpTypeFunction %void
+%sampler = OpTypeSampler
+%undef = OpUndef %sampler
+%main = OpFunction %void None %void_fn
+%label = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_VULKAN_1_3);
+  ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_VULKAN_1_3));
+  EXPECT_THAT(getDiagnosticString(),
+              AnyVUID("VUID-StandaloneSpirv-OpUndef-12464"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("OpUndef Result Type must not be OpTypeSampler"));
+}
+
 TEST_F(ValidateMisc, VulkanInvalidStorageClass) {
   const std::string spirv = R"(
 OpCapability Shader
