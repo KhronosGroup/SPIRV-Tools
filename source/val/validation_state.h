@@ -1228,6 +1228,7 @@ class ValidationState_t {
   void InspectLineAndFunctionDefinition(std::ostringstream& ss,
                                         const Function& func,
                                         const Instruction& inst);
+  void InspectLineAndVariable(std::ostringstream& ss, const Instruction& inst);
   void InspectEntryPoint(std::ostringstream& ss, const Instruction& inst);
   void InspectDebugFunctionDefinition(std::ostringstream& ss,
                                       const Instruction& function_inst);
