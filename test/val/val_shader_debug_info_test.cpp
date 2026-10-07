@@ -417,6 +417,54 @@ TEST_F(ValidateShaderDebugInfo, NoDebugGlobalVariable) {
   EXPECT_THAT(getDiagnosticString(), Not(HasSubstr("a.comp")));
 }
 
+TEST_F(ValidateShaderDebugInfo, DecorateGlobalVariable) {
+  const std::string str = R"(
+               OpCapability Shader
+               OpExtension "SPV_KHR_non_semantic_info"
+          %1 = OpExtInstImport "NonSemantic.Shader.DebugInfo.100"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %main "main" %x
+               OpExecutionMode %main LocalSize 1 1 1
+          %2 = OpString "a.comp"
+          %8 = OpString "float"
+         %19 = OpString "#version 450
+float x;
+
+void main() {
+}"
+         %40 = OpString "x"
+               ;; invalid here, Binding on a Private variable
+               OpDecorate %x Binding 1
+       %void = OpTypeVoid
+          %5 = OpTypeFunction %void
+       %uint = OpTypeInt 32 0
+    %uint_32 = OpConstant %uint 32
+     %uint_0 = OpConstant %uint 0
+     %uint_1 = OpConstant %uint 1
+     %uint_2 = OpConstant %uint 2
+     %uint_3 = OpConstant %uint 3
+     %uint_4 = OpConstant %uint 4
+     %uint_8 = OpConstant %uint 8
+      %float = OpTypeFloat 32
+          %9 = OpExtInst %void %1 DebugTypeBasic %8 %uint_32 %uint_3 %uint_0
+         %18 = OpExtInst %void %1 DebugSource %2 %19
+         %20 = OpExtInst %void %1 DebugCompilationUnit %uint_1 %uint_4 %18 %uint_2
+%_ptr_Private_float = OpTypePointer Private %float
+          %x = OpVariable %_ptr_Private_float Private
+         %39 = OpExtInst %void %1 DebugGlobalVariable %40 %9 %18 %uint_2 %uint_0 %20 %40 %x %uint_8
+       %main = OpFunction %void None %5
+         %15 = OpLabel
+               OpReturn
+               OpFunctionEnd
+)";
+  CompileSuccessfully(str.c_str(), SPV_ENV_VULKAN_1_3);
+  EXPECT_NE(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_3));
+  EXPECT_THAT(getDiagnosticString(), HasSubstr(R"(  --> a.comp:2:0
+  |
+2 | float x;
+  |)"));
+}
+
 TEST_F(ValidateShaderDebugInfo, DebugLocalVariable) {
   const std::string str = R"(
                OpCapability Shader
@@ -557,6 +605,124 @@ void main() {
   CompileSuccessfully(str.c_str(), SPV_ENV_VULKAN_1_3);
   EXPECT_NE(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_3));
   EXPECT_THAT(getDiagnosticString(), Not(HasSubstr("a.comp")));
+}
+
+TEST_F(ValidateShaderDebugInfo, StoreGlobalVariable) {
+  const std::string str = R"(
+               OpCapability Shader
+               OpExtension "SPV_KHR_non_semantic_info"
+          %1 = OpExtInstImport "NonSemantic.Shader.DebugInfo.100"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %main "main" %x
+               OpExecutionMode %main LocalSize 1 1 1
+          %2 = OpString "a.comp"
+          %8 = OpString "float"
+         %19 = OpString "#version 450
+float x;
+
+void main() {
+    x = 0;
+}"
+         %40 = OpString "x"
+       %void = OpTypeVoid
+          %5 = OpTypeFunction %void
+       %uint = OpTypeInt 32 0
+    %uint_32 = OpConstant %uint 32
+     %uint_0 = OpConstant %uint 0
+     %uint_1 = OpConstant %uint 1
+     %uint_2 = OpConstant %uint 2
+     %uint_3 = OpConstant %uint 3
+     %uint_4 = OpConstant %uint 4
+     %uint_5 = OpConstant %uint 5
+     %uint_8 = OpConstant %uint 8
+      %float = OpTypeFloat 32
+          %9 = OpExtInst %void %1 DebugTypeBasic %8 %uint_32 %uint_3 %uint_0
+         %18 = OpExtInst %void %1 DebugSource %2 %19
+         %20 = OpExtInst %void %1 DebugCompilationUnit %uint_1 %uint_4 %18 %uint_2
+%_ptr_Private_float = OpTypePointer Private %float
+          %x = OpVariable %_ptr_Private_float Private
+         %39 = OpExtInst %void %1 DebugGlobalVariable %40 %9 %18 %uint_2 %uint_0 %20 %40 %x %uint_8
+       %main = OpFunction %void None %5
+         %15 = OpLabel
+         %26 = OpExtInst %void %1 DebugLine %18 %uint_5 %uint_5 %uint_0 %uint_0
+         ;; invalid here, storing a uint to a float
+               OpStore %x %uint_0
+               OpReturn
+               OpFunctionEnd
+)";
+  CompileSuccessfully(str.c_str(), SPV_ENV_VULKAN_1_3);
+  EXPECT_NE(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_3));
+  EXPECT_THAT(getDiagnosticString(), HasSubstr(R"(  --> a.comp:5:0
+  |
+5 |     x = 0;
+  |
+  --> a.comp:2:0
+  |
+2 | float x;
+  |)"));
+}
+
+TEST_F(ValidateShaderDebugInfo, LoadLocalVariable) {
+  const std::string str = R"(
+               OpCapability Shader
+               OpExtension "SPV_KHR_non_semantic_info"
+          %1 = OpExtInstImport "NonSemantic.Shader.DebugInfo.100"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %main "main"
+               OpExecutionMode %main LocalSize 1 1 1
+          %2 = OpString "a.comp"
+          %8 = OpString "uint"
+         %16 = OpString "main"
+         %19 = OpString "#version 450
+
+void main() {
+    uint x = 0;
+    int y = x;
+}"
+         %32 = OpString "x"
+       %void = OpTypeVoid
+          %5 = OpTypeFunction %void
+       %uint = OpTypeInt 32 0
+        %int = OpTypeInt 32 1
+    %uint_32 = OpConstant %uint 32
+     %uint_0 = OpConstant %uint 0
+     %uint_1 = OpConstant %uint 1
+     %uint_2 = OpConstant %uint 2
+     %uint_3 = OpConstant %uint 3
+     %uint_4 = OpConstant %uint 4
+     %uint_5 = OpConstant %uint 5
+     %uint_6 = OpConstant %uint 6
+          %9 = OpExtInst %void %1 DebugTypeBasic %8 %uint_32 %uint_6 %uint_0
+          %6 = OpExtInst %void %1 DebugTypeFunction %uint_3 %void
+         %18 = OpExtInst %void %1 DebugSource %2 %19
+         %20 = OpExtInst %void %1 DebugCompilationUnit %uint_1 %uint_4 %18 %uint_2
+         %17 = OpExtInst %void %1 DebugFunction %16 %6 %18 %uint_3 %uint_0 %20 %16 %uint_3 %uint_3
+         %31 = OpExtInst %void %1 DebugLocalVariable %32 %9 %18 %uint_4 %uint_0 %17 %uint_4
+         %34 = OpExtInst %void %1 DebugExpression
+%_ptr_Function_uint = OpTypePointer Function %uint
+       %main = OpFunction %void None %5
+         %15 = OpLabel
+          %x = OpVariable %_ptr_Function_uint Function
+         %25 = OpExtInst %void %1 DebugScope %17
+         %35 = OpExtInst %void %1 DebugLine %18 %uint_4 %uint_4 %uint_0 %uint_0
+         %33 = OpExtInst %void %1 DebugDeclare %31 %x %34
+               OpStore %x %uint_0
+         %46 = OpExtInst %void %1 DebugLine %18 %uint_5 %uint_5 %uint_0 %uint_0
+         ;; invalid here, loading a uint as an int
+         %47 = OpLoad %int %x
+               OpReturn
+               OpFunctionEnd
+)";
+  CompileSuccessfully(str.c_str(), SPV_ENV_VULKAN_1_3);
+  EXPECT_NE(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_3));
+  EXPECT_THAT(getDiagnosticString(), HasSubstr(R"(  --> a.comp:5:0
+  |
+5 |     int y = x;
+  |
+  --> a.comp:4:0
+  |
+4 |     uint x = 0;
+  |)"));
 }
 
 TEST_F(ValidateShaderDebugInfo, FunctionCall) {
@@ -937,6 +1103,61 @@ void main() {
   EXPECT_THAT(getDiagnosticString(), HasSubstr(R"(--> a.comp:3:0
   |
 3 | void main() {
+  |)"));
+}
+
+TEST_F(ValidateShaderDebugInfo, Function) {
+  const std::string str = R"(
+               OpCapability Shader
+               OpExtension "SPV_KHR_non_semantic_info"
+          %1 = OpExtInstImport "NonSemantic.Shader.DebugInfo.100"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %main "main"
+               OpExecutionMode %main LocalSize 1 1 1
+          %2 = OpString "a.comp"
+          %8 = OpString "uint"
+         %16 = OpString "foo"
+         %19 = OpString "#version 450
+
+uint foo() {
+    return 1;
+}
+
+void main() {
+}"
+       %void = OpTypeVoid
+          %5 = OpTypeFunction %void
+       %uint = OpTypeInt 32 0
+    %uint_32 = OpConstant %uint 32
+     %uint_6 = OpConstant %uint 6
+     %uint_0 = OpConstant %uint 0
+          %9 = OpExtInst %void %1 DebugTypeBasic %8 %uint_32 %uint_6 %uint_0
+     %uint_3 = OpConstant %uint 3
+          %6 = OpExtInst %void %1 DebugTypeFunction %uint_3 %9
+         %18 = OpExtInst %void %1 DebugSource %2 %19
+     %uint_1 = OpConstant %uint 1
+     %uint_4 = OpConstant %uint 4
+     %uint_2 = OpConstant %uint 2
+         %20 = OpExtInst %void %1 DebugCompilationUnit %uint_1 %uint_4 %18 %uint_2
+         %17 = OpExtInst %void %1 DebugFunction %16 %6 %18 %uint_3 %uint_0 %20 %16 %uint_3 %uint_3
+       %main = OpFunction %void None %5
+         %15 = OpLabel
+               OpReturn
+               OpFunctionEnd
+         ;; invalid here, return type does not match the function type
+        %foo = OpFunction %uint None %5
+         %21 = OpLabel
+         %25 = OpExtInst %void %1 DebugScope %17
+         %26 = OpExtInst %void %1 DebugLine %18 %uint_3 %uint_3 %uint_0 %uint_0
+         %24 = OpExtInst %void %1 DebugFunctionDefinition %17 %foo
+               OpReturnValue %uint_1
+               OpFunctionEnd
+)";
+  CompileSuccessfully(str.c_str(), SPV_ENV_VULKAN_1_3);
+  EXPECT_NE(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_3));
+  EXPECT_THAT(getDiagnosticString(), HasSubstr(R"(--> a.comp:3:0
+  |
+3 | uint foo() {
   |)"));
 }
 

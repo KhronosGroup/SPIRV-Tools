@@ -2406,6 +2406,10 @@ std::string ValidationState_t::InspectShaderDebugInfo(const Instruction& inst) {
     } else if (opcode == spv::Op::OpReturnValue ||
                opcode == spv::Op::OpFunctionParameter) {
       InspectLineAndFunctionDefinition(ss, *func, inst);
+    } else if (opcode == spv::Op::OpLoad || opcode == spv::Op::OpStore ||
+               opcode == spv::Op::OpAccessChain ||
+               opcode == spv::Op::OpInBoundsAccessChain) {
+      InspectLineAndVariable(ss, inst);
     } else {
       // Currently a fall back for anything in a function
       InspectDebugLine(ss, inst);
@@ -2414,10 +2418,19 @@ std::string ValidationState_t::InspectShaderDebugInfo(const Instruction& inst) {
     // Know are global because not in any function
     // TODO - test with OpUntypedVariable as well
     InspectDebugGlobalVariable(ss, inst);
+  } else if (spvOpcodeIsDecoration(opcode)) {
+    // Print the global variable being decorated
+    const Instruction* target = FindDef(inst.GetOperandAs<uint32_t>(0));
+    if (target && target->opcode() == spv::Op::OpVariable &&
+        target->function() == nullptr) {
+      InspectDebugGlobalVariable(ss, *target);
+    }
   } else if (opcode == spv::Op::OpExecutionMode ||
              opcode == spv::Op::OpExecutionModeId ||
              opcode == spv::Op::OpEntryPoint) {
     InspectEntryPoint(ss, inst);
+  } else if (opcode == spv::Op::OpFunction) {
+    InspectDebugFunctionDefinition(ss, inst);
   }
 
   return ss.str();
@@ -2644,6 +2657,28 @@ void ValidationState_t::InspectLineAndFunctionDefinition(
   const Instruction* function_inst = FindDef(func.id());
   if (function_inst) {
     InspectDebugFunctionDefinition(ss, *function_inst);
+  }
+}
+
+// For memory accesses, print both the line of the access and where the
+// variable was declared
+void ValidationState_t::InspectLineAndVariable(std::ostringstream& ss,
+                                               const Instruction& inst) {
+  InspectDebugLine(ss, inst);
+
+  // OpStore has no result, so the pointer is the first operand
+  const size_t pointer_index = inst.opcode() == spv::Op::OpStore ? 0 : 2;
+  const Instruction* pointer =
+      FindDef(inst.GetOperandAs<uint32_t>(pointer_index));
+  if (!pointer) return;
+
+  const Instruction* variable = TracePointer(pointer);
+  if (!variable || variable->opcode() != spv::Op::OpVariable) return;
+
+  if (variable->function()) {
+    InspectDebugLocalVariable(ss, *variable->function(), *variable);
+  } else {
+    InspectDebugGlobalVariable(ss, *variable);
   }
 }
 
