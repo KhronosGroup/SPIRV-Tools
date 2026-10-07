@@ -5240,6 +5240,38 @@ OpFunctionEnd
                 "OpTypeSampledImage, or OpTypeAccelerationStructureKHR"));
 }
 
+TEST_F(ValidateMemory, CopyMemoryToImage) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %main "main"
+OpExecutionMode %main LocalSize 1 1 1
+OpDecorate %uc_var DescriptorSet 0
+OpDecorate %uc_var Binding 0
+%void = OpTypeVoid
+%int = OpTypeInt 32 0
+%img = OpTypeImage %int 2D 2 0 0 2 R32i
+%ptr_uc_img = OpTypePointer UniformConstant %img
+%ptr_img = OpTypePointer Function %img
+%uc_var = OpVariable %ptr_uc_img UniformConstant
+%void_fn = OpTypeFunction %void
+%main = OpFunction %void None %void_fn
+%entry = OpLabel
+%var = OpVariable %ptr_img Function
+OpCopyMemory %var %uc_var
+OpReturn
+OpFunctionEnd
+)";
+  CompileSuccessfully(spirv, SPV_ENV_VULKAN_1_1);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_VULKAN_1_1));
+  EXPECT_THAT(getDiagnosticString(),
+              AnyVUID("VUID-StandaloneSpirv-OpTypeImage-06924"));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("Cannot store to OpTypeImage, OpTypeSampler, "
+                "OpTypeSampledImage, or OpTypeAccelerationStructureKHR"));
+}
+
 TEST_F(ValidateMemory, StoreToUniformBlock) {
   const std::string spirv = R"(
 OpCapability Shader

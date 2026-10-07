@@ -1500,6 +1500,28 @@ spv_result_t ValidateLoad(ValidationState_t& _, const Instruction* inst) {
   return SPV_SUCCESS;
 }
 
+spv_result_t ValidateStoredTypeNotOpaque(ValidationState_t& _,
+                                         const Instruction* inst,
+                                         uint32_t type_id) {
+  if (!spvIsVulkanEnv(_.context()->target_env) ||
+      _.options()->before_hlsl_legalization) {
+    return SPV_SUCCESS;
+  }
+  const auto isForbiddenType = [](const Instruction* type_inst) {
+    auto opcode = type_inst->opcode();
+    return opcode == spv::Op::OpTypeImage || opcode == spv::Op::OpTypeSampler ||
+           opcode == spv::Op::OpTypeSampledImage ||
+           opcode == spv::Op::OpTypeAccelerationStructureKHR;
+  };
+  if (_.ContainsType(type_id, isForbiddenType)) {
+    return _.diag(SPV_ERROR_INVALID_ID, inst)
+           << _.VkErrorID(6924)
+           << "Cannot store to OpTypeImage, OpTypeSampler, "
+              "OpTypeSampledImage, or OpTypeAccelerationStructureKHR objects";
+  }
+  return SPV_SUCCESS;
+}
+
 spv_result_t ValidateStore(ValidationState_t& _, const Instruction* inst) {
   const auto pointer_index = 0;
   const auto pointer_id = inst->GetOperandAs<uint32_t>(pointer_index);
@@ -1641,21 +1663,8 @@ spv_result_t ValidateStore(ValidationState_t& _, const Instruction* inst) {
     }
   }
 
-  if (spvIsVulkanEnv(_.context()->target_env) &&
-      !_.options()->before_hlsl_legalization) {
-    const auto isForbiddenType = [](const Instruction* type_inst) {
-      auto opcode = type_inst->opcode();
-      return opcode == spv::Op::OpTypeImage ||
-             opcode == spv::Op::OpTypeSampler ||
-             opcode == spv::Op::OpTypeSampledImage ||
-             opcode == spv::Op::OpTypeAccelerationStructureKHR;
-    };
-    if (_.ContainsType(object_type->id(), isForbiddenType)) {
-      return _.diag(SPV_ERROR_INVALID_ID, inst)
-             << _.VkErrorID(6924)
-             << "Cannot store to OpTypeImage, OpTypeSampler, "
-                "OpTypeSampledImage, or OpTypeAccelerationStructureKHR objects";
-    }
+  if (auto error = ValidateStoredTypeNotOpaque(_, inst, object_type->id())) {
+    return error;
   }
 
   return SPV_SUCCESS;
@@ -1782,6 +1791,11 @@ spv_result_t ValidateCopyMemory(ValidationState_t& _, const Instruction* inst) {
     if (!target_type && !source_type) {
       return _.diag(SPV_ERROR_INVALID_ID, inst)
              << "One of Source or Target must be a typed pointer";
+    }
+
+    const auto copied_type = target_type ? target_type : source_type;
+    if (auto error = ValidateStoredTypeNotOpaque(_, inst, copied_type->id())) {
+      return error;
     }
 
     if (auto error = CheckMemoryAccess(_, inst, 2)) return error;
