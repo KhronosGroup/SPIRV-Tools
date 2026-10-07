@@ -971,6 +971,32 @@ TEST_F(ValidateSpvEXTDescriptorHeap, ConstantSizeOfDescriptorTypeTarget) {
                         "<Id> '5[%U]' must be a Descriptor type"));
 }
 
+TEST_F(ValidateSpvEXTDescriptorHeap, ConstantSizeOfNonIntResultType) {
+  const std::string str = R"(
+               OpCapability Shader
+               OpCapability DescriptorHeapEXT
+               OpExtension "SPV_EXT_descriptor_heap"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %main "main"
+               OpExecutionMode %main LocalSize 1 1 1
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+       %bool = OpTypeBool
+    %sampler = OpTypeSampler
+         %18 = OpConstantSizeOfEXT %bool %sampler
+       %main = OpFunction %void None %3
+          %5 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+  CompileSuccessfully(str.c_str(), SPV_ENV_VULKAN_1_3);
+  EXPECT_NE(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_3));
+  const std::string diag = getDiagnosticString();
+  EXPECT_THAT(diag,
+              HasSubstr("For OpConstantSizeOfEXT instruction, its result type "
+                        "must be a 32-bit or 64-bit integer type scalar."));
+}
+
 TEST_F(ValidateSpvEXTDescriptorHeap, OffsetId64BitIndexingBad) {
   const std::string str = R"(
         OpCapability Shader
