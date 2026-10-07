@@ -3626,6 +3626,19 @@ spv_result_t ValidatePtrComparison(ValidationState_t& _,
   const auto op2 = _.FindDef(inst->GetOperandAs<uint32_t>(3u));
   const auto op1_type = _.FindDef(op1->type_id());
   const auto op2_type = _.FindDef(op2->type_id());
+
+  if (!op1_type || (op1_type->opcode() != spv::Op::OpTypePointer &&
+                    op1_type->opcode() != spv::Op::OpTypeUntypedPointerKHR)) {
+    return _.diag(SPV_ERROR_INVALID_ID, inst)
+           << "Operand type must be a pointer";
+  }
+
+  if (!op2_type || (op2_type->opcode() != spv::Op::OpTypePointer &&
+                    op2_type->opcode() != spv::Op::OpTypeUntypedPointerKHR)) {
+    return _.diag(SPV_ERROR_INVALID_ID, inst)
+           << "Operand type must be a pointer";
+  }
+
   spv::StorageClass sc = op1_type->GetOperandAs<spv::StorageClass>(1u);
   if ((_.addressing_model() == spv::AddressingModel::Logical ||
        _.addressing_model() == spv::AddressingModel::PhysicalStorageBuffer64) &&
@@ -3647,18 +3660,6 @@ spv_result_t ValidatePtrComparison(ValidationState_t& _,
       return _.diag(SPV_ERROR_INVALID_ID, inst)
              << "Result Type must be OpTypeBool";
     }
-  }
-
-  if (!op1_type || (op1_type->opcode() != spv::Op::OpTypePointer &&
-                    op1_type->opcode() != spv::Op::OpTypeUntypedPointerKHR)) {
-    return _.diag(SPV_ERROR_INVALID_ID, inst)
-           << "Operand type must be a pointer";
-  }
-
-  if (!op2_type || (op2_type->opcode() != spv::Op::OpTypePointer &&
-                    op2_type->opcode() != spv::Op::OpTypeUntypedPointerKHR)) {
-    return _.diag(SPV_ERROR_INVALID_ID, inst)
-           << "Operand type must be a pointer";
   }
 
   if (inst->opcode() == spv::Op::OpPtrDiff) {

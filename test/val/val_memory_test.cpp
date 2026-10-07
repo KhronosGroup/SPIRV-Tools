@@ -4736,6 +4736,40 @@ OpFunctionEnd
               HasSubstr("Operand type must be a pointer"));
 }
 
+TEST_P(ValidatePointerComparisons, BadOperandTypeBool) {
+  const std::string operation = GetParam();
+
+  std::string spirv = R"(
+OpCapability Shader
+OpCapability Linkage
+OpCapability VariablePointersStorageBuffer
+OpMemoryModel Logical GLSL450
+%void = OpTypeVoid
+%bool = OpTypeBool
+%int = OpTypeInt 32 0
+%true = OpConstantTrue %bool
+%func_ty = OpTypeFunction %void
+%func = OpFunction %void None %func_ty
+%1 = OpLabel
+%equal = )" + operation;
+
+  if (operation == "OpPtrDiff") {
+    spirv += " %int ";
+  } else {
+    spirv += " %bool ";
+  }
+
+  spirv += R"(%true %true
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_4);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_UNIVERSAL_1_4));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Operand type must be a pointer"));
+}
+
 TEST_P(ValidatePointerComparisons, BadStorageClassWorkgroup) {
   const std::string operation = GetParam();
 
