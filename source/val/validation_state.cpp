@@ -2513,7 +2513,10 @@ void ValidationState_t::InspectDebugLine(std::ostringstream& ss,
   size_t idx = &inst - &ordered_instructions()[0];
   while (idx > 0) {
     const Instruction* prev = &ordered_instructions()[--idx];
-    if (prev->opcode() == spv::Op::OpFunction) {
+    // A DebugLine only applies until the end of its block
+    if (prev->opcode() == spv::Op::OpFunction ||
+        prev->opcode() == spv::Op::OpLabel ||
+        spvOpcodeIsBlockTerminator(prev->opcode())) {
       break;
     }
 
@@ -2709,6 +2712,9 @@ void ValidationState_t::InspectDebugFunctionDefinition(
 void ValidationState_t::PrintShaderDebugInfoSource(
     std::ostringstream& ss, const Instruction& debug_source,
     const DebugSourceInfo& source_info) {
+  // Line 0 is used when it can't be attributed to any source line
+  if (source_info.line_start == 0) return;
+
   // The left hand side line number, need to make sure if going from line number
   // 99 to 100 that all lines have the same padding
   const size_t vertical_line_padding =
@@ -2753,6 +2759,9 @@ void ValidationState_t::PrintShaderDebugInfoSource(
       FindDef(debug_source.GetOperandAs<uint32_t>(4));
   ss << "\n  --> " << file_string->GetOperandAs<std::string>(1) << ":"
      << source_info.line_start << ":" << source_info.column_start << '\n';
+
+  // The Text operand is optional
+  if (debug_source.operands().size() < 6) return;
 
   add_vertical_line(0);
   ss << '\n';
