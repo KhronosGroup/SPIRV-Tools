@@ -2084,6 +2084,27 @@ BinaryScalarFoldingRule FoldBinaryIntegerOperation(uint64_t (*op)(uint64_t,
       };
 }
 
+template <Sign signedness>
+UnaryScalarFoldingRule FoldUnaryIntegerOperation(uint64_t (*op)(uint64_t)) {
+  return
+      [op](const analysis::Type* result_type, const analysis::Constant* a,
+           analysis::ConstantManager* const_mgr) -> const analysis::Constant* {
+        assert(result_type != nullptr && a != nullptr);
+        const analysis::Integer* integer_type = result_type->AsInteger();
+        assert(integer_type != nullptr);
+        assert(a->type()->kind() == analysis::Type::kInteger);
+        assert(integer_type->width() == a->type()->AsInteger()->width());
+
+        uint64_t ia = (signedness == Signed ? a->GetSignExtendedValue()
+                                            : a->GetZeroExtendedValue());
+        uint64_t result = op(ia);
+
+        const analysis::Constant* result_constant =
+            const_mgr->GenerateIntegerConstant(integer_type, result);
+        return result_constant;
+      };
+}
+
 // A scalar folding rule that folds OpSConvert.
 const analysis::Constant* FoldScalarSConvert(
     const analysis::Type* result_type, const analysis::Constant* a,
@@ -2331,6 +2352,14 @@ void ConstantFoldingRules::AddFoldingRules() {
         FoldFPBinaryOp(FoldFTranscendentalBinary(std::atan2)));
     ext_rules_[{ext_inst_glslstd450_id, GLSLstd450Pow}].push_back(
         FoldFPBinaryOp(FoldFTranscendentalBinary(std::pow)));
+    ext_rules_[{ext_inst_glslstd450_id, GLSLstd450FAbs}].push_back(
+        FoldFPUnaryOp(FoldFTranscendentalUnary(std::fabs)));
+
+    ext_rules_[{ext_inst_glslstd450_id, GLSLstd450SAbs}].push_back(
+        FoldUnaryOp(FoldUnaryIntegerOperation<Signed>([](uint64_t a) {
+          int64_t value = static_cast<int64_t>(a);
+          return static_cast<uint64_t>(value >= 0 ? value : -value);
+        })));
   }
 }
 }  // namespace opt
