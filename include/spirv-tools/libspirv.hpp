@@ -138,6 +138,12 @@ class SPIRV_TOOLS_EXPORT ValidatorOptions {
     spvValidatorOptionsSetAllowVulkan32BitBitwise(options_, val);
   }
 
+  // Records whether or not the validator should reject modules that import a
+  // NonSemantic.Shader.DebugInfo version newer than the latest known version.
+  void SetRejectUnknownNsdiVersion(bool val) {
+    spvValidatorOptionsSetRejectUnknownNsdiVersion(options_, val);
+  }
+
   // Sets custom size and alignment for buffer and acceleration structure
   // descriptor heap resources.
   void SetBufferDescriptorLayout(uint32_t size, uint32_t alignment) {

@@ -5885,7 +5885,7 @@ TEST_F(ValidateVulkan100DebugInfo, DebugTypeBasicExtraOperand) {
   const std::string dbg_inst_header = R"(
 %dbg_src = OpExtInst %void %DbgExt DebugSource %src %code
 %comp_unit = OpExtInst %void %DbgExt DebugCompilationUnit %u32_2 %u32_4 %dbg_src %u32_5
-%float_info = OpExtInst %void %DbgExt DebugTypeBasic %float_name %u32_32 %u32_3 %u32_0 %u32_1
+%float_info = OpExtInst %void %DbgExt DebugTypeBasic %float_name %u32_32 %u32_3 %u32_0 %u32_1 %u32_2
 )";
 
   CompileSuccessfully(GenerateShaderCodeForDebugInfo(
@@ -5893,11 +5893,109 @@ TEST_F(ValidateVulkan100DebugInfo, DebugTypeBasicExtraOperand) {
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
+TEST_F(ValidateVulkan100DebugInfo, DebugTypeBasicExtraOperandKnownVersion) {
+  const std::string src = R"(
+%src = OpString "simple.hlsl"
+%code = OpString "int main() {}"
+%float_name = OpString "float"
+)";
+
+  const std::string dbg_inst_header = R"(
+%dbg_src = OpExtInst %void %DbgExt DebugSource %src %code
+%comp_unit = OpExtInst %void %DbgExt DebugCompilationUnit %u32_2 %u32_4 %dbg_src %u32_5
+%float_info = OpExtInst %void %DbgExt DebugTypeBasic %float_name %u32_32 %u32_3 %u32_0 %u32_1 %u32_2
+)";
+
+  CompileSuccessfully(GenerateShaderCodeForDebugInfo(
+      src, "", dbg_inst_header, "", shader_extension_101, "Vertex"));
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("DebugTypeBasic: incorrect number of operands: "
+                        "expected at most 5 operands, but found 6"));
+}
+
+TEST_F(ValidateVulkan100DebugInfo, DebugTypeBasicBadFlagsUnknownVersion) {
+  const std::string src = R"(
+%src = OpString "simple.hlsl"
+%code = OpString "int main() {}"
+%float_name = OpString "float"
+)";
+
+  const std::string dbg_inst_header = R"(
+%dbg_src = OpExtInst %void %DbgExt DebugSource %src %code
+%comp_unit = OpExtInst %void %DbgExt DebugCompilationUnit %u32_2 %u32_4 %dbg_src %u32_5
+%float_info = OpExtInst %void %DbgExt DebugTypeBasic %float_name %u32_32 %u32_3 %float_name
+)";
+
+  CompileSuccessfully(GenerateShaderCodeForDebugInfo(
+      src, "", dbg_inst_header, "", shader_extension_9999, "Vertex"));
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("DebugTypeBasic: expected operand Flags must be a "
+                        "result id of 32-bit unsigned OpConstant"));
+}
+
+TEST_F(ValidateVulkan100DebugInfo, DebugSourceBadTextUnknownVersion) {
+  // The optional Text operand is still checked when a newer version adds a
+  // trailing operand after it.
+  const std::string src = R"(
+%src = OpString "simple.hlsl"
+)";
+
+  const std::string dbg_inst_header = R"(
+%dbg_src = OpExtInst %void %DbgExt DebugSource %src %u32_0 %u32_0
+%comp_unit = OpExtInst %void %DbgExt DebugCompilationUnit %u32_2 %u32_4 %dbg_src %u32_5
+)";
+
+  CompileSuccessfully(GenerateShaderCodeForDebugInfo(
+      src, "", dbg_inst_header, "", shader_extension_9999, "Vertex"));
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("DebugSource: expected operand Text must be a result "
+                        "id of OpString"));
+}
+
+TEST_F(ValidateVulkan100DebugInfo, RejectUnknownVersionOption) {
+  const std::string src = R"(
+%src = OpString "simple.hlsl"
+%code = OpString "int main() {}"
+)";
+
+  const std::string dbg_inst_header = R"(
+%dbg_src = OpExtInst %void %DbgExt DebugSource %src %code
+%comp_unit = OpExtInst %void %DbgExt DebugCompilationUnit %u32_2 %u32_4 %dbg_src %u32_5
+)";
+
+  spvValidatorOptionsSetRejectUnknownNsdiVersion(getValidatorOptions(), true);
+  CompileSuccessfully(GenerateShaderCodeForDebugInfo(
+      src, "", dbg_inst_header, "", shader_extension_9999, "Vertex"));
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("NonSemantic.Shader.DebugInfo import version 9999 is "
+                        "newer than the latest known version 101"));
+}
+
+TEST_F(ValidateVulkan100DebugInfo, RejectUnknownVersionOptionKnownVersion) {
+  const std::string src = R"(
+%src = OpString "simple.hlsl"
+%code = OpString "int main() {}"
+)";
+
+  const std::string dbg_inst_header = R"(
+%dbg_src = OpExtInst %void %DbgExt DebugSource %src %code
+%comp_unit = OpExtInst %void %DbgExt DebugCompilationUnit %u32_2 %u32_4 %dbg_src %u32_5
+)";
+
+  spvValidatorOptionsSetRejectUnknownNsdiVersion(getValidatorOptions(), true);
+  CompileSuccessfully(GenerateShaderCodeForDebugInfo(
+      src, "", dbg_inst_header, "", shader_extension_101, "Vertex"));
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
 TEST_F(ValidateVulkan100DebugInfo, UnknownInstructionAccepted) {
-  // Opcode 20000 is not defined in NSDI 100 (highest known opcode is 108).
-  // Both the text assembler and binary decoder handle it via the VARIABLE_ID
-  // fallback for unknown non-semantic opcodes; the validator's switch falls
-  // through to SPV_SUCCESS.
+  // Opcode 20000 is not defined in any known NSDI version (highest known
+  // opcode is 110). Both the text assembler and binary decoder handle it via
+  // the VARIABLE_ID fallback for unknown non-semantic opcodes.
   const std::string src = R"(
 %src = OpString "simple.hlsl"
 %code = OpString "int main() {}"
@@ -5910,8 +6008,28 @@ TEST_F(ValidateVulkan100DebugInfo, UnknownInstructionAccepted) {
 )";
 
   CompileSuccessfully(GenerateShaderCodeForDebugInfo(
-      src, "", dbg_inst_header, "", shader_extension_100, "Vertex"));
+      src, "", dbg_inst_header, "", shader_extension_9999, "Vertex"));
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+TEST_F(ValidateVulkan100DebugInfo, UnknownInstructionKnownVersion) {
+  const std::string src = R"(
+%src = OpString "simple.hlsl"
+%code = OpString "int main() {}"
+)";
+
+  const std::string dbg_inst_header = R"(
+%dbg_src = OpExtInst %void %DbgExt DebugSource %src %code
+%comp_unit = OpExtInst %void %DbgExt DebugCompilationUnit %u32_2 %u32_4 %dbg_src %u32_5
+%unknown_inst = OpExtInst %void %DbgExt 20000 %u32_0 %u32_1 %u32_2 %u32_3
+)";
+
+  CompileSuccessfully(GenerateShaderCodeForDebugInfo(
+      src, "", dbg_inst_header, "", shader_extension_101, "Vertex"));
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("NonSemantic.Shader.DebugInfo.101 has no instruction "
+                        "20000"));
 }
 
 TEST_F(ValidateVulkan100DebugInfo, DebugTypeBasicTwoExtraOperands) {
@@ -5926,7 +6044,7 @@ TEST_F(ValidateVulkan100DebugInfo, DebugTypeBasicTwoExtraOperands) {
   const std::string dbg_inst_header = R"(
 %dbg_src = OpExtInst %void %DbgExt DebugSource %src %code
 %comp_unit = OpExtInst %void %DbgExt DebugCompilationUnit %u32_2 %u32_4 %dbg_src %u32_5
-%float_info = OpExtInst %void %DbgExt DebugTypeBasic %float_name %u32_32 %u32_3 %u32_0 %u32_1 %u32_2
+%float_info = OpExtInst %void %DbgExt DebugTypeBasic %float_name %u32_32 %u32_3 %u32_0 %u32_1 %u32_2 %u32_3
 )";
 
   CompileSuccessfully(GenerateShaderCodeForDebugInfo(
@@ -5935,9 +6053,25 @@ TEST_F(ValidateVulkan100DebugInfo, DebugTypeBasicTwoExtraOperands) {
 }
 
 TEST_F(ValidateVulkan100DebugInfo, DebugSourceExtraOperand) {
-  // DebugSource already has one optional operand (Text) in NSDI 100.  An
-  // additional trailing operand tests the VARIABLE_ID sentinel when a
-  // grammar-defined OPTIONAL_ID is also present.
+  // DebugSource already has one optional operand (Text).  An additional
+  // trailing operand tests the VARIABLE_ID sentinel when a grammar-defined
+  // OPTIONAL_ID is also present.
+  const std::string src = R"(
+%src = OpString "simple.hlsl"
+%code = OpString "int main() {}"
+)";
+
+  const std::string dbg_inst_header = R"(
+%dbg_src = OpExtInst %void %DbgExt DebugSource %src %code %u32_0
+%comp_unit = OpExtInst %void %DbgExt DebugCompilationUnit %u32_2 %u32_4 %dbg_src %u32_5
+)";
+
+  CompileSuccessfully(GenerateShaderCodeForDebugInfo(
+      src, "", dbg_inst_header, "", shader_extension_9999, "Vertex"));
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+TEST_F(ValidateVulkan100DebugInfo, DebugSourceExtraOperandKnownVersion) {
   const std::string src = R"(
 %src = OpString "simple.hlsl"
 %code = OpString "int main() {}"
@@ -5950,7 +6084,10 @@ TEST_F(ValidateVulkan100DebugInfo, DebugSourceExtraOperand) {
 
   CompileSuccessfully(GenerateShaderCodeForDebugInfo(
       src, "", dbg_inst_header, "", shader_extension_100, "Vertex"));
-  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("DebugSource: incorrect number of operands: expected "
+                        "at most 2 operands, but found 3"));
 }
 
 TEST_F(ValidateVulkan100DebugInfo, UnknownInstructionNoOperands) {
@@ -5967,7 +6104,7 @@ TEST_F(ValidateVulkan100DebugInfo, UnknownInstructionNoOperands) {
 )";
 
   CompileSuccessfully(GenerateShaderCodeForDebugInfo(
-      src, "", dbg_inst_header, "", shader_extension_100, "Vertex"));
+      src, "", dbg_inst_header, "", shader_extension_9999, "Vertex"));
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
@@ -5985,8 +6122,99 @@ TEST_F(ValidateVulkan100DebugInfo, UnknownInstructionManyOperands) {
 )";
 
   CompileSuccessfully(GenerateShaderCodeForDebugInfo(
-      src, "", dbg_inst_header, "", shader_extension_100, "Vertex"));
+      src, "", dbg_inst_header, "", shader_extension_9999, "Vertex"));
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+TEST_F(ValidateVulkan100DebugInfo, UnknownInstructionInBody) {
+  const std::string src = R"(
+%src = OpString "simple.hlsl"
+%code = OpString "int main() {}"
+)";
+
+  const std::string dbg_inst_header = R"(
+%dbg_src = OpExtInst %void %DbgExt DebugSource %src %code
+%comp_unit = OpExtInst %void %DbgExt DebugCompilationUnit %u32_2 %u32_4 %dbg_src %u32_5
+)";
+
+  const std::string body = R"(
+%unknown_inst = OpExtInst %void %DbgExt 20000 %u32_0 %u32_1
+)";
+
+  CompileSuccessfully(GenerateShaderCodeForDebugInfo(
+      src, "", dbg_inst_header, body, shader_extension_9999, "Vertex"));
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+TEST_F(ValidateVulkan100DebugInfo, UnknownInstructionInBodyKnownVersion) {
+  const std::string src = R"(
+%src = OpString "simple.hlsl"
+%code = OpString "int main() {}"
+)";
+
+  const std::string dbg_inst_header = R"(
+%dbg_src = OpExtInst %void %DbgExt DebugSource %src %code
+%comp_unit = OpExtInst %void %DbgExt DebugCompilationUnit %u32_2 %u32_4 %dbg_src %u32_5
+)";
+
+  const std::string body = R"(
+%unknown_inst = OpExtInst %void %DbgExt 20000 %u32_0 %u32_1
+)";
+
+  CompileSuccessfully(GenerateShaderCodeForDebugInfo(
+      src, "", dbg_inst_header, body, shader_extension_101, "Vertex"));
+  ASSERT_EQ(SPV_ERROR_INVALID_LAYOUT, ValidateInstructions());
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("Debug info extension instructions other than DebugScope, "
+                "DebugNoScope, DebugDeclare, DebugValue must appear between "
+                "section 9 (types, constants, global variables) and section 10 "
+                "(function declarations)"));
+}
+
+TEST_F(ValidateVulkan100DebugInfo, UnknownInstructionAfterFunction) {
+  const std::string src = R"(
+%src = OpString "simple.hlsl"
+%code = OpString "int main() {}"
+)";
+
+  const std::string dbg_inst_header = R"(
+%dbg_src = OpExtInst %void %DbgExt DebugSource %src %code
+%comp_unit = OpExtInst %void %DbgExt DebugCompilationUnit %u32_2 %u32_4 %dbg_src %u32_5
+)";
+
+  CompileSuccessfully(
+      GenerateShaderCodeForDebugInfo(src, "", dbg_inst_header, "",
+                                     shader_extension_9999, "Vertex") +
+      "\n%unknown_inst = OpExtInst %void %DbgExt 20000 %u32_0 %u32_1\n");
+  ASSERT_EQ(SPV_ERROR_INVALID_LAYOUT, ValidateInstructions());
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("Debug info extension instructions other than DebugScope, "
+                "DebugNoScope, DebugDeclare, DebugValue must appear between "
+                "section 9 (types, constants, global variables) and section 10 "
+                "(function declarations)"));
+}
+
+TEST_F(ValidateVulkan100DebugInfo, DebugSourceInFunctionUnknownVersion) {
+  const std::string src = R"(
+%src = OpString "simple.hlsl"
+%code = OpString "main() {}"
+)";
+
+  const std::string body = R"(
+%dbg_src = OpExtInst %void %DbgExt DebugSource %src %code
+)";
+
+  CompileSuccessfully(GenerateShaderCodeForDebugInfo(
+      src, "", "", body, shader_extension_9999, "Vertex"));
+  ASSERT_EQ(SPV_ERROR_INVALID_LAYOUT, ValidateInstructions());
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("Debug info extension instructions other than DebugScope, "
+                "DebugNoScope, DebugDeclare, DebugValue must appear between "
+                "section 9 (types, constants, global variables) and section 10 "
+                "(function declarations)"));
 }
 
 TEST_F(ValidateVulkan100DebugInfo, DebugNoScopeExtraOperandInBody) {
@@ -6009,8 +6237,31 @@ TEST_F(ValidateVulkan100DebugInfo, DebugNoScopeExtraOperandInBody) {
 )";
 
   CompileSuccessfully(GenerateShaderCodeForDebugInfo(
-      src, "", dbg_inst_header, body, shader_extension_100, "Vertex"));
+      src, "", dbg_inst_header, body, shader_extension_9999, "Vertex"));
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+TEST_F(ValidateVulkan100DebugInfo, DebugNoScopeExtraOperandKnownVersion) {
+  const std::string src = R"(
+%src = OpString "simple.hlsl"
+%code = OpString "int main() {}"
+)";
+
+  const std::string dbg_inst_header = R"(
+%dbg_src = OpExtInst %void %DbgExt DebugSource %src %code
+%comp_unit = OpExtInst %void %DbgExt DebugCompilationUnit %u32_2 %u32_4 %dbg_src %u32_5
+)";
+
+  const std::string body = R"(
+%no_scope = OpExtInst %void %DbgExt DebugNoScope %u32_0
+)";
+
+  CompileSuccessfully(GenerateShaderCodeForDebugInfo(
+      src, "", dbg_inst_header, body, shader_extension_100, "Vertex"));
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("DebugNoScope: incorrect number of operands: expected "
+                        "at most 0 operands, but found 1"));
 }
 
 // From
