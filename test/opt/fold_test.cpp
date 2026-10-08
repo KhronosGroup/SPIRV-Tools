@@ -376,6 +376,7 @@ OpName %main "main"
 %v2int_2_3 = OpConstantComposite %v2int %int_2 %int_3
 %v2int_3_2 = OpConstantComposite %v2int %int_3 %int_2
 %v2int_n1_n24 = OpConstantComposite %v2int %int_n1 %int_n24
+%v2int_n1_2 = OpConstantComposite %v2int %int_n1 %int_2
 %v2int_4_4 = OpConstantComposite %v2int %int_4 %int_4
 %v2int_min_max = OpConstantComposite %v2int %int_min %int_max
 %v2short_2_n5 = OpConstantComposite %v2short %short_2 %short_n5
@@ -1390,21 +1391,21 @@ INSTANTIATE_TEST_SUITE_P(TestCase, IntegerInstructionFoldingTest,
             "OpFunctionEnd",
         2, 0x3d),
     // Test case 102: Fold SAbs -24
-  InstructionFoldingCase<uint32_t>(
-      Header() + "%main = OpFunction %void None %void_func\n" +
-          "%main_lab = OpLabel\n" +
-          "%2 = OpExtInst %int %1 SAbs %int_n24\n" +
-          "OpReturn\n" +
-          "OpFunctionEnd",
-      2, 24),
+    InstructionFoldingCase<uint32_t>(
+        Header() + "%main = OpFunction %void None %void_func\n" +
+            "%main_lab = OpLabel\n" +
+            "%2 = OpExtInst %int %1 SAbs %int_n24\n" +
+            "OpReturn\n" +
+            "OpFunctionEnd",
+        2, 24),
     // Test case 103: Fold SAbs 3
-  InstructionFoldingCase<uint32_t>(
-      Header() + "%main = OpFunction %void None %void_func\n" +
-          "%main_lab = OpLabel\n" +
-          "%2 = OpExtInst %int %1 SAbs %int_3\n" +
-          "OpReturn\n" +
-          "OpFunctionEnd",
-      2, 3)
+    InstructionFoldingCase<uint32_t>(
+        Header() + "%main = OpFunction %void None %void_func\n" +
+            "%main_lab = OpLabel\n" +
+            "%2 = OpExtInst %int %1 SAbs %int_3\n" +
+            "OpReturn\n" +
+            "OpFunctionEnd",
+        2, 3)
 ));
 // clang-format on
 
@@ -1781,7 +1782,15 @@ INSTANTIATE_TEST_SUITE_P(TestCase, IntVectorInstructionFoldingTest,
           "%2 = OpIMul %v2int %v2int_2_3 %v2int_2_3\n" +
           "OpReturn\n" +
           "OpFunctionEnd",
-      2, {4,9})
+      2, {4,9}),
+    // Test case 4: Fold SAbs
+    InstructionFoldingCase<std::vector<int32_t>>(
+        Header() + "%main = OpFunction %void None %void_func\n" +
+            "%main_lab = OpLabel\n" +
+            "%2 = OpExtInst %v2int %1 SAbs %v2int_n1_2\n" +
+            "OpReturn\n" +
+            "OpFunctionEnd",
+        2, {1, 2})
 ));
 // clang-format on
 
@@ -2067,7 +2076,15 @@ INSTANTIATE_TEST_SUITE_P(TestCase, FloatVectorInstructionFoldingTest,
        "%2 = OpMatrixTimesVector %v4float %mat4v4float_1_2_3_4_null %v4float_1_2_3_4\n" +
        "OpReturn\n" +
        "OpFunctionEnd",
-       2, {4.0,8.0,12.0,16.0})
+       2, {4.0,8.0,12.0,16.0}),
+    // Test case 11: FAbs
+    InstructionFoldingCase<std::vector<float>>(
+        HeaderWithNaN() + "%main = OpFunction %void None %void_func\n" +
+            "%main_lab = OpLabel\n" +
+            "%2 = OpExtInst %v4float %1 FAbs %v4float_n1_2_1_3\n" +
+            "OpReturn\n" +
+            "OpFunctionEnd",
+        2, {1.0,2.0,1.0,3.0})
 ));
 // clang-format on
 
