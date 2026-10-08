@@ -4254,10 +4254,15 @@ spv_result_t ValidateExtInstDebugInfo(ValidationState_t& _,
         auto validate_scope = ValidateOperandLexicalScope(_, "Scope", inst, 10);
         if (validate_scope != SPV_SUCCESS) return validate_scope;
         CHECK_OPERAND("Linkage Name", spv::Op::OpString, 11);
+        // Only NonSemantic.Shader.DebugInfo allows a DebugExpression here.
+        const bool allow_debug_expression =
+            ext_inst_type == SPV_EXT_INST_TYPE_NONSEMANTIC_SHADER_DEBUGINFO_100;
         if (!DoesDebugInfoOperandMatchExpectation(
                 _,
-                [](CommonDebugInfoInstructions dbg_inst) {
-                  return dbg_inst == CommonDebugInfoDebugInfoNone;
+                [allow_debug_expression](CommonDebugInfoInstructions dbg_inst) {
+                  return dbg_inst == CommonDebugInfoDebugInfoNone ||
+                         (allow_debug_expression &&
+                          dbg_inst == CommonDebugInfoDebugExpression);
                 },
                 inst, 12)) {
           auto* operand = _.FindDef(inst->word(12));
@@ -4279,8 +4284,10 @@ spv_result_t ValidateExtInstDebugInfo(ValidationState_t& _,
             return _.diag(SPV_ERROR_INVALID_DATA, inst)
                    << GetExtInstName(_, inst) << ": "
                    << "expected operand Variable must be a result id of "
-                      "OpVariable, OpConstant variant, OpSpecConstant variant "
-                      "or DebugInfoNone";
+                      "OpVariable, OpConstant variant, OpSpecConstant variant"
+                   << (allow_debug_expression
+                           ? ", DebugInfoNone or DebugExpression"
+                           : " or DebugInfoNone");
           }
         }
         if (has_optional_at(15)) {
