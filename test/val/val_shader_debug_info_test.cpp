@@ -1236,6 +1236,34 @@ void main() {
   |)"));
 }
 
+TEST_F(ValidateShaderDebugInfo, DebugSourceWithoutText) {
+  const std::string str = R"(
+               OpCapability Shader
+               OpExtension "SPV_KHR_non_semantic_info"
+          %1 = OpExtInstImport "NonSemantic.Shader.DebugInfo.100"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %main "main"
+               OpExecutionMode %main LocalSize 1 1 1
+          %2 = OpString "a.comp"
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+       %uint = OpTypeInt 32 0
+     %uint_0 = OpConstant %uint 0
+     %uint_7 = OpConstant %uint 7
+          %4 = OpExtInst %void %1 DebugSource %2
+       %main = OpFunction %void None %3
+          %5 = OpLabel
+          %6 = OpExtInst %void %1 DebugLine %4 %uint_7 %uint_7 %uint_0 %uint_0
+         ;; invalid here
+          %7 = OpIAdd %void %uint_0 %uint_0
+               OpReturn
+               OpFunctionEnd
+)";
+  CompileSuccessfully(str.c_str(), SPV_ENV_VULKAN_1_1);
+  EXPECT_NE(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_1));
+  EXPECT_THAT(getDiagnosticString(), HasSubstr("  --> a.comp:7:0\n"));
+}
+
 }  // namespace
 }  // namespace val
 }  // namespace spvtools

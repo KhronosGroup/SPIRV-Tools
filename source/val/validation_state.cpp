@@ -2754,6 +2754,9 @@ void ValidationState_t::PrintShaderDebugInfoSource(
   ss << "\n  --> " << file_string->GetOperandAs<std::string>(1) << ":"
      << source_info.line_start << ":" << source_info.column_start << '\n';
 
+  // The Text operand is optional; without it there is no source to print.
+  if (debug_source.operands().size() <= 5) return;
+
   add_vertical_line(0);
   ss << '\n';
 
