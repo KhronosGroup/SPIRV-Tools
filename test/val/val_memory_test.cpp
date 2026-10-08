@@ -472,6 +472,133 @@ OpFunctionEnd
                 "= OpVariable %_ptr_Input_float Input %float_1\n"));
 }
 
+TEST_F(ValidateMemory, VulkanSpecConstantInitializerPrivateWithoutConstantBad) {
+  std::string spirv = R"(
+OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %func "func"
+OpExecutionMode %func OriginUpperLeft
+%float = OpTypeFloat 32
+%float_ptr = OpTypePointer Private %float
+%spec_val = OpSpecConstant %float 1.0
+%var = OpVariable %float_ptr Private %spec_val
+%void = OpTypeVoid
+%functy = OpTypeFunction %void
+%func = OpFunction %void None %functy
+%label = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+  CompileSuccessfully(spirv.c_str(), SPV_ENV_VULKAN_1_1);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_VULKAN_1_1));
+  EXPECT_THAT(getDiagnosticString(),
+              AnyVUID("VUID-StandaloneSpirv-Function-04681"));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr(
+          "with an initializer that is a specialization constant must have "
+          "an OpDecorate with Constant or be in the Function storage class."));
+}
+
+TEST_F(ValidateMemory, VulkanSpecConstantInitializerOutputWithoutConstantBad) {
+  std::string spirv = R"(
+OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %func "func" %var
+OpExecutionMode %func OriginUpperLeft
+%float = OpTypeFloat 32
+%float_ptr = OpTypePointer Output %float
+%spec_val = OpSpecConstant %float 1.0
+%var = OpVariable %float_ptr Output %spec_val
+%void = OpTypeVoid
+%functy = OpTypeFunction %void
+%func = OpFunction %void None %functy
+%label = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+  CompileSuccessfully(spirv.c_str(), SPV_ENV_VULKAN_1_1);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_VULKAN_1_1));
+  EXPECT_THAT(getDiagnosticString(),
+              AnyVUID("VUID-StandaloneSpirv-Function-04681"));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr(
+          "with an initializer that is a specialization constant must have "
+          "an OpDecorate with Constant or be in the Function storage class."));
+}
+
+TEST_F(ValidateMemory, VulkanSpecConstantInitializerFunctionGood) {
+  std::string spirv = R"(
+OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %func "func"
+OpExecutionMode %func OriginUpperLeft
+%float = OpTypeFloat 32
+%float_ptr = OpTypePointer Function %float
+%spec_val = OpSpecConstant %float 1.0
+%void = OpTypeVoid
+%functy = OpTypeFunction %void
+%func = OpFunction %void None %functy
+%label = OpLabel
+%var = OpVariable %float_ptr Function %spec_val
+OpReturn
+OpFunctionEnd
+)";
+  CompileSuccessfully(spirv.c_str(), SPV_ENV_VULKAN_1_1);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_1));
+}
+
+TEST_F(ValidateMemory, VulkanSpecConstantCompositeInitializerFunctionGood) {
+  std::string spirv = R"(
+OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %func "func"
+OpExecutionMode %func OriginUpperLeft
+%float = OpTypeFloat 32
+%v2float = OpTypeVector %float 2
+%float_ptr = OpTypePointer Function %v2float
+%spec_a = OpSpecConstant %float 1.0
+%spec_b = OpSpecConstant %float 2.0
+%spec_comp = OpSpecConstantComposite %v2float %spec_a %spec_b
+%void = OpTypeVoid
+%functy = OpTypeFunction %void
+%func = OpFunction %void None %functy
+%label = OpLabel
+%var = OpVariable %float_ptr Function %spec_comp
+OpReturn
+OpFunctionEnd
+)";
+  CompileSuccessfully(spirv.c_str(), SPV_ENV_VULKAN_1_1);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_1));
+}
+
+TEST_F(ValidateMemory,
+       VulkanSpecConstantOpInitializerPrivateWithoutConstantBad) {
+  std::string spirv = R"(
+OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %func "func"
+OpExecutionMode %func OriginUpperLeft
+%uint = OpTypeInt 32 0
+%uint_ptr = OpTypePointer Private %uint
+%spec_a = OpSpecConstant %uint 1
+%spec_b = OpSpecConstant %uint 2
+%spec_op = OpSpecConstantOp %uint IAdd %spec_a %spec_b
+%var = OpVariable %uint_ptr Private %spec_op
+%void = OpTypeVoid
+%functy = OpTypeFunction %void
+%func = OpFunction %void None %functy
+%label = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+  CompileSuccessfully(spirv.c_str(), SPV_ENV_VULKAN_1_1);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_VULKAN_1_1));
+  EXPECT_THAT(getDiagnosticString(),
+              AnyVUID("VUID-StandaloneSpirv-Function-04681"));
+}
+
 TEST_F(ValidateMemory, UniversalInitializerWithDisallowedStorageClassesBad) {
   std::string spirv = R"(
 OpCapability Shader

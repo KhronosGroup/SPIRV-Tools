@@ -464,6 +464,20 @@ spv_result_t ValidateVariableInitializer(ValidationState_t& _,
       return _.diag(SPV_ERROR_INVALID_ID, inst)
              << "Initializer type must match the data type";
     }
+
+    if (spvIsVulkanEnv(_.context()->target_env)) {
+      if (spvOpcodeIsSpecConstant(initializer->opcode())) {
+        if (storage_class != spv::StorageClass::Function &&
+            !_.HasDecoration(inst->id(), spv::Decoration::Constant)) {
+          return _.diag(SPV_ERROR_INVALID_ID, inst)
+                 << _.VkErrorID(4681) << "OpVariable, <id> "
+                 << _.getIdName(inst->id())
+                 << ", with an initializer that is a specialization constant "
+                    "must have an OpDecorate with Constant or be in the "
+                    "Function storage class.";
+        }
+      }
+    }
   }
 
   // Vulkan Appendix A: Check that if contains initializer, then
