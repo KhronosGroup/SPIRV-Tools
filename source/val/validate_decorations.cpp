@@ -959,10 +959,10 @@ spv_result_t CheckNonReadableWritableDecorations(ValidationState_t& vstate,
                 "memory object "
                 "declaration (a variable or a function parameter)";
     }
-    const auto var_storage_class = opcode == spv::Op::OpVariable
+
+    const auto var_storage_class = (opcode == spv::Op::OpVariable ||
+                                    opcode == spv::Op::OpUntypedVariableKHR)
                                        ? inst.GetOperandAs<spv::StorageClass>(2)
-                                   : opcode == spv::Op::OpUntypedVariableKHR
-                                       ? inst.GetOperandAs<spv::StorageClass>(3)
                                        : spv::StorageClass::Max;
 
     if (opcode == spv::Op::OpBufferPointerEXT) {
