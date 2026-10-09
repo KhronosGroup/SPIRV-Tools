@@ -20,10 +20,20 @@ namespace spvtools {
 namespace opt {
 
 class RemoveUnusedInterfaceVariablesPass : public Pass {
+ public:
+  explicit RemoveUnusedInterfaceVariablesPass(bool preserve_interface = false)
+      : preserve_interface_(preserve_interface) {}
+
   const char* name() const override {
     return "remove-unused-interface-variables-pass";
   }
   Status Process() override;
+
+ private:
+  // Preserve entry point interface if true. All variables in interface
+  // will not be eliminated. This mode is needed by GPU-Assisted Validation
+  // instrumentation where a change in the interface is not allowed.
+  bool preserve_interface_;
 };
 }  // namespace opt
 }  // namespace spvtools
