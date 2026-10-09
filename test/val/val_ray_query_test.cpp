@@ -685,6 +685,47 @@ TEST_F(ValidateRayQuery, RayQueryArraySuccessInBounds) {
   EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
+TEST_F(ValidateRayQuery, RayQueryCopyObjectSuccess) {
+  const std::string shader = R"(
+               OpCapability Shader
+               OpCapability RayQueryKHR
+               OpExtension "SPV_KHR_ray_query"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %main "main" %as
+               OpExecutionMode %main LocalSize 1 1 1
+               OpDecorate %as DescriptorSet 0
+               OpDecorate %as Binding 0
+       %void = OpTypeVoid
+     %voidfn = OpTypeFunction %void
+       %bool = OpTypeBool
+       %uint = OpTypeInt 32 0
+      %float = OpTypeFloat 32
+    %v3float = OpTypeVector %float 3
+     %uint_0 = OpConstant %uint 0
+   %uint_255 = OpConstant %uint 255
+    %float_0 = OpConstant %float 0
+    %float_1 = OpConstant %float 1
+     %origin = OpConstantComposite %v3float %float_0 %float_0 %float_0
+        %dir = OpConstantComposite %v3float %float_0 %float_0 %float_1
+         %rq = OpTypeRayQueryKHR
+     %ptr_rq = OpTypePointer Function %rq
+     %acc_st = OpTypeAccelerationStructureKHR
+ %ptr_acc_st = OpTypePointer UniformConstant %acc_st
+         %as = OpVariable %ptr_acc_st UniformConstant
+       %main = OpFunction %void None %voidfn
+      %entry = OpLabel
+     %rq_var = OpVariable %ptr_rq Function
+    %rq_copy = OpCopyObject %ptr_rq %rq_var
+       %tlas = OpLoad %acc_st %as
+               OpRayQueryInitializeKHR %rq_copy %tlas %uint_0 %uint_255 %origin %float_0 %dir %float_1
+    %proceed = OpRayQueryProceedKHR %bool %rq_copy
+               OpReturn
+               OpFunctionEnd
+)";
+  CompileSuccessfully(shader, SPV_ENV_VULKAN_1_2);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_2));
+}
+
 TEST_F(ValidateRayQuery, ClusterASNV) {
   const std::string cap = R"(
                OpCapability RayTracingClusterAccelerationStructureNV
