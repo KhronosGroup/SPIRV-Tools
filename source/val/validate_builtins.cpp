@@ -1441,11 +1441,9 @@ spv_result_t BuiltInsValidator::ValidateF32ArrHelper(
     return diag(ss.str());
   }
 
-  if (num_components != 0) {
-    uint64_t actual_num_components = 0;
-    if (!_.EvalConstantValUint64(type_inst->word(3), &actual_num_components)) {
-      assert(0 && "Array type definition is corrupt");
-    }
+  uint64_t actual_num_components = 0;
+  if (num_components != 0 &&
+      _.EvalConstantValUint64(type_inst->word(3), &actual_num_components)) {
     if (actual_num_components != num_components) {
       std::ostringstream ss;
       ss << GetDefinitionDesc(decoration, inst) << " has "
@@ -3206,9 +3204,8 @@ spv_result_t BuiltInsValidator::ValidateMeshBuiltinInterfaceRules(
         uint64_t primitive_array_dim = 0;
         if (_.GetIdOpcode(underlying_type) == spv::Op::OpTypeArray) {
           underlying_type = _.FindDef(underlying_type)->word(3u);
-          if (!_.EvalConstantValUint64(underlying_type, &primitive_array_dim)) {
-            assert(0 && "Array type definition is corrupt");
-          }
+          // if spec constant, stays zero
+          _.EvalConstantValUint64(underlying_type, &primitive_array_dim);
         }
 
         const auto* modes = _.GetExecutionModes(entry_point_id);
