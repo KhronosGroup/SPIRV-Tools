@@ -2613,6 +2613,85 @@ OpFunctionEnd
   EXPECT_EQ(SPV_SUCCESS, ValidateAndRetrieveValidationState());
 }
 
+TEST_F(ValidateDecorations, FPRoundingModeUntypedPointerGood) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpCapability Float16
+OpCapability StorageBuffer16BitAccess
+OpCapability UntypedPointersKHR
+OpExtension "SPV_KHR_untyped_pointers"
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %main "main" %ssbo
+OpExecutionMode %main LocalSize 1 1 1
+OpDecorate %Block Block
+OpMemberDecorate %Block 0 Offset 0
+OpDecorate %ssbo DescriptorSet 0
+OpDecorate %ssbo Binding 0
+OpDecorate %cvt FPRoundingMode RTE
+%void = OpTypeVoid
+%voidfn = OpTypeFunction %void
+%float = OpTypeFloat 32
+%half = OpTypeFloat 16
+%uint = OpTypeInt 32 0
+%uint_0 = OpConstant %uint 0
+%float_1 = OpConstant %float 1
+%Block = OpTypeStruct %half
+%uptr = OpTypeUntypedPointerKHR StorageBuffer
+%ssbo = OpUntypedVariableKHR %uptr StorageBuffer %Block
+%main = OpFunction %void None %voidfn
+%entry = OpLabel
+%ac = OpUntypedAccessChainKHR %uptr %Block %ssbo %uint_0
+%cvt = OpFConvert %half %float_1
+OpStore %ac %cvt
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_VULKAN_1_3);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_3));
+}
+
+TEST_F(ValidateDecorations, FPRoundingModeUntypedPointerNot16Bit) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpCapability Float16
+OpCapability StorageBuffer16BitAccess
+OpCapability UntypedPointersKHR
+OpExtension "SPV_KHR_untyped_pointers"
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %main "main" %ssbo
+OpExecutionMode %main LocalSize 1 1 1
+OpDecorate %Block Block
+OpMemberDecorate %Block 0 Offset 0
+OpDecorate %ssbo DescriptorSet 0
+OpDecorate %ssbo Binding 0
+OpDecorate %cvt FPRoundingMode RTE
+%void = OpTypeVoid
+%voidfn = OpTypeFunction %void
+%float = OpTypeFloat 32
+%half = OpTypeFloat 16
+%uint = OpTypeInt 32 0
+%uint_0 = OpConstant %uint 0
+%float_1 = OpConstant %float 1
+%half_1 = OpConstant %half 1
+%Block = OpTypeStruct %float
+%uptr = OpTypeUntypedPointerKHR StorageBuffer
+%ssbo = OpUntypedVariableKHR %uptr StorageBuffer %Block
+%main = OpFunction %void None %voidfn
+%entry = OpLabel
+%ac = OpUntypedAccessChainKHR %uptr %Block %ssbo %uint_0
+%cvt = OpFConvert %float %half_1
+OpStore %ac %cvt
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_VULKAN_1_3);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_VULKAN_1_3));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("a 16-bit floating-point scalar or vector object"));
+}
+
 TEST_F(ValidateDecorations, FPRoundingModeNotOpFConvert) {
   std::string spirv = R"(
 OpCapability Shader
