@@ -997,6 +997,78 @@ TEST_F(ValidateSpvEXTDescriptorHeap, ConstantSizeOfNonIntResultType) {
                         "must be a 32-bit or 64-bit integer type scalar."));
 }
 
+TEST_F(ValidateSpvEXTDescriptorHeap, ConstantSizeOfArrayLengthComposite) {
+  // The array length is not statically known
+  // so composite accesses cannot be bounds checked
+  const std::string str = R"(
+               OpCapability Shader
+               OpCapability DescriptorHeapEXT
+               OpExtension "SPV_EXT_descriptor_heap"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %main "main"
+               OpExecutionMode %main LocalSize 1 1 1
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+       %uint = OpTypeInt 32 0
+      %float = OpTypeFloat 32
+    %sampler = OpTypeSampler
+        %len = OpConstantSizeOfEXT %uint %sampler
+        %arr = OpTypeArray %float %len
+    %float_0 = OpConstant %float 0
+       %main = OpFunction %void None %3
+          %5 = OpLabel
+         %10 = OpUndef %arr
+         %11 = OpCompositeExtract %float %10 0
+         %12 = OpCompositeInsert %arr %float_0 %10 1
+         %13 = OpCompositeConstruct %arr %float_0 %float_0
+               OpReturn
+               OpFunctionEnd
+  )";
+  CompileSuccessfully(str.c_str(), SPV_ENV_VULKAN_1_3);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_3));
+}
+
+TEST_F(ValidateSpvEXTDescriptorHeap, ConstantSizeOfArrayLengthConstant) {
+  const std::string str = R"(
+               OpCapability Shader
+               OpCapability DescriptorHeapEXT
+               OpExtension "SPV_EXT_descriptor_heap"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %main "main"
+               OpExecutionMode %main LocalSize 1 1 1
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+       %uint = OpTypeInt 32 0
+      %float = OpTypeFloat 32
+    %sampler = OpTypeSampler
+        %len = OpConstantSizeOfEXT %uint %sampler
+        %arr = OpTypeArray %float %len
+    %float_0 = OpConstant %float 0
+         %10 = OpConstantComposite %arr %float_0 %float_0
+       %main = OpFunction %void None %3
+          %5 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+  // Without descriptor layout
+  CompileSuccessfully(str.c_str(), SPV_ENV_VULKAN_1_3);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_3));
+
+  // Matches OpConstantComposite operand count
+  options_->sampler_descriptor_layout.size = 2;
+  options_->sampler_descriptor_layout.alignment = 2;
+  CompileSuccessfully(str.c_str(), SPV_ENV_VULKAN_1_3);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_3));
+
+  options_->sampler_descriptor_layout.size = 4;
+  options_->sampler_descriptor_layout.alignment = 4;
+  CompileSuccessfully(str.c_str(), SPV_ENV_VULKAN_1_3);
+  EXPECT_NE(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_3));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("OpConstantComposite Constituent count does not match "
+                        "Result Type <id> '8[%_arr_float_7]'s array length."));
+}
+
 TEST_F(ValidateSpvEXTDescriptorHeap, OffsetId64BitIndexingBad) {
   const std::string str = R"(
         OpCapability Shader

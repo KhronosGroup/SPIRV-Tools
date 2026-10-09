@@ -2054,6 +2054,15 @@ std::tuple<bool, bool, uint32_t> ValidationState_t::EvalInt32IfConst(
     return std::make_tuple(true, true, 0);
   }
 
+  if (inst->opcode() == spv::Op::OpConstantSizeOfEXT) {
+    // The value is only known when the descriptor layout was provided.
+    uint64_t value = 0;
+    if (EvalConstantValUint64(id, &value)) {
+      return std::make_tuple(true, true, static_cast<uint32_t>(value));
+    }
+    return std::make_tuple(true, false, 0);
+  }
+
   assert(inst->words().size() == 4);
   return std::make_tuple(true, true, inst->word(3));
 }
