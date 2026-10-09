@@ -677,11 +677,8 @@ spv_result_t ValidateImageOperands(ValidationState_t& _,
     }
 
     uint64_t array_size = 0;
-    if (!_.EvalConstantValUint64(type_inst->word(3), &array_size)) {
-      assert(0 && "Array type definition is corrupt");
-    }
-
-    if (array_size != 4) {
+    if (_.EvalConstantValUint64(type_inst->word(3), &array_size) &&
+        array_size != 4) {
       return _.diag(SPV_ERROR_INVALID_DATA, inst)
              << "Expected Image Operand ConstOffsets to be an array of size 4";
     }
