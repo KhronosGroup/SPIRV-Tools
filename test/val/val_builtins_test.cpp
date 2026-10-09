@@ -5750,6 +5750,47 @@ TEST_F(ValidateBuiltIns, VulkanBuiltinCullPrimitiveEXTInBlock) {
   EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_3));
 }
 
+TEST_F(ValidateBuiltIns,
+       VulkanBuiltinCullPrimitiveEXTWithUntypedPointerInterface) {
+  const std::string text = R"(
+               OpCapability Shader
+               OpCapability MeshShadingEXT
+               OpCapability UntypedPointersKHR
+               OpCapability DescriptorHeapEXT
+               OpExtension "SPV_EXT_mesh_shader"
+               OpExtension "SPV_KHR_untyped_pointers"
+               OpExtension "SPV_EXT_descriptor_heap"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint MeshEXT %main "main" %heap %prims
+               OpExecutionMode %main LocalSize 1 1 1
+               OpExecutionMode %main OutputVertices 3
+               OpExecutionMode %main OutputPrimitivesEXT 1
+               OpExecutionMode %main OutputTrianglesEXT
+               OpDecorate %heap BuiltIn ResourceHeapEXT
+               OpDecorate %S Block
+               OpMemberDecorate %S 0 BuiltIn CullPrimitiveEXT
+               OpMemberDecorate %S 0 PerPrimitiveEXT
+       %void = OpTypeVoid
+         %fn = OpTypeFunction %void
+       %bool = OpTypeBool
+       %uint = OpTypeInt 32 0
+     %uint_1 = OpConstant %uint 1
+          %S = OpTypeStruct %bool
+    %arr = OpTypeArray %S %uint_1
+    %ptr = OpTypePointer Output %arr
+  %prims = OpVariable %ptr Output
+       %uptr = OpTypeUntypedPointerKHR UniformConstant
+       %heap = OpUntypedVariableKHR %uptr UniformConstant
+       %main = OpFunction %void None %fn
+      %label = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  CompileSuccessfully(text, SPV_ENV_VULKAN_1_4);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_4));
+}
+
 TEST_F(ValidateBuiltIns, BadVulkanBuiltinCullPrimitiveEXTBlockArraySize) {
   const std::string text = R"(
         OpCapability MeshShadingEXT
