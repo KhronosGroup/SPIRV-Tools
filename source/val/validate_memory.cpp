@@ -1197,6 +1197,28 @@ spv_result_t ValidateVariableTileImageEXT(ValidationState_t& _,
   }
 }
 
+spv_result_t ValidateUntypedVariableLengthArray(ValidationState_t& _,
+                                                const Instruction* inst) {
+  const auto result_type = _.FindDef(inst->type_id());
+  if (!result_type ||
+      result_type->opcode() != spv::Op::OpTypeUntypedPointerKHR ||
+      result_type->GetOperandAs<spv::StorageClass>(1u) !=
+          spv::StorageClass::Function) {
+    return _.diag(SPV_ERROR_INVALID_ID, inst)
+           << "Result Type must be an untyped pointer with Function storage "
+              "class";
+  }
+  if (!_.IsConcreteType(inst->GetOperandAs<uint32_t>(2u))) {
+    return _.diag(SPV_ERROR_INVALID_ID, inst)
+           << "Element Type must be a concrete type";
+  }
+  if (!_.IsIntScalarType(_.GetTypeId(inst->GetOperandAs<uint32_t>(3u)))) {
+    return _.diag(SPV_ERROR_INVALID_ID, inst)
+           << "Length must have a scalar integer type";
+  }
+  return SPV_SUCCESS;
+}
+
 spv_result_t ValidateVariable(ValidationState_t& _, const Instruction* inst) {
   const bool untyped_pointer = inst->opcode() == spv::Op::OpUntypedVariableKHR;
 
@@ -1478,6 +1500,28 @@ spv_result_t ValidateLoad(ValidationState_t& _, const Instruction* inst) {
   return SPV_SUCCESS;
 }
 
+spv_result_t ValidateStoredTypeNotOpaque(ValidationState_t& _,
+                                         const Instruction* inst,
+                                         uint32_t type_id) {
+  if (!spvIsVulkanEnv(_.context()->target_env) ||
+      _.options()->before_hlsl_legalization) {
+    return SPV_SUCCESS;
+  }
+  const auto isForbiddenType = [](const Instruction* type_inst) {
+    auto opcode = type_inst->opcode();
+    return opcode == spv::Op::OpTypeImage || opcode == spv::Op::OpTypeSampler ||
+           opcode == spv::Op::OpTypeSampledImage ||
+           opcode == spv::Op::OpTypeAccelerationStructureKHR;
+  };
+  if (_.ContainsType(type_id, isForbiddenType)) {
+    return _.diag(SPV_ERROR_INVALID_ID, inst)
+           << _.VkErrorID(6924)
+           << "Cannot store to OpTypeImage, OpTypeSampler, "
+              "OpTypeSampledImage, or OpTypeAccelerationStructureKHR objects";
+  }
+  return SPV_SUCCESS;
+}
+
 spv_result_t ValidateStore(ValidationState_t& _, const Instruction* inst) {
   const auto pointer_index = 0;
   const auto pointer_id = inst->GetOperandAs<uint32_t>(pointer_index);
@@ -1619,21 +1663,8 @@ spv_result_t ValidateStore(ValidationState_t& _, const Instruction* inst) {
     }
   }
 
-  if (spvIsVulkanEnv(_.context()->target_env) &&
-      !_.options()->before_hlsl_legalization) {
-    const auto isForbiddenType = [](const Instruction* type_inst) {
-      auto opcode = type_inst->opcode();
-      return opcode == spv::Op::OpTypeImage ||
-             opcode == spv::Op::OpTypeSampler ||
-             opcode == spv::Op::OpTypeSampledImage ||
-             opcode == spv::Op::OpTypeAccelerationStructureKHR;
-    };
-    if (_.ContainsType(object_type->id(), isForbiddenType)) {
-      return _.diag(SPV_ERROR_INVALID_ID, inst)
-             << _.VkErrorID(6924)
-             << "Cannot store to OpTypeImage, OpTypeSampler, "
-                "OpTypeSampledImage, or OpTypeAccelerationStructureKHR objects";
-    }
+  if (auto error = ValidateStoredTypeNotOpaque(_, inst, object_type->id())) {
+    return error;
   }
 
   return SPV_SUCCESS;
@@ -1760,6 +1791,11 @@ spv_result_t ValidateCopyMemory(ValidationState_t& _, const Instruction* inst) {
     if (!target_type && !source_type) {
       return _.diag(SPV_ERROR_INVALID_ID, inst)
              << "One of Source or Target must be a typed pointer";
+    }
+
+    const auto copied_type = target_type ? target_type : source_type;
+    if (auto error = ValidateStoredTypeNotOpaque(_, inst, copied_type->id())) {
+      return error;
     }
 
     if (auto error = CheckMemoryAccess(_, inst, 2)) return error;
@@ -3604,6 +3640,19 @@ spv_result_t ValidatePtrComparison(ValidationState_t& _,
   const auto op2 = _.FindDef(inst->GetOperandAs<uint32_t>(3u));
   const auto op1_type = _.FindDef(op1->type_id());
   const auto op2_type = _.FindDef(op2->type_id());
+
+  if (!op1_type || (op1_type->opcode() != spv::Op::OpTypePointer &&
+                    op1_type->opcode() != spv::Op::OpTypeUntypedPointerKHR)) {
+    return _.diag(SPV_ERROR_INVALID_ID, inst)
+           << "Operand type must be a pointer";
+  }
+
+  if (!op2_type || (op2_type->opcode() != spv::Op::OpTypePointer &&
+                    op2_type->opcode() != spv::Op::OpTypeUntypedPointerKHR)) {
+    return _.diag(SPV_ERROR_INVALID_ID, inst)
+           << "Operand type must be a pointer";
+  }
+
   spv::StorageClass sc = op1_type->GetOperandAs<spv::StorageClass>(1u);
   if ((_.addressing_model() == spv::AddressingModel::Logical ||
        _.addressing_model() == spv::AddressingModel::PhysicalStorageBuffer64) &&
@@ -3625,18 +3674,6 @@ spv_result_t ValidatePtrComparison(ValidationState_t& _,
       return _.diag(SPV_ERROR_INVALID_ID, inst)
              << "Result Type must be OpTypeBool";
     }
-  }
-
-  if (!op1_type || (op1_type->opcode() != spv::Op::OpTypePointer &&
-                    op1_type->opcode() != spv::Op::OpTypeUntypedPointerKHR)) {
-    return _.diag(SPV_ERROR_INVALID_ID, inst)
-           << "Operand type must be a pointer";
-  }
-
-  if (!op2_type || (op2_type->opcode() != spv::Op::OpTypePointer &&
-                    op2_type->opcode() != spv::Op::OpTypeUntypedPointerKHR)) {
-    return _.diag(SPV_ERROR_INVALID_ID, inst)
-           << "Operand type must be a pointer";
   }
 
   if (inst->opcode() == spv::Op::OpPtrDiff) {
@@ -3834,6 +3871,8 @@ spv_result_t ValidatePredicatedStoreINTEL(ValidationState_t& _,
 
 spv_result_t MemoryPass(ValidationState_t& _, const Instruction* inst) {
   switch (inst->opcode()) {
+    case spv::Op::OpUntypedVariableLengthArrayINTEL:
+      return ValidateUntypedVariableLengthArray(_, inst);
     case spv::Op::OpVariable:
     case spv::Op::OpUntypedVariableKHR:
       return ValidateVariable(_, inst);

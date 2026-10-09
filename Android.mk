@@ -1,3 +1,5 @@
+ifdef NDK_ROOT
+
 LOCAL_PATH := $(call my-dir)
 SPVTOOLS_OUT_PATH=$(if $(call host-path-is-absolute,$(TARGET_OUT)),$(TARGET_OUT),$(abspath $(TARGET_OUT)))
 
@@ -168,6 +170,7 @@ SPVTOOLS_OPT_SRC_FILES := \
 		source/opt/merge_return_pass.cpp \
 		source/opt/modify_maximal_reconvergence.cpp \
 		source/opt/module.cpp \
+		source/opt/nonwritable_propagation_pass.cpp \
 		source/opt/opextinst_forward_ref_fixup_pass.cpp \
 		source/opt/optimizer.cpp \
 		source/opt/pass.cpp \
@@ -330,3 +333,5 @@ LOCAL_CXXFLAGS:=-std=c++17 -fno-exceptions -fno-rtti -Werror
 LOCAL_STATIC_LIBRARIES:=SPIRV-Tools
 LOCAL_SRC_FILES:= $(SPVTOOLS_OPT_SRC_FILES)
 include $(BUILD_STATIC_LIBRARY)
+
+endif # NDK_ROOT

@@ -712,6 +712,52 @@ spv_result_t ValidateCooperativeMatrixMulAddKHR(ValidationState_t& _,
     return _.diag(SPV_ERROR_INVALID_DATA, inst)
            << "Cooperative matrix 'K' mismatch: " << spvOpcodeString(opcode);
   }
+
+  if (inst->operands().size() > 5) {
+    const uint32_t matrix_operands = inst->GetOperandAs<uint32_t>(5);
+    const auto validate_signed_components =
+        [&_, inst, opcode, matrix_operands](
+            spv::CooperativeMatrixOperandsMask mask,
+            const Instruction* matrix_type) -> spv_result_t {
+      if ((matrix_operands & uint32_t(mask)) == 0) {
+        return SPV_SUCCESS;
+      }
+      const uint32_t component_type_id = matrix_type->GetOperandAs<uint32_t>(1);
+      if (_.IsIntScalarType(component_type_id)) {
+        return SPV_SUCCESS;
+      }
+      return _.diag(SPV_ERROR_INVALID_DATA, inst)
+             << "Cooperative Matrix Operand "
+             << _.grammar().lookupOperandName(
+                    SPV_OPERAND_TYPE_COOPERATIVE_MATRIX_OPERANDS,
+                    uint32_t(mask))
+             << " can only be used when the component type of the "
+                "corresponding matrix is an integer type, but found "
+             << _.getIdName(component_type_id) << ": "
+             << spvOpcodeString(opcode);
+    };
+
+    if (auto error = validate_signed_components(
+            spv::CooperativeMatrixOperandsMask::MatrixASignedComponentsKHR,
+            A)) {
+      return error;
+    }
+    if (auto error = validate_signed_components(
+            spv::CooperativeMatrixOperandsMask::MatrixBSignedComponentsKHR,
+            B)) {
+      return error;
+    }
+    if (auto error = validate_signed_components(
+            spv::CooperativeMatrixOperandsMask::MatrixCSignedComponentsKHR,
+            C)) {
+      return error;
+    }
+    if (auto error = validate_signed_components(
+            spv::CooperativeMatrixOperandsMask::MatrixResultSignedComponentsKHR,
+            D)) {
+      return error;
+    }
+  }
   return SPV_SUCCESS;
 }
 

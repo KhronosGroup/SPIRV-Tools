@@ -1328,4 +1328,76 @@ TEST_F(EliminateDeadMemberTest, 8BitIndexWithChange) {
   SinglePassRunAndMatch<opt::EliminateDeadMembersPass>(text, true);
 }
 
+TEST_F(EliminateDeadMemberTest, KeepAbortMessageTypeMembers) {
+  // The Message Type operand of OpAbortKHR must keep all of its members so
+  // that it still logically matches the type of the Message operand.
+  const std::string text = R"(
+; CHECK: [[uint:%\w+]] = OpTypeInt 32 0
+; CHECK: [[float:%\w+]] = OpTypeFloat 32
+; CHECK: [[msg_type:%\w+]] = OpTypeStruct [[uint]] [[float]]
+; CHECK: OpAbortKHR [[msg_type]]
+               OpCapability Shader
+               OpCapability AbortKHR
+               OpExtension "SPV_KHR_abort"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %main "main"
+               OpExecutionMode %main LocalSize 1 1 1
+               OpMemberDecorate %msg_type 0 Offset 0
+               OpMemberDecorate %msg_type 1 Offset 4
+       %void = OpTypeVoid
+         %fn = OpTypeFunction %void
+       %uint = OpTypeInt 32 0
+      %float = OpTypeFloat 32
+     %uint_1 = OpConstant %uint 1
+    %float_2 = OpConstant %float 2
+   %msg_type = OpTypeStruct %uint %float
+  %msg_value = OpTypeStruct %uint %float
+       %main = OpFunction %void None %fn
+      %entry = OpLabel
+        %msg = OpCompositeConstruct %msg_value %uint_1 %float_2
+               OpAbortKHR %msg_type %msg
+               OpFunctionEnd
+)";
+
+  SetTargetEnv(SPV_ENV_VULKAN_1_3);
+  SinglePassRunAndMatch<opt::EliminateDeadMembersPass>(text, true);
+}
+
+TEST_F(EliminateDeadMemberTest, KeepUntypedAccessChainBaseTypeMembers) {
+  // The Base Type operand of OpUntypedAccessChainKHR is a type, so the struct
+  // must keep the members the access chain indexes into.
+  const std::string text = R"(
+; CHECK: [[uint:%\w+]] = OpTypeInt 32 0
+; CHECK: [[block:%\w+]] = OpTypeStruct [[uint]] [[uint]]
+; CHECK: OpUntypedAccessChainKHR {{%\w+}} [[block]] {{%\w+}} %uint_1
+               OpCapability Shader
+               OpCapability UntypedPointersKHR
+               OpExtension "SPV_KHR_untyped_pointers"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %main "main" %var
+               OpExecutionMode %main LocalSize 1 1 1
+               OpDecorate %block Block
+               OpMemberDecorate %block 0 Offset 0
+               OpMemberDecorate %block 1 Offset 4
+               OpDecorate %var DescriptorSet 0
+               OpDecorate %var Binding 0
+       %void = OpTypeVoid
+         %fn = OpTypeFunction %void
+       %uint = OpTypeInt 32 0
+     %uint_1 = OpConstant %uint 1
+      %block = OpTypeStruct %uint %uint
+        %ptr = OpTypeUntypedPointerKHR StorageBuffer
+        %var = OpUntypedVariableKHR %ptr StorageBuffer %block
+       %main = OpFunction %void None %fn
+      %entry = OpLabel
+         %ac = OpUntypedAccessChainKHR %ptr %block %var %uint_1
+         %ld = OpLoad %uint %ac
+               OpReturn
+               OpFunctionEnd
+)";
+
+  SetTargetEnv(SPV_ENV_VULKAN_1_3);
+  SinglePassRunAndMatch<opt::EliminateDeadMembersPass>(text, true);
+}
+
 }  // namespace

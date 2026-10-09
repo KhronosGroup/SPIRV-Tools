@@ -4736,6 +4736,40 @@ OpFunctionEnd
               HasSubstr("Operand type must be a pointer"));
 }
 
+TEST_P(ValidatePointerComparisons, BadOperandTypeBool) {
+  const std::string operation = GetParam();
+
+  std::string spirv = R"(
+OpCapability Shader
+OpCapability Linkage
+OpCapability VariablePointersStorageBuffer
+OpMemoryModel Logical GLSL450
+%void = OpTypeVoid
+%bool = OpTypeBool
+%int = OpTypeInt 32 0
+%true = OpConstantTrue %bool
+%func_ty = OpTypeFunction %void
+%func = OpFunction %void None %func_ty
+%1 = OpLabel
+%equal = )" + operation;
+
+  if (operation == "OpPtrDiff") {
+    spirv += " %int ";
+  } else {
+    spirv += " %bool ";
+  }
+
+  spirv += R"(%true %true
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_4);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_UNIVERSAL_1_4));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Operand type must be a pointer"));
+}
+
 TEST_P(ValidatePointerComparisons, BadStorageClassWorkgroup) {
   const std::string operation = GetParam();
 
@@ -5230,6 +5264,38 @@ OpReturn
 OpFunctionEnd
 )";
 
+  CompileSuccessfully(spirv, SPV_ENV_VULKAN_1_1);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_VULKAN_1_1));
+  EXPECT_THAT(getDiagnosticString(),
+              AnyVUID("VUID-StandaloneSpirv-OpTypeImage-06924"));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("Cannot store to OpTypeImage, OpTypeSampler, "
+                "OpTypeSampledImage, or OpTypeAccelerationStructureKHR"));
+}
+
+TEST_F(ValidateMemory, CopyMemoryToImage) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %main "main"
+OpExecutionMode %main LocalSize 1 1 1
+OpDecorate %uc_var DescriptorSet 0
+OpDecorate %uc_var Binding 0
+%void = OpTypeVoid
+%int = OpTypeInt 32 0
+%img = OpTypeImage %int 2D 2 0 0 2 R32i
+%ptr_uc_img = OpTypePointer UniformConstant %img
+%ptr_img = OpTypePointer Function %img
+%uc_var = OpVariable %ptr_uc_img UniformConstant
+%void_fn = OpTypeFunction %void
+%main = OpFunction %void None %void_fn
+%entry = OpLabel
+%var = OpVariable %ptr_img Function
+OpCopyMemory %var %uc_var
+OpReturn
+OpFunctionEnd
+)";
   CompileSuccessfully(spirv, SPV_ENV_VULKAN_1_1);
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_VULKAN_1_1));
   EXPECT_THAT(getDiagnosticString(),
@@ -6465,6 +6531,82 @@ OpFunctionEnd
   CompileSuccessfully(spirv);
   EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
+
+TEST_F(ValidateMemory, UntypedVariableLengthArrayGood) {
+  const std::string spirv = R"(
+OpCapability Kernel
+OpCapability Addresses
+OpCapability Linkage
+OpCapability UntypedPointersKHR
+OpCapability VariableLengthArrayINTEL
+OpCapability UntypedVariableLengthArrayINTEL
+OpExtension "SPV_KHR_untyped_pointers"
+OpExtension "SPV_INTEL_variable_length_array"
+OpMemoryModel Physical32 OpenCL
+%void = OpTypeVoid
+%uint = OpTypeInt 32 0
+%float = OpTypeFloat 32
+%size = OpConstant %uint 4
+%ptr = OpTypeUntypedPointerKHR Function
+%fn_type = OpTypeFunction %void
+%fn = OpFunction %void None %fn_type
+%entry = OpLabel
+%state = OpSaveMemoryINTEL %ptr
+%array = OpUntypedVariableLengthArrayINTEL %ptr %uint %size
+OpRestoreMemoryINTEL %state
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+using ValidateUntypedVariableLengthArrayBad =
+    spvtest::ValidateBase<std::pair<std::string, std::string>>;
+
+TEST_P(ValidateUntypedVariableLengthArrayBad, InvalidOperands) {
+  const std::string spirv = R"(
+OpCapability Kernel
+OpCapability Addresses
+OpCapability Linkage
+OpCapability UntypedPointersKHR
+OpCapability VariableLengthArrayINTEL
+OpCapability UntypedVariableLengthArrayINTEL
+OpExtension "SPV_KHR_untyped_pointers"
+OpExtension "SPV_INTEL_variable_length_array"
+OpMemoryModel Physical32 OpenCL
+%void = OpTypeVoid
+%uint = OpTypeInt 32 0
+%float = OpTypeFloat 32
+%float_size = OpConstant %float 4
+%size = OpConstant %uint 4
+%ptr = OpTypeUntypedPointerKHR Function
+%private_ptr = OpTypeUntypedPointerKHR CrossWorkgroup
+%fn_type = OpTypeFunction %void
+%fn = OpFunction %void None %fn_type
+%entry = OpLabel
+%state = OpSaveMemoryINTEL %ptr
+%array = OpUntypedVariableLengthArrayINTEL )" +
+                            GetParam().first + R"(
+OpRestoreMemoryINTEL %state
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(), HasSubstr(GetParam().second));
+}
+
+INSTANTIATE_TEST_SUITE_P(
+    ValidateMemory, ValidateUntypedVariableLengthArrayBad,
+    Values(std::make_pair("%uint %uint %size", "Result Type"),
+           std::make_pair("%private_ptr %uint %size", "Result Type"),
+           std::make_pair("%ptr %size %size", "Element Type"),
+           std::make_pair("%ptr %void %size", "Element Type"),
+           std::make_pair("%ptr %uint %uint", "Length"),
+           std::make_pair("%ptr %uint %float_size", "Length")));
 
 TEST_F(ValidateMemory, UntypedVariableGood) {
   const std::string spirv = R"(

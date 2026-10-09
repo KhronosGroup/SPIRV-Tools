@@ -36,6 +36,23 @@ spv_result_t ValidateUndef(ValidationState_t& _, const Instruction* inst) {
            << "Cannot create undefined values with 8- or 16-bit types";
   }
 
+  if (spvIsVulkanEnv(_.context()->target_env) &&
+      inst->opcode() == spv::Op::OpUndef) {
+    const spv::Op type_opcode = _.GetIdOpcode(inst->type_id());
+    switch (type_opcode) {
+      case spv::Op::OpTypeImage:
+      case spv::Op::OpTypeSampler:
+      case spv::Op::OpTypeSampledImage:
+      case spv::Op::OpTypeAccelerationStructureKHR:
+      case spv::Op::OpTypeTensorARM:
+        return _.diag(SPV_ERROR_INVALID_ID, inst)
+               << _.VkErrorID(12464) << "OpUndef Result Type must not be Op"
+               << spvOpcodeString(type_opcode);
+      default:
+        break;
+    }
+  }
+
   return SPV_SUCCESS;
 }
 
@@ -122,6 +139,12 @@ spv_result_t ValidateAbort(ValidationState_t& _, const Instruction* inst) {
     return _.diag(SPV_ERROR_INVALID_ID, inst)
            << "Message Type operand " << _.getIdName(message_type_id)
            << " must be a concrete type";
+  }
+
+  if (!source_type) {
+    return _.diag(SPV_ERROR_INVALID_ID, inst)
+           << "Message operand " << _.getIdName(source->id())
+           << " must be a value with a type";
   }
 
   if (source_type != message_type &&

@@ -17,6 +17,7 @@
 
 // Validates correctness of built-in variables.
 
+#include <algorithm>
 #include <array>
 #include <cstdint>
 #include <functional>
@@ -859,6 +860,13 @@ class BuiltInsValidator {
   // For Builtin that can only be declared once in an entry point, keep track if
   // the entry point has it already
   std::set<uint32_t> cull_primitive_entry_points_;
+
+  // Single spot to dedupe repeated id operands within a single instruction.
+  // We use a vector over a unordered_set because the value here comes from
+  // not having to re-allocate things each time.
+  // The dedupe is within a single instruction so the vector is only slower
+  // if you have a crazy ~4000 operand instruction. (very unlikely)
+  std::vector<uint32_t> already_checked_ids_;
 };
 
 void BuiltInsValidator::Update(const Instruction& inst) {
@@ -5460,7 +5468,7 @@ spv_result_t BuiltInsValidator::Run() {
   for (const Instruction& inst : _.ordered_instructions()) {
     Update(inst);
 
-    std::set<uint32_t> already_checked;
+    already_checked_ids_.clear();
 
     for (const auto& operand : inst.operands()) {
       if (!spvIsIdType(operand.type)) {
@@ -5474,10 +5482,12 @@ spv_result_t BuiltInsValidator::Run() {
         continue;
       }
 
-      if (!already_checked.insert(id).second) {
+      if (std::find(already_checked_ids_.begin(), already_checked_ids_.end(),
+                    id) != already_checked_ids_.end()) {
         // The instruction has already referenced this id.
         continue;
       }
+      already_checked_ids_.push_back(id);
 
       // Instruction references the id. Run all checks associated with the id
       // on the instruction. id_to_at_reference_checks_ can be modified in the

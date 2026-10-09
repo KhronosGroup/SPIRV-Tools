@@ -1340,6 +1340,218 @@ INSTANTIATE_TEST_SUITE_P(
         // Nans are below because we cannot test for equality.
     })));
 
+struct SmallFloatCastCase {
+  float source;
+  unsigned expected_bits;
+  RD round;
+};
+
+void PrintTo(const SmallFloatCastCase& test, std::ostream* os) {
+  *os << "source=" << test.source << " (FP32 bits=0x" << std::hex
+      << BitwiseCast<uint32_t>(test.source) << "), expected bits=0x"
+      << test.expected_bits << std::dec
+      << ", rounding=" << get_round_text(test.round);
+}
+
+std::string SmallFloatCastName(
+    const ::testing::TestParamInfo<SmallFloatCastCase>& info) {
+  std::ostringstream name;
+  const std::string round = get_round_text(info.param.round);
+  name << (std::signbit(info.param.source) ? "Negative_" : "Positive_")
+       << "FP32Bits_" << std::hex << BitwiseCast<uint32_t>(info.param.source)
+       << "_" << round.substr(round.rfind(':') + 1);
+  return name.str();
+}
+
+template <typename FloatType>
+void CheckSmallFloatCast(const SmallFloatCastCase& test) {
+  HexFloat<FloatProxy<float>> source(test.source);
+  HexFloat<FloatProxy<FloatType>> result(0);
+  source.castTo(result, test.round);
+  EXPECT_EQ(test.expected_bits, unsigned(result.getBits()));
+}
+
+// Generate every finite encoding from an independently constructed FP32 value.
+// In particular, the all-ones exponent is finite in E4M3 and FP4/FP6.
+template <typename FloatType>
+std::vector<SmallFloatCastCase> FiniteSmallFloatCasts(unsigned max_bits,
+                                                      unsigned fraction_bits,
+                                                      int bias) {
+  using Target = HexFloat<FloatProxy<FloatType>>;
+  std::vector<SmallFloatCastCase> cases;
+  for (unsigned bits = 0; bits <= max_bits; ++bits) {
+    const unsigned exponent = bits >> fraction_bits;
+    const unsigned fraction = bits & ((1u << fraction_bits) - 1);
+    const float magnitude = std::ldexp(
+        float(exponent ? (1u << fraction_bits) + fraction : fraction),
+        (exponent ? int(exponent) : 1) - bias - int(fraction_bits));
+    for (bool negative : {false, true}) {
+      const unsigned expected = bits | (negative ? Target::sign_mask : 0);
+      for (auto round : {RD::kToZero, RD::kToPositiveInfinity,
+                         RD::kToNegativeInfinity, RD::kToNearestEven}) {
+        cases.push_back({negative ? -magnitude : magnitude, expected, round});
+      }
+    }
+  }
+  return cases;
+}
+
+// Overflow still needs handling when the destination cannot represent infinity.
+template <typename FloatType>
+std::vector<SmallFloatCastCase> SmallFloatSaturationCasts(float overflow_value,
+                                                          unsigned max_bits) {
+  using Target = HexFloat<FloatProxy<FloatType>>;
+  std::vector<SmallFloatCastCase> cases;
+  for (float value : {overflow_value, std::numeric_limits<float>::infinity()}) {
+    for (bool negative : {false, true}) {
+      for (auto round : {RD::kToZero, RD::kToPositiveInfinity,
+                         RD::kToNegativeInfinity, RD::kToNearestEven}) {
+        cases.push_back({negative ? -value : value,
+                         max_bits | (negative ? Target::sign_mask : 0), round});
+      }
+    }
+  }
+  return cases;
+}
+
+using HexFloatFiniteRangeE2M1 = ::testing::TestWithParam<SmallFloatCastCase>;
+using HexFloatFiniteRangeE2M3 = ::testing::TestWithParam<SmallFloatCastCase>;
+using HexFloatFiniteRangeE3M2 = ::testing::TestWithParam<SmallFloatCastCase>;
+using HexFloatFiniteRangeE4M3 = ::testing::TestWithParam<SmallFloatCastCase>;
+using HexFloatFiniteRangeE5M2 = ::testing::TestWithParam<SmallFloatCastCase>;
+
+TEST_P(HexFloatFiniteRangeE2M1, Cast) {
+  CheckSmallFloatCast<Float4_E2M1>(GetParam());
+}
+
+TEST_P(HexFloatFiniteRangeE2M3, Cast) {
+  CheckSmallFloatCast<Float6_E2M3>(GetParam());
+}
+
+TEST_P(HexFloatFiniteRangeE3M2, Cast) {
+  CheckSmallFloatCast<Float6_E3M2>(GetParam());
+}
+
+TEST_P(HexFloatFiniteRangeE4M3, Cast) {
+  CheckSmallFloatCast<Float8_E4M3>(GetParam());
+}
+
+TEST_P(HexFloatFiniteRangeE5M2, Cast) {
+  CheckSmallFloatCast<Float8_E5M2>(GetParam());
+}
+
+INSTANTIATE_TEST_SUITE_P(
+    Exact, HexFloatFiniteRangeE2M1,
+    ::testing::ValuesIn(FiniteSmallFloatCasts<Float4_E2M1>(0x7, 1, 1)),
+    SmallFloatCastName);
+INSTANTIATE_TEST_SUITE_P(
+    Exact, HexFloatFiniteRangeE2M3,
+    ::testing::ValuesIn(FiniteSmallFloatCasts<Float6_E2M3>(0x1f, 3, 1)),
+    SmallFloatCastName);
+INSTANTIATE_TEST_SUITE_P(
+    Exact, HexFloatFiniteRangeE3M2,
+    ::testing::ValuesIn(FiniteSmallFloatCasts<Float6_E3M2>(0x1f, 2, 3)),
+    SmallFloatCastName);
+INSTANTIATE_TEST_SUITE_P(
+    Exact, HexFloatFiniteRangeE4M3,
+    ::testing::ValuesIn(FiniteSmallFloatCasts<Float8_E4M3>(0x7e, 3, 7)),
+    SmallFloatCastName);
+INSTANTIATE_TEST_SUITE_P(
+    Exact, HexFloatFiniteRangeE5M2,
+    ::testing::ValuesIn(FiniteSmallFloatCasts<Float8_E5M2>(0x7b, 2, 15)),
+    SmallFloatCastName);
+
+INSTANTIATE_TEST_SUITE_P(
+    Saturation, HexFloatFiniteRangeE2M1,
+    ::testing::ValuesIn(SmallFloatSaturationCasts<Float4_E2M1>(8.0f, 0x7)),
+    SmallFloatCastName);
+INSTANTIATE_TEST_SUITE_P(
+    Saturation, HexFloatFiniteRangeE2M3,
+    ::testing::ValuesIn(SmallFloatSaturationCasts<Float6_E2M3>(8.0f, 0x1f)),
+    SmallFloatCastName);
+INSTANTIATE_TEST_SUITE_P(
+    Saturation, HexFloatFiniteRangeE3M2,
+    ::testing::ValuesIn(SmallFloatSaturationCasts<Float6_E3M2>(32.0f, 0x1f)),
+    SmallFloatCastName);
+INSTANTIATE_TEST_SUITE_P(
+    Saturation, HexFloatFiniteRangeE4M3,
+    ::testing::ValuesIn(SmallFloatSaturationCasts<Float8_E4M3>(512.0f, 0x7e)),
+    SmallFloatCastName);
+
+std::vector<SmallFloatCastCase> E4M3RoundingBoundaryCasts() {
+  std::vector<SmallFloatCastCase> cases;
+  for (bool negative : {false, true}) {
+    for (auto sample :
+         {std::make_pair(248.0f, 0x78u), std::make_pair(272.0f, 0x78u),
+          std::make_pair(432.0f, 0x7eu), std::make_pair(464.0f, 0x7eu),
+          std::make_pair(480.0f, 0x7eu), std::make_pair(512.0f, 0x7eu)}) {
+      cases.push_back({negative ? -sample.first : sample.first,
+                       sample.second | (negative ? 0x80u : 0),
+                       RD::kToNearestEven});
+    }
+    // Directed rounding beyond the largest finite value must saturate,
+    // including when it would otherwise produce the reserved NaN encoding.
+    for (auto round : {RD::kToZero, RD::kToPositiveInfinity,
+                       RD::kToNegativeInfinity, RD::kToNearestEven}) {
+      cases.push_back(
+          {negative ? -449.0f : 449.0f, negative ? 0xfeu : 0x7eu, round});
+    }
+  }
+  return cases;
+}
+
+INSTANTIATE_TEST_SUITE_P(RoundingBoundaries, HexFloatFiniteRangeE4M3,
+                         ::testing::ValuesIn(E4M3RoundingBoundaryCasts()),
+                         SmallFloatCastName);
+
+struct E4M3DecimalCase {
+  std::string literal;
+  unsigned expected_bits;
+  bool expect_fail;
+};
+
+void PrintTo(const E4M3DecimalCase& test, std::ostream* os) {
+  *os << "literal=\"" << test.literal << "\", expected bits=0x" << std::hex
+      << test.expected_bits << std::dec << ", expect_fail=" << test.expect_fail;
+}
+
+std::vector<E4M3DecimalCase> E4M3DecimalUpperRangeCases() {
+  std::vector<E4M3DecimalCase> cases;
+  for (unsigned i = 0; i <= 6; ++i) {
+    for (bool negative : {false, true}) {
+      const std::string literal =
+          (negative ? "-" : "") + std::to_string(256 + 32 * i);
+      cases.push_back({literal, (0x78u + i) | (negative ? 0x80u : 0), false});
+    }
+  }
+  cases.insert(cases.end(), {{"449", 0x7e, true},
+                             {"-449", 0xfe, true},
+                             {"480", 0x7e, true},
+                             {"-480", 0xfe, true}});
+  return cases;
+}
+
+using HexFloatFiniteRangeE4M3Decimal =
+    ::testing::TestWithParam<E4M3DecimalCase>;
+
+TEST_P(HexFloatFiniteRangeE4M3Decimal, Parse) {
+  const auto& test = GetParam();
+  std::istringstream input(test.literal);
+  HexFloat<FloatProxy<Float8_E4M3>> result(0);
+  input >> result;
+  EXPECT_EQ(test.expect_fail, input.fail());
+  EXPECT_EQ(test.expected_bits, unsigned(result.getBits()));
+}
+
+INSTANTIATE_TEST_SUITE_P(
+    UpperRange, HexFloatFiniteRangeE4M3Decimal,
+    ::testing::ValuesIn(E4M3DecimalUpperRangeCases()),
+    [](const ::testing::TestParamInfo<E4M3DecimalCase>& info) {
+      const std::string& literal = info.param.literal;
+      return literal[0] == '-' ? "Negative_" + literal.substr(1)
+                               : "Positive_" + literal;
+    });
+
 using HexFloatFP32ToE5M2Tests = ::testing::TestWithParam<DownCastTest>;
 
 TEST_P(HexFloatFP32ToE5M2Tests, NarrowingCasts) {

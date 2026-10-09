@@ -284,7 +284,7 @@ def git_sync_deps(deps_file_path, prefix, command_line_os_requests, verbose, tre
             continue
 
         if '@' in value:
-          repo, checkoutable = value.split('@', 1)
+          repo, checkoutable = value.rsplit('@', 1)
         else:
           print(f"subdir {subdir} value {value}")
           raise Exception("please specify commit or tag")

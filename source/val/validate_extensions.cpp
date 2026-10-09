@@ -1838,8 +1838,7 @@ spv_result_t ValidateExtInstGlslStd450(ValidationState_t& _,
       if (!_.IsIntScalarOrVectorType(exp_type)) {
         return _.diag(SPV_ERROR_INVALID_DATA, inst)
                << GetExtInstName(_, inst) << ": "
-               << "expected operand Exp to be a 32-bit int scalar "
-               << "or vector type";
+               << "expected operand Exp to be an int scalar or vector type";
       }
 
       if (_.GetDimension(result_type) != _.GetDimension(exp_type)) {
@@ -2122,6 +2121,13 @@ spv_result_t ValidateExtInstGlslStd450(ValidationState_t& _,
         return _.diag(SPV_ERROR_INVALID_DATA, inst)
                << GetExtInstName(_, inst) << ": "
                << "expected operand Eta to be a float scalar";
+      }
+
+      if (_.GetComponentType(result_type) != eta_type) {
+        return _.diag(SPV_ERROR_INVALID_DATA, inst)
+               << GetExtInstName(_, inst) << ": "
+               << "expected operand Eta to have the same component type as "
+                  "Result Type";
       }
       break;
     }

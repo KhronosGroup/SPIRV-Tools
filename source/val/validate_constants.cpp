@@ -553,10 +553,12 @@ spv_result_t ValidateConstantNull(ValidationState_t& _,
 spv_result_t ValidateConstantSizeOfEXT(ValidationState_t& _,
                                        const Instruction* inst) {
   const Instruction* result_type = _.FindDef(inst->type_id());
-  const uint32_t bit_width = result_type->GetOperandAs<uint32_t>(1);
+  const uint32_t bit_width = result_type->opcode() == spv::Op::OpTypeInt
+                                 ? result_type->GetOperandAs<uint32_t>(1)
+                                 : 0;
+
   // VVL will validate the SPV_EXT_shader_64bit_indexing interaction
-  if (result_type->opcode() != spv::Op::OpTypeInt ||
-      (bit_width != 64 && bit_width != 32)) {
+  if (bit_width != 64 && bit_width != 32) {
     return _.diag(SPV_ERROR_INVALID_DATA, inst)
            << "For OpConstantSizeOfEXT instruction, its result type "
            << "must be a 32-bit or 64-bit integer type scalar."
