@@ -329,15 +329,29 @@ uint32_t NegateConstant(analysis::ConstantManager* const_mgr,
 uint32_t Reciprocal(analysis::ConstantManager* const_mgr,
                     const analysis::Constant* c) {
   assert(const_mgr && c);
+
+  if (c->IsZero()) {
+    return 0;
+  }
+
+  if (c->type()->AsVector()) {
+    std::vector<uint32_t> words;
+    for (auto& comp : c->AsVectorConstant()->GetComponents()) {
+      uint32_t id = Reciprocal(const_mgr, comp);
+      if (id == 0) return 0;
+      words.push_back(id);
+    }
+
+    const analysis::Constant* reciprocal_const =
+        const_mgr->GetConstant(c->type(), std::move(words));
+    return const_mgr->GetDefiningInstruction(reciprocal_const)->result_id();
+  }
+
   assert(c->type()->AsFloat());
 
   uint32_t width = c->type()->AsFloat()->width();
   assert(width == 32 || width == 64);
   std::vector<uint32_t> words;
-
-  if (c->IsZero()) {
-    return 0;
-  }
 
   if (width == 64) {
     spvtools::utils::FloatProxy<double> result(1.0 / c->GetDouble());
