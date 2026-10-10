@@ -771,16 +771,14 @@ class BuiltInsValidator {
   void Update(const Instruction& inst);
 
   uint32_t GetInterfaceVarUnderlyingTypeId(const Instruction* ifx_var) const {
-    if (!ifx_var) return 0;
-    uint32_t data_type = 0;
-    spv::StorageClass storage_class = spv::StorageClass::Max;
-    if (!_.GetPointerTypeInfo(ifx_var->type_id(), &data_type, &storage_class) ||
-        !data_type) {
+    assert(ifx_var);
+    const auto* ptr_type = _.FindDef(ifx_var->type_id());
+    if (!ptr_type || ptr_type->opcode() != spv::Op::OpTypePointer) {
       return 0;
     }
-    const Instruction* type_inst = _.FindDef(data_type);
+    const Instruction* type_inst =
+        _.FindDef(ptr_type->GetOperandAs<uint32_t>(2));
     while (type_inst && type_inst->opcode() == spv::Op::OpTypeArray) {
-      if (type_inst->operands().size() <= 1) break;
       type_inst = _.FindDef(type_inst->GetOperandAs<uint32_t>(1));
     }
     return type_inst ? type_inst->id() : 0;
