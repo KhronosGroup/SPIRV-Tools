@@ -771,20 +771,25 @@ class BuiltInsValidator {
   void Update(const Instruction& inst);
 
   bool IsBulitinInEntryPoint(const Instruction& inst, uint32_t entry_point) {
-    auto get_underlying_type_id = [&](const Instruction* ifx_var) {
+    auto get_underlying_type_id = [&](const Instruction* ifx_var) -> uint32_t {
+      if (!ifx_var) return 0;
       auto pointer_type_inst = _.FindDef(ifx_var->type_id());
+      if (!pointer_type_inst ||
+          pointer_type_inst->opcode() != spv::Op::OpTypePointer) {
+        return 0;
+      }
       auto type_inst = _.FindDef(pointer_type_inst->GetOperandAs<uint32_t>(2));
-      while (type_inst->opcode() == spv::Op::OpTypeArray) {
+      while (type_inst && type_inst->opcode() == spv::Op::OpTypeArray) {
         type_inst = _.FindDef(type_inst->GetOperandAs<uint32_t>(1));
       };
-      return type_inst->id();
+      return type_inst ? type_inst->id() : 0;
     };
 
     for (const auto& desc : _.entry_point_descriptions(entry_point)) {
       for (auto interface : desc.interfaces) {
         if (inst.opcode() == spv::Op::OpTypeStruct) {
           auto varInst = _.FindDef(interface);
-          if (inst.id() == get_underlying_type_id(varInst)) {
+          if (varInst && inst.id() == get_underlying_type_id(varInst)) {
             return true;
           }
         } else if (inst.id() == interface) {
@@ -801,13 +806,18 @@ class BuiltInsValidator {
   bool IsMeshInterfaceVar(
       const Instruction& inst,
       std::map<uint32_t, uint32_t>& entry_point_interface_id) {
-    auto get_underlying_type_id = [&](const Instruction* ifx_var) {
+    auto get_underlying_type_id = [&](const Instruction* ifx_var) -> uint32_t {
+      if (!ifx_var) return 0;
       auto pointer_type_inst = _.FindDef(ifx_var->type_id());
+      if (!pointer_type_inst ||
+          pointer_type_inst->opcode() != spv::Op::OpTypePointer) {
+        return 0;
+      }
       auto type_inst = _.FindDef(pointer_type_inst->GetOperandAs<uint32_t>(2));
-      while (type_inst->opcode() == spv::Op::OpTypeArray) {
+      while (type_inst && type_inst->opcode() == spv::Op::OpTypeArray) {
         type_inst = _.FindDef(type_inst->GetOperandAs<uint32_t>(1));
       };
-      return type_inst->id();
+      return type_inst ? type_inst->id() : 0;
     };
 
     for (const uint32_t entry_point : _.entry_points()) {
@@ -818,7 +828,7 @@ class BuiltInsValidator {
           for (auto interface : desc.interfaces) {
             if (inst.opcode() == spv::Op::OpTypeStruct) {
               auto varInst = _.FindDef(interface);
-              if (inst.id() == get_underlying_type_id(varInst)) {
+              if (varInst && inst.id() == get_underlying_type_id(varInst)) {
                 entry_point_interface_id[entry_point] = interface;
                 break;
               }
