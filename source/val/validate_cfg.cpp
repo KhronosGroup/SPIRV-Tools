@@ -16,6 +16,7 @@
 #include <functional>
 #include <iostream>
 #include <iterator>
+#include <limits>
 #include <map>
 #include <string>
 #include <tuple>
@@ -197,6 +198,22 @@ spv_result_t ValidateBranchConditional(ValidationState_t& _,
     return _.diag(SPV_ERROR_INVALID_ID, inst)
            << "In SPIR-V 1.6 or later, True Label and False Label must be "
               "different labels";
+  }
+
+  if (num_operands == 5) {
+    const auto true_weight = inst->GetOperandAs<uint32_t>(3);
+    const auto false_weight = inst->GetOperandAs<uint32_t>(4);
+    if (true_weight == 0 && false_weight == 0) {
+      return _.diag(SPV_ERROR_INVALID_ID, inst)
+             << "At least one Branch Weight of OpBranchConditional must be "
+                "non-zero";
+    }
+    if (static_cast<uint64_t>(true_weight) + false_weight >
+        std::numeric_limits<uint32_t>::max()) {
+      return _.diag(SPV_ERROR_INVALID_ID, inst)
+             << "The sum of the Branch Weights of OpBranchConditional must "
+                "not overflow a 32-bit unsigned integer";
+    }
   }
 
   return SPV_SUCCESS;
