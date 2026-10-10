@@ -4200,6 +4200,24 @@ TEST_F(ValidateImage, ReadNeedCapabilityStorageImageReadWithoutFormatVulkan) {
                         "to read storage image"));
 }
 
+TEST_F(ValidateImage, ReadConstOffsetStorageImageVulkan) {
+  const std::string body = R"(
+%img = OpLoad %type_image_u32_2d_0002 %uniform_image_u32_2d_0002
+%res1 = OpImageRead %u32vec4 %img %u32vec2_01 ConstOffset %s32vec2_01
+)";
+
+  const std::string extra = "\nOpCapability StorageImageReadWithoutFormat\n";
+  spv_target_env env = SPV_ENV_VULKAN_1_0;
+  CompileSuccessfully(
+      GenerateShaderCode(body, extra, "Fragment", "", env).c_str(), env);
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(env));
+  EXPECT_THAT(getDiagnosticString(),
+              AnyVUID("VUID-StandaloneSpirv-Offset-04865"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("can only be used with an image whose 'Sampled' "
+                        "operand is 1"));
+}
+
 TEST_F(ValidateImage, ReadNeedCapabilityImage1D) {
   const std::string body = R"(
 %img = OpLoad %type_image_f32_1d_0002_rgba32f %uniform_image_f32_1d_0002_rgba32f

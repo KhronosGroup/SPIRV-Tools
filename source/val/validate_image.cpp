@@ -461,6 +461,18 @@ spv_result_t ValidateImageOperands(ValidationState_t& _,
               "cannot be used together";
   }
 
+  if (spvIsVulkanEnv(_.context()->target_env)) {
+    if (info.sampled != 1 &&
+        (mask & uint32_t(spv::ImageOperandsMask::Offset |
+                         spv::ImageOperandsMask::ConstOffset |
+                         spv::ImageOperandsMask::ConstOffsets))) {
+      return _.diag(SPV_ERROR_INVALID_DATA, inst)
+             << _.VkErrorID(4865)
+             << "Image Operands Offset, ConstOffset, and ConstOffsets can only "
+                "be used with an image whose 'Sampled' operand is 1";
+    }
+  }
+
   const bool is_implicit_lod = IsImplicitLod(opcode);
   const bool is_explicit_lod = IsExplicitLod(opcode);
   const bool is_valid_lod_operand = IsValidLodOperand(_, opcode);
