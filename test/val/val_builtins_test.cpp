@@ -5347,6 +5347,41 @@ TEST_F(ValidateBuiltIns, BadVulkanPrimitiveTriangleIndicesArraySizeMeshEXT) {
                       "PrimitiveTriangleIndicesEXT-07058"));
 }
 
+TEST_F(ValidateBuiltIns, VulkanPrimitiveTriangleIndicesSpecConstantArraySize) {
+  const std::string text = R"(
+               OpCapability MeshShadingEXT
+               OpExtension "SPV_EXT_mesh_shader"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint MeshEXT %main "main" %gl_PrimitiveTriangleIndicesEXT
+               OpExecutionMode %main LocalSize 1 1 1
+               OpExecutionMode %main OutputVertices 3
+               OpExecutionMode %main OutputPrimitivesEXT 1
+               OpExecutionMode %main OutputTrianglesEXT
+               OpDecorate %gl_PrimitiveTriangleIndicesEXT BuiltIn PrimitiveTriangleIndicesEXT
+               OpDecorate %sc SpecId 0
+       %void = OpTypeVoid
+         %fn = OpTypeFunction %void
+       %uint = OpTypeInt 32 0
+     %uint_0 = OpConstant %uint 0
+     %v3uint = OpTypeVector %uint 3
+       %zero = OpConstantComposite %v3uint %uint_0 %uint_0 %uint_0
+         %sc = OpSpecConstant %uint 1
+        %arr = OpTypeArray %v3uint %sc
+        %ptr = OpTypePointer Output %arr
+     %ptr_v3 = OpTypePointer Output %v3uint
+%gl_PrimitiveTriangleIndicesEXT = OpVariable %ptr Output
+       %main = OpFunction %void None %fn
+          %l = OpLabel
+         %ac = OpAccessChain %ptr_v3 %gl_PrimitiveTriangleIndicesEXT %uint_0
+               OpStore %ac %zero
+               OpReturn
+               OpFunctionEnd
+)";
+
+  CompileSuccessfully(text, SPV_ENV_VULKAN_1_3);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_3));
+}
+
 // https://godbolt.org/z/xqsMqqnxd
 TEST_F(ValidateBuiltIns, VulkanMeshMultipleTopology) {
   const std::string text = R"(
@@ -6276,6 +6311,37 @@ TEST_F(ValidateBuiltIns, BadExecModelVulkanCullPrimitiveEXT) {
               AnyVUID("VUID-CullPrimitiveEXT-CullPrimitiveEXT-07034"));
 }
 
+TEST_F(ValidateBuiltIns, BadVulkanBuiltinPrimitiveIdInputMeshEXT) {
+  const std::string text = R"(
+               OpCapability MeshShadingEXT
+               OpExtension "SPV_EXT_mesh_shader"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint MeshEXT %main "main" %pid
+               OpExecutionMode %main LocalSize 1 1 1
+               OpExecutionMode %main OutputVertices 3
+               OpExecutionMode %main OutputPrimitivesEXT 1
+               OpExecutionMode %main OutputTrianglesEXT
+               OpDecorate %pid BuiltIn PrimitiveId
+       %void = OpTypeVoid
+         %fn = OpTypeFunction %void
+        %int = OpTypeInt 32 1
+        %ptr = OpTypePointer Input %int
+        %pid = OpVariable %ptr Input
+       %main = OpFunction %void None %fn
+          %l = OpLabel
+         %ld = OpLoad %int %pid
+               OpReturn
+               OpFunctionEnd
+)";
+
+  CompileSuccessfully(text, SPV_ENV_VULKAN_1_3);
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_VULKAN_1_3));
+  EXPECT_THAT(getDiagnosticString(),
+              AnyVUID("VUID-PrimitiveId-PrimitiveId-04336"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Input storage class if execution model is MeshEXT"));
+}
+
 TEST_F(ValidateBuiltIns, VulkanBuiltinLayerInBlockMeshEXT) {
   const std::string text = R"(
       OpCapability MeshShadingEXT
@@ -6351,6 +6417,86 @@ TEST_F(ValidateBuiltIns, VulkanBuiltinLayerAsArrayOfIntMeshEXT) {
 
   CompileSuccessfully(text, SPV_ENV_VULKAN_1_3);
   EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_3));
+}
+
+TEST_F(ValidateBuiltIns, BadVulkanBuiltinLayerArrayOfInt64MeshEXT) {
+  const std::string text = R"(
+               OpCapability MeshShadingEXT
+               OpCapability Int64
+               OpExtension "SPV_EXT_mesh_shader"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint MeshEXT %main "main" %gl_Layer
+               OpExecutionMode %main LocalSize 1 1 1
+               OpExecutionMode %main OutputVertices 3
+               OpExecutionMode %main OutputPrimitivesEXT 1
+               OpExecutionMode %main OutputTrianglesEXT
+               OpDecorate %gl_Layer BuiltIn Layer
+               OpDecorate %gl_Layer PerPrimitiveEXT
+       %void = OpTypeVoid
+         %fn = OpTypeFunction %void
+       %long = OpTypeInt 64 1
+       %uint = OpTypeInt 32 0
+     %uint_0 = OpConstant %uint 0
+     %uint_1 = OpConstant %uint 1
+     %long_0 = OpConstant %long 0
+        %arr = OpTypeArray %long %uint_1
+%ptr_out_arr = OpTypePointer Output %arr
+%ptr_out_long = OpTypePointer Output %long
+   %gl_Layer = OpVariable %ptr_out_arr Output
+       %main = OpFunction %void None %fn
+          %l = OpLabel
+         %ac = OpAccessChain %ptr_out_long %gl_Layer %uint_0
+               OpStore %ac %long_0
+               OpReturn
+               OpFunctionEnd
+)";
+
+  CompileSuccessfully(text, SPV_ENV_VULKAN_1_3);
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_VULKAN_1_3));
+  EXPECT_THAT(getDiagnosticString(), AnyVUID("VUID-Layer-Layer-10592"));
+  EXPECT_THAT(getDiagnosticString(), HasSubstr("has bit width 64"));
+}
+
+TEST_F(ValidateBuiltIns, BadVulkanBuiltinViewportIndexInBlockInt64MeshEXT) {
+  const std::string text = R"(
+               OpCapability MeshShadingEXT
+               OpCapability Int64
+               OpExtension "SPV_EXT_mesh_shader"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint MeshEXT %main "main" %prims
+               OpExecutionMode %main LocalSize 1 1 1
+               OpExecutionMode %main OutputVertices 3
+               OpExecutionMode %main OutputPrimitivesEXT 1
+               OpExecutionMode %main OutputTrianglesEXT
+               OpDecorate %perprim Block
+               OpMemberDecorate %perprim 0 BuiltIn ViewportIndex
+               OpMemberDecorate %perprim 0 PerPrimitiveEXT
+       %void = OpTypeVoid
+         %fn = OpTypeFunction %void
+       %long = OpTypeInt 64 1
+        %int = OpTypeInt 32 1
+       %uint = OpTypeInt 32 0
+     %uint_1 = OpConstant %uint 1
+      %int_0 = OpConstant %int 0
+     %long_0 = OpConstant %long 0
+    %perprim = OpTypeStruct %long
+        %arr = OpTypeArray %perprim %uint_1
+%ptr_out_arr = OpTypePointer Output %arr
+%ptr_out_long = OpTypePointer Output %long
+      %prims = OpVariable %ptr_out_arr Output
+       %main = OpFunction %void None %fn
+          %l = OpLabel
+         %ac = OpAccessChain %ptr_out_long %prims %int_0 %int_0
+               OpStore %ac %long_0
+               OpReturn
+               OpFunctionEnd
+)";
+
+  CompileSuccessfully(text, SPV_ENV_VULKAN_1_3);
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_VULKAN_1_3));
+  EXPECT_THAT(getDiagnosticString(),
+              AnyVUID("VUID-ViewportIndex-ViewportIndex-10601"));
+  EXPECT_THAT(getDiagnosticString(), HasSubstr("has bit width 64"));
 }
 
 TEST_F(ValidateBuiltIns, BadVulkanBuiltinLayerArrayTypeMeshEXT) {
