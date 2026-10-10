@@ -1030,6 +1030,32 @@ TEST_F(ValidateVulkan100DebugInfo, DebugTypeBasicFailFlags) {
                         "unsigned OpConstant"));
 }
 
+// https://github.com/KhronosGroup/SPIRV-Tools/issues/5897
+TEST_F(ValidateVulkan100DebugInfo, DebugTypeBasicFailFlagsConstantNull) {
+  const std::string src = R"(
+%src = OpString "simple.hlsl"
+%code = OpString "int main() {}"
+%float_name = OpString "float"
+)";
+
+  const std::string constants = R"(
+%u32_null = OpConstantNull %u32
+)";
+
+  const std::string dbg_inst_header = R"(
+%dbg_src = OpExtInst %void %DbgExt DebugSource %src %code
+%comp_unit = OpExtInst %void %DbgExt DebugCompilationUnit %u32_2 %u32_4 %dbg_src %u32_5
+%float_info = OpExtInst %void %DbgExt DebugTypeBasic %float_name %u32_32 %u32_3 %u32_null
+)";
+
+  CompileSuccessfully(GenerateShaderCodeForDebugInfo(
+      src, constants, dbg_inst_header, "", shader_extension_100, "Vertex"));
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("expected operand Flags must be a result id of 32-bit "
+                        "unsigned OpConstant"));
+}
+
 TEST_F(ValidateOpenCL100DebugInfo, DebugTypePointer) {
   const std::string src = R"(
 %src = OpString "simple.hlsl"
