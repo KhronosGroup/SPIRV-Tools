@@ -4082,6 +4082,35 @@ TEST_F(ValidateOpenCL100DebugInfo, DebugGlobalVariableDebugInfoNone) {
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
+TEST_F(ValidateOpenCL100DebugInfo, DebugGlobalVariableDebugExpressionFail) {
+  const std::string src = R"(
+%src = OpString "simple.hlsl"
+%code = OpString "float foo; void main() {}"
+%float_name = OpString "float"
+%foo_name = OpString "foo"
+)";
+
+  const std::string size_const = R"(
+%int_32 = OpConstant %u32 32
+)";
+
+  const std::string dbg_inst_header = R"(
+%expr = OpExtInst %void %DbgExt DebugExpression
+%dbg_src = OpExtInst %void %DbgExt DebugSource %src %code
+%comp_unit = OpExtInst %void %DbgExt DebugCompilationUnit 2 4 %dbg_src HLSL
+%float_info = OpExtInst %void %DbgExt DebugTypeBasic %float_name %int_32 Float
+%foo = OpExtInst %void %DbgExt DebugGlobalVariable %foo_name %float_info %dbg_src 0 0 %comp_unit %foo_name %expr FlagIsProtected|FlagIsPrivate
+)";
+
+  CompileSuccessfully(GenerateShaderCodeForDebugInfo(
+      src, size_const, dbg_inst_header, "", opencl_extension, "Vertex"));
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("expected operand Variable must be a result id of "
+                        "OpVariable, OpConstant variant, OpSpecConstant "
+                        "variant or DebugInfoNone"));
+}
+
 TEST_F(ValidateOpenCL100DebugInfo, DebugGlobalVariableConst) {
   const std::string src = R"(
 %src = OpString "simple.hlsl"
@@ -4238,6 +4267,34 @@ TEST_F(ValidateVulkan100DebugInfo, DebugGlobalVariableConst) {
 
   CompileSuccessfully(GenerateShaderCodeForDebugInfo(
       src, "", dbg_inst_header, "", shader_extension_100, "Vertex"));
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+TEST_F(ValidateVulkan100DebugInfo, DebugGlobalVariableDebugExpression) {
+  const std::string src = R"(
+%src = OpString "simple.hlsl"
+%code = OpString "static const float foo = 1.0; void main() {}"
+%float_name = OpString "float"
+%foo_name = OpString "foo"
+)";
+
+  const std::string consts = R"(
+%u32_7 = OpConstant %u32 7
+%u32_8 = OpConstant %u32 8
+)";
+
+  const std::string dbg_inst_header = R"(
+%dbg_src = OpExtInst %void %DbgExt DebugSource %src %code
+%comp_unit = OpExtInst %void %DbgExt DebugCompilationUnit %u32_2 %u32_4 %dbg_src %u32_5
+%float_info = OpExtInst %void %DbgExt DebugTypeBasic %float_name %u32_32 %u32_3 %u32_0
+%const_op = OpExtInst %void %DbgExt DebugOperation %u32_8 %u32_1
+%stack_op = OpExtInst %void %DbgExt DebugOperation %u32_7
+%expr = OpExtInst %void %DbgExt DebugExpression %const_op %stack_op
+%foo = OpExtInst %void %DbgExt DebugGlobalVariable %foo_name %float_info %dbg_src %u32_0 %u32_0 %comp_unit %foo_name %expr %u32_3
+)";
+
+  CompileSuccessfully(GenerateShaderCodeForDebugInfo(
+      src, consts, dbg_inst_header, "", shader_extension_100, "Vertex"));
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
