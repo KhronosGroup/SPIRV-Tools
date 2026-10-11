@@ -137,6 +137,53 @@ void main() {
   EXPECT_THAT(getDiagnosticString(), Not(HasSubstr("a.comp")));
 }
 
+TEST_F(ValidateShaderDebugInfo, DebugLineZero) {
+  const std::string str = R"(
+               OpCapability Shader
+               OpExtension "SPV_KHR_non_semantic_info"
+          %1 = OpExtInstImport "NonSemantic.Shader.DebugInfo.100"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %main "main"
+               OpExecutionMode %main LocalSize 1 1 1
+          %2 = OpString "a.comp"
+         %19 = OpString "#version 450
+layout(set = 0, binding = 1, std430) buffer SSBO {
+    vec4 data;
+};
+
+void main() {
+    data = vec4(0.0);
+}"
+               OpDecorate %SSBO Block
+               OpMemberDecorate %SSBO 0 Offset 0
+               OpDecorate %_ Binding 1
+               OpDecorate %_ DescriptorSet 0
+       %void = OpTypeVoid
+          %5 = OpTypeFunction %void
+       %uint = OpTypeInt 32 0
+     %uint_0 = OpConstant %uint 0
+         %18 = OpExtInst %void %1 DebugSource %2 %19
+      %float = OpTypeFloat 32
+    %v4float = OpTypeVector %float 4
+       %SSBO = OpTypeStruct %v4float
+%_ptr_StorageBuffer_SSBO = OpTypePointer StorageBuffer %SSBO
+          %_ = OpVariable %_ptr_StorageBuffer_SSBO StorageBuffer
+        %int = OpTypeInt 32 1
+      %int_0 = OpConstant %int 0
+%_ptr_StorageBuffer_v4float = OpTypePointer StorageBuffer %v4float
+       %main = OpFunction %void None %5
+         %15 = OpLabel
+         %54 = OpExtInst %void %1 DebugLine %18 %uint_0 %uint_0 %uint_0 %uint_0
+         ;; invalid here
+         %53 = OpAccessChain %_ptr_StorageBuffer_v4float %_ %int_0 %int_0 %int_0
+               OpReturn
+               OpFunctionEnd
+)";
+  CompileSuccessfully(str.c_str(), SPV_ENV_VULKAN_1_1);
+  EXPECT_NE(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_1));
+  EXPECT_THAT(getDiagnosticString(), Not(HasSubstr("a.comp")));
+}
+
 TEST_F(ValidateShaderDebugInfo, DebugLineMultieLine) {
   const std::string str = R"(
                OpCapability Shader
@@ -194,6 +241,42 @@ void main() {
 7 |     data = vec4(0.0);
 8 | }
   |)"));
+}
+
+TEST_F(ValidateShaderDebugInfo, DebugLinePreviousBlock) {
+  const std::string str = R"(
+               OpCapability Shader
+               OpExtension "SPV_KHR_non_semantic_info"
+          %1 = OpExtInstImport "NonSemantic.Shader.DebugInfo.100"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %main "main"
+               OpExecutionMode %main LocalSize 1 1 1
+          %2 = OpString "a.comp"
+         %19 = OpString "#version 450
+void main() {
+    float x = 0.0;
+}"
+       %void = OpTypeVoid
+          %5 = OpTypeFunction %void
+       %uint = OpTypeInt 32 0
+     %uint_0 = OpConstant %uint 0
+     %uint_3 = OpConstant %uint 3
+         %18 = OpExtInst %void %1 DebugSource %2 %19
+      %float = OpTypeFloat 32
+       %main = OpFunction %void None %5
+         %15 = OpLabel
+         %54 = OpExtInst %void %1 DebugLine %18 %uint_3 %uint_3 %uint_0 %uint_0
+               OpBranch %16
+         %16 = OpLabel
+         ;; invalid here, an OpPhi is before any DebugLine in the block
+         %17 = OpPhi %float %uint_0 %15
+               OpReturn
+               OpFunctionEnd
+)";
+  CompileSuccessfully(str.c_str(), SPV_ENV_VULKAN_1_1);
+  EXPECT_NE(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_1));
+  EXPECT_THAT(getDiagnosticString(), HasSubstr("OpPhi's result type"));
+  EXPECT_THAT(getDiagnosticString(), Not(HasSubstr("a.comp")));
 }
 
 TEST_F(ValidateShaderDebugInfo, DebugSourceContinued) {
@@ -261,6 +344,47 @@ layout(set = 0, binding = 1, std430) buffer SSBO {
 7 |     data = vec4(0.0);
 8 | }
   |)"));
+}
+
+TEST_F(ValidateShaderDebugInfo, DebugSourceNoText) {
+  const std::string str = R"(
+               OpCapability Shader
+               OpExtension "SPV_KHR_non_semantic_info"
+          %1 = OpExtInstImport "NonSemantic.Shader.DebugInfo.100"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %main "main"
+               OpExecutionMode %main LocalSize 1 1 1
+          %2 = OpString "a.comp"
+               OpDecorate %SSBO Block
+               OpMemberDecorate %SSBO 0 Offset 0
+               OpDecorate %_ Binding 1
+               OpDecorate %_ DescriptorSet 0
+       %void = OpTypeVoid
+          %5 = OpTypeFunction %void
+       %uint = OpTypeInt 32 0
+     %uint_0 = OpConstant %uint 0
+         %18 = OpExtInst %void %1 DebugSource %2
+      %float = OpTypeFloat 32
+    %v4float = OpTypeVector %float 4
+       %SSBO = OpTypeStruct %v4float
+%_ptr_StorageBuffer_SSBO = OpTypePointer StorageBuffer %SSBO
+          %_ = OpVariable %_ptr_StorageBuffer_SSBO StorageBuffer
+        %int = OpTypeInt 32 1
+      %int_0 = OpConstant %int 0
+%_ptr_StorageBuffer_v4float = OpTypePointer StorageBuffer %v4float
+     %uint_7 = OpConstant %uint 7
+       %main = OpFunction %void None %5
+         %15 = OpLabel
+         %54 = OpExtInst %void %1 DebugLine %18 %uint_7 %uint_7 %uint_0 %uint_0
+         ;; invalid here
+         %53 = OpAccessChain %_ptr_StorageBuffer_v4float %_ %int_0 %int_0 %int_0
+               OpReturn
+               OpFunctionEnd
+)";
+  CompileSuccessfully(str.c_str(), SPV_ENV_VULKAN_1_1);
+  EXPECT_NE(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_1));
+  EXPECT_THAT(getDiagnosticString(), HasSubstr("  --> a.comp:7:0"));
+  EXPECT_THAT(getDiagnosticString(), Not(HasSubstr("|")));
 }
 
 // Make sure we can handle various instructions where there DebugInfo is unused
