@@ -874,7 +874,10 @@ spv_result_t CheckFPRoundingModeForShaders(ValidationState_t& vstate,
     const auto ptr_inst = vstate.FindDef(store->GetOperandAs<uint32_t>(0));
     const auto ptr_type = vstate.FindDef(ptr_inst->GetOperandAs<uint32_t>(0));
 
-    const auto half_float_id = ptr_type->GetOperandAs<uint32_t>(2);
+    const auto half_float_id =
+        ptr_type->opcode() == spv::Op::OpTypeUntypedPointerKHR
+            ? inst.type_id()
+            : ptr_type->GetOperandAs<uint32_t>(2);
     if (!vstate.IsFloatScalarOrVectorType(half_float_id) ||
         vstate.GetBitWidth(half_float_id) != 16) {
       return vstate.diag(SPV_ERROR_INVALID_ID, &inst)
