@@ -849,6 +849,126 @@ void main() {
   |)"));
 }
 
+TEST_F(ValidateShaderDebugInfo, PtrAccessChainGlobalVariable) {
+  const std::string str = R"(
+               OpCapability Shader
+               OpCapability VariablePointers
+               OpExtension "SPV_KHR_non_semantic_info"
+          %1 = OpExtInstImport "NonSemantic.Shader.DebugInfo.100"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %main "main" %x
+               OpExecutionMode %main LocalSize 1 1 1
+          %2 = OpString "a.comp"
+          %8 = OpString "float"
+         %19 = OpString "#version 450
+struct S { float a; };
+shared S x;
+
+void main() {
+    x.b = 0.0;
+}"
+         %40 = OpString "x"
+               OpDecorate %_ptr_Workgroup_S ArrayStride 4
+       %void = OpTypeVoid
+          %5 = OpTypeFunction %void
+       %uint = OpTypeInt 32 0
+    %uint_32 = OpConstant %uint 32
+     %uint_0 = OpConstant %uint 0
+     %uint_1 = OpConstant %uint 1
+     %uint_2 = OpConstant %uint 2
+     %uint_3 = OpConstant %uint 3
+     %uint_4 = OpConstant %uint 4
+     %uint_6 = OpConstant %uint 6
+     %uint_8 = OpConstant %uint 8
+      %float = OpTypeFloat 32
+          %S = OpTypeStruct %float
+          %9 = OpExtInst %void %1 DebugTypeBasic %8 %uint_32 %uint_3 %uint_0
+         %18 = OpExtInst %void %1 DebugSource %2 %19
+         %20 = OpExtInst %void %1 DebugCompilationUnit %uint_1 %uint_4 %18 %uint_2
+%_ptr_Workgroup_S = OpTypePointer Workgroup %S
+%_ptr_Workgroup_float = OpTypePointer Workgroup %float
+          %x = OpVariable %_ptr_Workgroup_S Workgroup
+         %39 = OpExtInst %void %1 DebugGlobalVariable %40 %9 %18 %uint_3 %uint_0 %20 %40 %x %uint_8
+       %main = OpFunction %void None %5
+         %15 = OpLabel
+         %26 = OpExtInst %void %1 DebugLine %18 %uint_6 %uint_6 %uint_0 %uint_0
+         ;; invalid here, S only has 1 member
+         %30 = OpPtrAccessChain %_ptr_Workgroup_float %x %uint_0 %uint_1
+               OpReturn
+               OpFunctionEnd
+)";
+  CompileSuccessfully(str.c_str(), SPV_ENV_UNIVERSAL_1_6);
+  EXPECT_NE(SPV_SUCCESS, ValidateInstructions(SPV_ENV_UNIVERSAL_1_6));
+  EXPECT_THAT(getDiagnosticString(), HasSubstr(R"(  --> a.comp:6:0
+  |
+6 |     x.b = 0.0;
+  |
+  --> a.comp:3:0
+  |
+3 | shared S x;
+  |)"));
+}
+
+TEST_F(ValidateShaderDebugInfo, UntypedAccessChainGlobalVariable) {
+  const std::string str = R"(
+               OpCapability Shader
+               OpCapability UntypedPointersKHR
+               OpExtension "SPV_KHR_non_semantic_info"
+               OpExtension "SPV_KHR_untyped_pointers"
+          %1 = OpExtInstImport "NonSemantic.Shader.DebugInfo.100"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %main "main" %x
+               OpExecutionMode %main LocalSize 1 1 1
+          %2 = OpString "a.comp"
+          %8 = OpString "float"
+         %19 = OpString "#version 450
+struct S { float a; };
+shared S x;
+
+void main() {
+    x.b = 0.0;
+}"
+         %40 = OpString "x"
+       %void = OpTypeVoid
+          %5 = OpTypeFunction %void
+       %uint = OpTypeInt 32 0
+    %uint_32 = OpConstant %uint 32
+     %uint_0 = OpConstant %uint 0
+     %uint_1 = OpConstant %uint 1
+     %uint_2 = OpConstant %uint 2
+     %uint_3 = OpConstant %uint 3
+     %uint_4 = OpConstant %uint 4
+     %uint_6 = OpConstant %uint 6
+     %uint_8 = OpConstant %uint 8
+      %float = OpTypeFloat 32
+          %S = OpTypeStruct %float
+          %9 = OpExtInst %void %1 DebugTypeBasic %8 %uint_32 %uint_3 %uint_0
+         %18 = OpExtInst %void %1 DebugSource %2 %19
+         %20 = OpExtInst %void %1 DebugCompilationUnit %uint_1 %uint_4 %18 %uint_2
+%_ptr_Workgroup_S = OpTypePointer Workgroup %S
+%_ptr_Workgroup = OpTypeUntypedPointerKHR Workgroup
+          %x = OpVariable %_ptr_Workgroup_S Workgroup
+         %39 = OpExtInst %void %1 DebugGlobalVariable %40 %9 %18 %uint_3 %uint_0 %20 %40 %x %uint_8
+       %main = OpFunction %void None %5
+         %15 = OpLabel
+         %26 = OpExtInst %void %1 DebugLine %18 %uint_6 %uint_6 %uint_0 %uint_0
+         ;; invalid here, S only has 1 member
+         %30 = OpUntypedAccessChainKHR %_ptr_Workgroup %S %x %uint_1
+               OpReturn
+               OpFunctionEnd
+)";
+  CompileSuccessfully(str.c_str(), SPV_ENV_UNIVERSAL_1_6);
+  EXPECT_NE(SPV_SUCCESS, ValidateInstructions(SPV_ENV_UNIVERSAL_1_6));
+  EXPECT_THAT(getDiagnosticString(), HasSubstr(R"(  --> a.comp:6:0
+  |
+6 |     x.b = 0.0;
+  |
+  --> a.comp:3:0
+  |
+3 | shared S x;
+  |)"));
+}
+
 TEST_F(ValidateShaderDebugInfo, FunctionCall) {
   const std::string str = R"(
                OpCapability Shader
