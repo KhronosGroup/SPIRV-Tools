@@ -14,6 +14,8 @@
 
 #include "source/opt/redundancy_elimination.h"
 
+#include <utility>
+
 #include "source/opt/value_number_table.h"
 
 namespace spvtools {
@@ -52,9 +54,16 @@ bool RedundancyEliminationPass::EliminateRedundanciesFrom(
   for (size_t next_node = 0; next_node < todo.size(); next_node++) {
     modified |= EliminateRedundanciesInBB(todo[next_node].node->bb_, vnTable,
                                           &todo[next_node].value_to_id_map);
-    for (DominatorTreeNode* child : todo[next_node].node->children_) {
-      todo.push_back({child, todo[next_node].value_to_id_map});
+    const auto& children = todo[next_node].node->children_;
+    for (size_t child_index = 0; child_index < children.size(); ++child_index) {
+      if (child_index + 1 == children.size()) {
+        todo.push_back({children[child_index],
+                        std::move(todo[next_node].value_to_id_map)});
+      } else {
+        todo.push_back({children[child_index], todo[next_node].value_to_id_map});
+      }
     }
+    todo[next_node].value_to_id_map.clear();
   }
   return modified;
 }

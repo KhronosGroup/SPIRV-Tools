@@ -184,6 +184,82 @@ TEST_F(RedundancyEliminationTest, RemoveRedundantAddInSideNode) {
   SinglePassRunAndMatch<RedundancyEliminationPass>(text, false);
 }
 
+// Inherit dominating values in every sibling, keeping branch-local values
+// confined to that branch's descendants.
+TEST_F(RedundancyEliminationTest, PreserveInheritedValuesAcrossSiblingSubtrees) {
+  const std::string text = R"(
+               OpCapability Shader
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %main "main" %input %output
+               OpExecutionMode %main OriginUpperLeft
+               OpDecorate %input Location 0
+               OpDecorate %output Location 0
+       %void = OpTypeVoid
+       %bool = OpTypeBool
+      %float = OpTypeFloat 32
+         %fn = OpTypeFunction %void
+   %inputptr = OpTypePointer Input %float
+  %outputptr = OpTypePointer Output %float
+      %input = OpVariable %inputptr Input
+     %output = OpVariable %outputptr Output
+       %zero = OpConstant %float 0
+       %main = OpFunction %void None %fn
+      %entry = OpLabel
+      %value = OpLoad %float %input
+     %parent = OpFAdd %float %value %value
+; CHECK: [[parent:%\w+]] = OpFAdd
+       %cond = OpFOrdGreaterThan %bool %value %zero
+               OpSelectionMerge %merge None
+               OpBranchConditional %cond %left %right
+; CHECK: OpBranchConditional {{%\w+}} [[left:%\w+]] [[right:%\w+]]
+       %left = OpLabel
+; CHECK-NEXT: [[left]] = OpLabel
+   %left_mul = OpFMul %float %value %value
+; CHECK-NEXT: [[left_mul:%\w+]] = OpFMul
+               OpBranch %left_tail
+; CHECK-NEXT: OpBranch [[left_tail:%\w+]]
+  %left_tail = OpLabel
+; CHECK-NEXT: [[left_tail]] = OpLabel
+   %left_add = OpFAdd %float %value %value
+  %left_copy = OpFMul %float %value %value
+               OpStore %output %left_add
+; CHECK-NEXT: OpStore [[output:%\w+]] [[parent]]
+               OpStore %output %left_copy
+; CHECK-NEXT: OpStore [[output]] [[left_mul]]
+               OpBranch %merge
+; CHECK-NEXT: OpBranch [[merge:%\w+]]
+      %right = OpLabel
+; CHECK-NEXT: [[right]] = OpLabel
+  %right_mul = OpFMul %float %value %value
+; CHECK-NEXT: [[right_mul:%\w+]] = OpFMul
+               OpBranch %right_tail
+; CHECK-NEXT: OpBranch [[right_tail:%\w+]]
+ %right_tail = OpLabel
+; CHECK-NEXT: [[right_tail]] = OpLabel
+  %right_add = OpFAdd %float %value %value
+ %right_copy = OpFMul %float %value %value
+               OpStore %output %right_add
+; CHECK-NEXT: OpStore [[output]] [[parent]]
+               OpStore %output %right_copy
+; CHECK-NEXT: OpStore [[output]] [[right_mul]]
+               OpBranch %merge
+; CHECK-NEXT: OpBranch [[merge]]
+      %merge = OpLabel
+; CHECK-NEXT: [[merge]] = OpLabel
+  %merge_add = OpFAdd %float %value %value
+  %merge_mul = OpFMul %float %value %value
+; CHECK-NEXT: [[merge_mul:%\w+]] = OpFMul
+               OpStore %output %merge_add
+; CHECK-NEXT: OpStore [[output]] [[parent]]
+               OpStore %output %merge_mul
+; CHECK-NEXT: OpStore [[output]] [[merge_mul]]
+               OpReturn
+; CHECK-NEXT: OpReturn
+               OpFunctionEnd
+  )";
+  SinglePassRunAndMatch<RedundancyEliminationPass>(text, true);
+}
+
 // Remove a redundant add whose value is in the result of a phi node.
 TEST_F(RedundancyEliminationTest, RemoveRedundantAddWithPhi) {
   const std::string text = R"(
