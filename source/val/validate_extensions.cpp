@@ -3416,10 +3416,6 @@ spv_result_t ValidateExtInstOpenClStd(ValidationState_t& _,
         }
       }
 
-      // If pointer points to an array, get the type of an element
-      if (_.IsIntArrayType(format_data_type))
-        format_data_type = _.GetComponentType(format_data_type);
-
       if (!_.IsIntScalarType(format_data_type, 8) &&
           !_.ContainsUntypedPointer(format_type)) {
         return _.diag(SPV_ERROR_INVALID_DATA, inst)

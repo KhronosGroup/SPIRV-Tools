@@ -5618,6 +5618,19 @@ OpExtension  "SPV_EXT_relaxed_printf_string_address_space"
                         "Function, or Generic"));
 }
 
+TEST_F(ValidateExtInst, OpenCLStdPrintfFormatPointerToArray) {
+  const std::string body = R"(
+%val1 = OpExtInst %u32 %extinst printf %u8arr_uniform_constant %u32_0 %u32_1
+)";
+
+  CompileSuccessfully(GenerateKernelCode(body));
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr(
+          "OpenCL.std printf: expected Format data type to be 8-bit int"));
+}
+
 TEST_F(ValidateExtInst, OpenCLStdPrintfFormatNotU8Pointer) {
   const std::string body = R"(
 %format = OpAccessChain %u32_ptr_uniform_constant %u32vec8_uniform_constant %u32_0
