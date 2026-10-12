@@ -3973,6 +3973,71 @@ TEST_F(ValidateImage, GatherConstOffsetsArrayWrongSize) {
           "Expected Image Operand ConstOffsets to be an array of size 4"));
 }
 
+TEST_F(ValidateImage, GatherConstOffsetsArraySpecConstantSize) {
+  const std::string text = R"(
+OpCapability Shader
+OpCapability ImageGatherExtended
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %main "main" %samp_var %i2d_var
+OpExecutionMode %main OriginUpperLeft
+OpDecorate %samp_var DescriptorSet 0
+OpDecorate %samp_var Binding 0
+OpDecorate %i2d_var DescriptorSet 0
+OpDecorate %i2d_var Binding 1
+OpDecorate %sl SpecId 1
+%void = OpTypeVoid
+%voidfn = OpTypeFunction %void
+%float = OpTypeFloat 32
+%v2float = OpTypeVector %float 2
+%v3float = OpTypeVector %float 3
+%v4float = OpTypeVector %float 4
+%int = OpTypeInt 32 1
+%v2int = OpTypeVector %int 2
+%v3int = OpTypeVector %int 3
+%v4int = OpTypeVector %int 4
+%uint = OpTypeInt 32 0
+%v2uint = OpTypeVector %uint 2
+%v3uint = OpTypeVector %uint 3
+%v4uint = OpTypeVector %uint 4
+%float_0 = OpConstant %float 0
+%float_1 = OpConstant %float 1
+%int_0 = OpConstant %int 0
+%int_1 = OpConstant %int 1
+%uint_0 = OpConstant %uint 0
+%uint_1 = OpConstant %uint 1
+%uint_2 = OpConstant %uint 2
+%uint_4 = OpConstant %uint 4
+%v2float_0 = OpConstantComposite %v2float %float_0 %float_0
+%v3float_0 = OpConstantComposite %v3float %float_0 %float_0 %float_0
+%v4float_0 = OpConstantComposite %v4float %float_0 %float_0 %float_0 %float_0
+%v2int_0 = OpConstantComposite %v2int %int_0 %int_0
+%v3int_0 = OpConstantComposite %v3int %int_0 %int_0 %int_0
+%v2uint_0 = OpConstantComposite %v2uint %uint_0 %uint_0
+%v3uint_0 = OpConstantComposite %v3uint %uint_0 %uint_0 %uint_0
+%sampler = OpTypeSampler
+%ptr_sampler = OpTypePointer UniformConstant %sampler
+%samp_var = OpVariable %ptr_sampler UniformConstant
+%i2d = OpTypeImage %float 2D 0 0 0 1 Unknown
+%ptr_i2d = OpTypePointer UniformConstant %i2d
+%i2d_var = OpVariable %ptr_i2d UniformConstant
+%si_i2d = OpTypeSampledImage %i2d
+%sl = OpSpecConstant %uint 4
+%arr4 = OpTypeArray %v2int %sl
+%n = OpConstantNull %arr4
+%main = OpFunction %void None %voidfn
+%entry = OpLabel
+%i_i2d = OpLoad %i2d %i2d_var
+%s_i2d = OpLoad %sampler %samp_var
+%sii2d = OpSampledImage %si_i2d %i_i2d %s_i2d
+%r = OpImageGather %v4float %sii2d %v2float_0 %int_0 ConstOffsets %n
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(text, SPV_ENV_VULKAN_1_3);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_3));
+}
+
 TEST_F(ValidateImage, GatherConstOffsetsArrayNotVector) {
   const std::string body = R"(
 %img = OpLoad %type_image_f32_2d_0001 %uniform_image_f32_2d_0001
@@ -11700,11 +11765,11 @@ TEST_F(ValidateImage, TileImageRequiresLocationDecoration) {
 %_ptr_Function_v4float = OpTypePointer Function %v4float
          %11 = OpTypeImage %float TileImageDataEXT 0 0 0 2 Unknown
 %_ptr_TileImageEXT_11 = OpTypePointer TileImageEXT %11
-     %color0 = OpVariable %_ptr_TileImageEXT_11 TileImageEXT    
+     %color0 = OpVariable %_ptr_TileImageEXT_11 TileImageEXT
     %float_2 = OpConstant %float 2
          %17 = OpConstantComposite %v4float %float_2 %float_2 %float_2 %float_2
 %_ptr_Output_v4float = OpTypePointer Output %v4float
-  %fragColor = OpVariable %_ptr_Output_v4float Output   
+  %fragColor = OpVariable %_ptr_Output_v4float Output
        %main = OpFunction %void None %4
           %6 = OpLabel
       %value = OpVariable %_ptr_Function_v4float Function
@@ -11747,10 +11812,10 @@ TEST_F(ValidateImage, TileImageRequiresNoLocationConflict) {
 %_ptr_Function_v4float = OpTypePointer Function %v4float
          %11 = OpTypeImage %float TileImageDataEXT 0 0 0 2 Unknown
 %_ptr_TileImageEXT_11 = OpTypePointer TileImageEXT %11
-     %color0 = OpVariable %_ptr_TileImageEXT_11 TileImageEXT    
-     %color1 = OpVariable %_ptr_TileImageEXT_11 TileImageEXT    
+     %color0 = OpVariable %_ptr_TileImageEXT_11 TileImageEXT
+     %color1 = OpVariable %_ptr_TileImageEXT_11 TileImageEXT
 %_ptr_Output_v4float = OpTypePointer Output %v4float
-  %fragColor = OpVariable %_ptr_Output_v4float Output   
+  %fragColor = OpVariable %_ptr_Output_v4float Output
        %main = OpFunction %void None %4
           %6 = OpLabel
       %value = OpVariable %_ptr_Function_v4float Function

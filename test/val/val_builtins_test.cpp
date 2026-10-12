@@ -7112,6 +7112,32 @@ TEST_F(ValidateBuiltIns, BadVulkanBuiltinPrimitiveIdFragmentWithRayTracing) {
               AnyVUID("VUID-PrimitiveId-Fragment-04333"));
 }
 
+TEST_F(ValidateBuiltIns, VulkanTessLevelOuterSpecConstantSize) {
+  const std::string text = R"(
+OpCapability Tessellation
+OpMemoryModel Logical GLSL450
+OpEntryPoint TessellationControl %main "main" %outer
+OpExecutionMode %main OutputVertices 3
+OpDecorate %outer BuiltIn TessLevelOuter
+OpDecorate %outer Patch
+%void = OpTypeVoid
+%voidfn = OpTypeFunction %void
+%float = OpTypeFloat 32
+%uint = OpTypeInt 32 0
+%uint_4 = OpSpecConstant %uint 4
+%arr4 = OpTypeArray %float %uint_4
+%_ptr_Output_arr4 = OpTypePointer Output %arr4
+%outer = OpVariable %_ptr_Output_arr4 Output
+%main = OpFunction %void None %voidfn
+%entry = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(text, SPV_ENV_VULKAN_1_0);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_0));
+}
+
 TEST_F(ValidateBuiltIns, TessellationMissingPatch) {
   const std::string spirv = R"(
                OpCapability Tessellation
