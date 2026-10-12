@@ -1345,6 +1345,24 @@ spv_result_t ValidateVariable(ValidationState_t& _, const Instruction* inst) {
   return SPV_SUCCESS;
 }
 
+spv_result_t ValidateUntypedPhysicalStorageBuffer(ValidationState_t& _,
+                                                  const Instruction* inst,
+                                                  uint32_t type_id) {
+  if (_.ContainsType(
+          type_id,
+          [](const Instruction* type_inst) {
+            return type_inst->opcode() == spv::Op::OpTypeBool;
+          },
+          false)) {
+    return _.diag(SPV_ERROR_INVALID_ID, inst)
+           << "Op" << spvOpcodeString(inst->opcode()) << " type <id> "
+           << _.getIdName(type_id)
+           << " contains an OpTypeBool, which must not be used with the "
+              "PhysicalStorageBuffer Storage Class";
+  }
+  return SPV_SUCCESS;
+}
+
 spv_result_t ValidateLoad(ValidationState_t& _, const Instruction* inst) {
   const auto result_type = _.FindDef(inst->type_id());
   if (!result_type) {
@@ -1384,6 +1402,14 @@ spv_result_t ValidateLoad(ValidationState_t& _, const Instruction* inst) {
              << "OpLoad Result Type <id> " << _.getIdName(inst->type_id())
              << " does not match Pointer <id> " << _.getIdName(pointer->id())
              << "s type.";
+    }
+  } else if (pointer_type->opcode() == spv::Op::OpTypeUntypedPointerKHR) {
+    if (pointer_type->GetOperandAs<spv::StorageClass>(1) ==
+        spv::StorageClass::PhysicalStorageBuffer) {
+      if (auto error =
+              ValidateUntypedPhysicalStorageBuffer(_, inst, inst->type_id())) {
+        return error;
+      }
     }
   }
 
@@ -1553,6 +1579,14 @@ spv_result_t ValidateStore(ValidationState_t& _, const Instruction* inst) {
       return _.diag(SPV_ERROR_INVALID_ID, inst)
              << "OpStore Pointer <id> " << _.getIdName(pointer_id)
              << "s type is void.";
+    }
+  } else if (pointer_type->opcode() == spv::Op::OpTypeUntypedPointerKHR) {
+    if (pointer_type->GetOperandAs<spv::StorageClass>(1) ==
+        spv::StorageClass::PhysicalStorageBuffer) {
+      if (auto error = ValidateUntypedPhysicalStorageBuffer(
+              _, inst, _.GetTypeId(inst->GetOperandAs<uint32_t>(1)))) {
+        return error;
+      }
     }
   }
 
@@ -2007,6 +2041,14 @@ spv_result_t ValidateAccessChain(ValidationState_t& _,
         base_type->opcode() == spv::Op::OpTypeUntypedPointerKHR) {
       return _.diag(SPV_ERROR_INVALID_ID, inst)
              << "Base type must be a non-pointer type";
+    }
+
+    if (result_type->GetOperandAs<spv::StorageClass>(1) ==
+        spv::StorageClass::PhysicalStorageBuffer) {
+      if (auto error =
+              ValidateUntypedPhysicalStorageBuffer(_, inst, base_type->id())) {
+        return error;
+      }
     }
 
     const auto ContainsBlock = [&_](const Instruction* type_inst) {

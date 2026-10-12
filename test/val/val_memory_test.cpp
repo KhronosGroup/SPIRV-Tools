@@ -6335,6 +6335,114 @@ OpFunctionEnd
                         "the PhysicalStorageBuffer Storage Class"));
 }
 
+TEST_F(ValidateMemory, PhysicalStorageBufferBoolUntypedLoad) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpCapability PhysicalStorageBufferAddresses
+OpCapability UntypedPointersKHR
+OpCapability Int64
+OpExtension "SPV_KHR_physical_storage_buffer"
+OpExtension "SPV_KHR_untyped_pointers"
+OpMemoryModel PhysicalStorageBuffer64 GLSL450
+OpEntryPoint GLCompute %main "main"
+OpExecutionMode %main LocalSize 1 1 1
+%void = OpTypeVoid
+%void_fn = OpTypeFunction %void
+%bool = OpTypeBool
+%true = OpConstantTrue %bool
+%ulong = OpTypeInt 64 0
+%addr = OpConstant %ulong 0
+%ptr = OpTypeUntypedPointerKHR PhysicalStorageBuffer
+%main = OpFunction %void None %void_fn
+%label = OpLabel
+%p = OpConvertUToPtr %ptr %addr
+%load = OpLoad %bool %p Aligned 4
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_5);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_UNIVERSAL_1_5));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("[%bool]' contains an OpTypeBool, which "
+                        "must not be used with the PhysicalStorageBuffer "
+                        "Storage Class"));
+}
+
+TEST_F(ValidateMemory, PhysicalStorageBufferBoolUntypedStore) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpCapability PhysicalStorageBufferAddresses
+OpCapability UntypedPointersKHR
+OpCapability Int64
+OpExtension "SPV_KHR_physical_storage_buffer"
+OpExtension "SPV_KHR_untyped_pointers"
+OpMemoryModel PhysicalStorageBuffer64 GLSL450
+OpEntryPoint GLCompute %main "main"
+OpExecutionMode %main LocalSize 1 1 1
+%void = OpTypeVoid
+%void_fn = OpTypeFunction %void
+%bool = OpTypeBool
+%true = OpConstantTrue %bool
+%ulong = OpTypeInt 64 0
+%addr = OpConstant %ulong 0
+%ptr = OpTypeUntypedPointerKHR PhysicalStorageBuffer
+%main = OpFunction %void None %void_fn
+%label = OpLabel
+%p = OpConvertUToPtr %ptr %addr
+OpStore %p %true Aligned 4
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_5);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_UNIVERSAL_1_5));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("[%bool]' contains an OpTypeBool, which "
+                        "must not be used with the PhysicalStorageBuffer "
+                        "Storage Class"));
+}
+
+TEST_F(ValidateMemory, PhysicalStorageBufferBoolUntypedAccessChain) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpCapability PhysicalStorageBufferAddresses
+OpCapability UntypedPointersKHR
+OpCapability Int64
+OpExtension "SPV_KHR_physical_storage_buffer"
+OpExtension "SPV_KHR_untyped_pointers"
+OpMemoryModel PhysicalStorageBuffer64 GLSL450
+OpEntryPoint GLCompute %main "main"
+OpExecutionMode %main LocalSize 1 1 1
+OpDecorate %array ArrayStride 4
+OpMemberDecorate %block 0 Offset 0
+%void = OpTypeVoid
+%void_fn = OpTypeFunction %void
+%bool = OpTypeBool
+%true = OpConstantTrue %bool
+%ulong = OpTypeInt 64 0
+%addr = OpConstant %ulong 0
+%ptr = OpTypeUntypedPointerKHR PhysicalStorageBuffer
+%int = OpTypeInt 32 1
+%int_0 = OpConstant %int 0
+%array = OpTypeRuntimeArray %bool
+%block = OpTypeStruct %array
+%main = OpFunction %void None %void_fn
+%label = OpLabel
+%p = OpConvertUToPtr %ptr %addr
+%ac = OpUntypedAccessChainKHR %ptr %block %p %int_0 %int_0
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_5);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_UNIVERSAL_1_5));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("' contains an OpTypeBool, which "
+                        "must not be used with the PhysicalStorageBuffer "
+                        "Storage Class"));
+}
+
 TEST_F(ValidateMemory, PhysicalStorageBufferPtrEqual) {
   const std::string spirv = R"(
 OpCapability Shader
