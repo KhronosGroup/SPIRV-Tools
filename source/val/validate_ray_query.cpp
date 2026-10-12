@@ -43,7 +43,8 @@ spv_result_t ValidateRayQueryPointer(ValidationState_t& _,
   if (!variable || (var_opcode != spv::Op::OpVariable &&
                     var_opcode != spv::Op::OpFunctionParameter &&
                     var_opcode != spv::Op::OpAccessChain &&
-                    var_opcode != spv::Op::OpInBoundsAccessChain)) {
+                    var_opcode != spv::Op::OpInBoundsAccessChain &&
+                    var_opcode != spv::Op::OpCopyObject)) {
     return _.diag(SPV_ERROR_INVALID_DATA, inst)
            << "Ray Query must be a memory object declaration";
   }
