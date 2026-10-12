@@ -472,123 +472,213 @@ OpFunctionEnd
                 "= OpVariable %_ptr_Input_float Input %float_1\n"));
 }
 
-TEST_F(ValidateMemory, VulkanSpecConstantInitializerPrivateWithoutConstantBad) {
+TEST_F(ValidateMemory, VulkanSpecConstantSizedArrayInStructUniformBad) {
   std::string spirv = R"(
 OpCapability Shader
 OpMemoryModel Logical GLSL450
-OpEntryPoint Fragment %func "func"
-OpExecutionMode %func OriginUpperLeft
+OpEntryPoint GLCompute %main "main"
+OpExecutionMode %main LocalSize 1 1 1
+OpDecorate %struct Block
+OpMemberDecorate %struct 0 Offset 0
+OpDecorate %array_type ArrayStride 4
+OpDecorate %var DescriptorSet 0
+OpDecorate %var Binding 0
 %float = OpTypeFloat 32
-%float_ptr = OpTypePointer Private %float
-%spec_val = OpSpecConstant %float 1.0
-%var = OpVariable %float_ptr Private %spec_val
-%void = OpTypeVoid
-%functy = OpTypeFunction %void
-%func = OpFunction %void None %functy
-%label = OpLabel
-OpReturn
-OpFunctionEnd
-)";
-  CompileSuccessfully(spirv.c_str(), SPV_ENV_VULKAN_1_1);
-  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_VULKAN_1_1));
-  EXPECT_THAT(getDiagnosticString(),
-              AnyVUID("VUID-StandaloneSpirv-Function-04681"));
-  EXPECT_THAT(
-      getDiagnosticString(),
-      HasSubstr(
-          "with an initializer that is a specialization constant must have "
-          "an OpDecorate with Constant or be in the Function storage class."));
-}
-
-TEST_F(ValidateMemory, VulkanSpecConstantInitializerOutputWithoutConstantBad) {
-  std::string spirv = R"(
-OpCapability Shader
-OpMemoryModel Logical GLSL450
-OpEntryPoint Fragment %func "func" %var
-OpExecutionMode %func OriginUpperLeft
-%float = OpTypeFloat 32
-%float_ptr = OpTypePointer Output %float
-%spec_val = OpSpecConstant %float 1.0
-%var = OpVariable %float_ptr Output %spec_val
-%void = OpTypeVoid
-%functy = OpTypeFunction %void
-%func = OpFunction %void None %functy
-%label = OpLabel
-OpReturn
-OpFunctionEnd
-)";
-  CompileSuccessfully(spirv.c_str(), SPV_ENV_VULKAN_1_1);
-  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_VULKAN_1_1));
-  EXPECT_THAT(getDiagnosticString(),
-              AnyVUID("VUID-StandaloneSpirv-Function-04681"));
-  EXPECT_THAT(
-      getDiagnosticString(),
-      HasSubstr(
-          "with an initializer that is a specialization constant must have "
-          "an OpDecorate with Constant or be in the Function storage class."));
-}
-
-TEST_F(ValidateMemory, VulkanSpecConstantInitializerFunctionGood) {
-  std::string spirv = R"(
-OpCapability Shader
-OpMemoryModel Logical GLSL450
-OpEntryPoint Fragment %func "func"
-OpExecutionMode %func OriginUpperLeft
-%float = OpTypeFloat 32
-%float_ptr = OpTypePointer Function %float
-%spec_val = OpSpecConstant %float 1.0
-%void = OpTypeVoid
-%functy = OpTypeFunction %void
-%func = OpFunction %void None %functy
-%label = OpLabel
-%var = OpVariable %float_ptr Function %spec_val
-OpReturn
-OpFunctionEnd
-)";
-  CompileSuccessfully(spirv.c_str(), SPV_ENV_VULKAN_1_1);
-  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_1));
-}
-
-TEST_F(ValidateMemory, VulkanSpecConstantCompositeInitializerFunctionGood) {
-  std::string spirv = R"(
-OpCapability Shader
-OpMemoryModel Logical GLSL450
-OpEntryPoint Fragment %func "func"
-OpExecutionMode %func OriginUpperLeft
-%float = OpTypeFloat 32
-%v2float = OpTypeVector %float 2
-%float_ptr = OpTypePointer Function %v2float
-%spec_a = OpSpecConstant %float 1.0
-%spec_b = OpSpecConstant %float 2.0
-%spec_comp = OpSpecConstantComposite %v2float %spec_a %spec_b
-%void = OpTypeVoid
-%functy = OpTypeFunction %void
-%func = OpFunction %void None %functy
-%label = OpLabel
-%var = OpVariable %float_ptr Function %spec_comp
-OpReturn
-OpFunctionEnd
-)";
-  CompileSuccessfully(spirv.c_str(), SPV_ENV_VULKAN_1_1);
-  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_1));
-}
-
-TEST_F(ValidateMemory,
-       VulkanSpecConstantOpInitializerPrivateWithoutConstantBad) {
-  std::string spirv = R"(
-OpCapability Shader
-OpMemoryModel Logical GLSL450
-OpEntryPoint Fragment %func "func"
-OpExecutionMode %func OriginUpperLeft
 %uint = OpTypeInt 32 0
-%uint_ptr = OpTypePointer Private %uint
-%spec_a = OpSpecConstant %uint 1
-%spec_b = OpSpecConstant %uint 2
-%spec_op = OpSpecConstantOp %uint IAdd %spec_a %spec_b
-%var = OpVariable %uint_ptr Private %spec_op
+%spec_size = OpSpecConstant %uint 4
+%array_type = OpTypeArray %float %spec_size
+%struct = OpTypeStruct %array_type
+%ptr = OpTypePointer Uniform %struct
+%var = OpVariable %ptr Uniform
 %void = OpTypeVoid
-%functy = OpTypeFunction %void
-%func = OpFunction %void None %functy
+%func_type = OpTypeFunction %void
+%main = OpFunction %void None %func_type
+%label = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+  CompileSuccessfully(spirv.c_str(), SPV_ENV_VULKAN_1_1);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_VULKAN_1_1));
+  EXPECT_THAT(getDiagnosticString(),
+              AnyVUID("VUID-StandaloneSpirv-Function-04681"));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("A type that is an array sized with a specialization constant "
+                "must neither be, nor be contained in, the type of variable"));
+}
+
+TEST_F(ValidateMemory, VulkanSpecConstantSizedArrayInBlockWorkgroupBad) {
+  std::string spirv = R"(
+OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %main "main"
+OpExecutionMode %main LocalSize 1 1 1
+OpDecorate %struct Block
+OpMemberDecorate %struct 0 Offset 0
+OpDecorate %array_type ArrayStride 4
+%float = OpTypeFloat 32
+%uint = OpTypeInt 32 0
+%spec_size = OpSpecConstant %uint 4
+%array_type = OpTypeArray %float %spec_size
+%struct = OpTypeStruct %array_type
+%ptr = OpTypePointer Workgroup %struct
+%var = OpVariable %ptr Workgroup
+%void = OpTypeVoid
+%func_type = OpTypeFunction %void
+%main = OpFunction %void None %func_type
+%label = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+  CompileSuccessfully(spirv.c_str(), SPV_ENV_VULKAN_1_1);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_VULKAN_1_1));
+  EXPECT_THAT(getDiagnosticString(),
+              AnyVUID("VUID-StandaloneSpirv-Function-04681"));
+}
+
+TEST_F(ValidateMemory, VulkanSpecConstantSizedArrayNonBlockWorkgroupGood) {
+  std::string spirv = R"(
+OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %main "main"
+OpExecutionMode %main LocalSize 1 1 1
+%float = OpTypeFloat 32
+%uint = OpTypeInt 32 0
+%spec_size = OpSpecConstant %uint 4
+%array_type = OpTypeArray %float %spec_size
+%struct = OpTypeStruct %array_type
+%ptr = OpTypePointer Workgroup %struct
+%var = OpVariable %ptr Workgroup
+%void = OpTypeVoid
+%func_type = OpTypeFunction %void
+%main = OpFunction %void None %func_type
+%label = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+  CompileSuccessfully(spirv.c_str(), SPV_ENV_VULKAN_1_1);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_1));
+}
+
+TEST_F(ValidateMemory, VulkanSpecConstantSizedArrayFunctionGood) {
+  std::string spirv = R"(
+OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %main "main"
+OpExecutionMode %main LocalSize 1 1 1
+%float = OpTypeFloat 32
+%uint = OpTypeInt 32 0
+%spec_size = OpSpecConstant %uint 4
+%array_type = OpTypeArray %float %spec_size
+%struct = OpTypeStruct %array_type
+%ptr = OpTypePointer Function %struct
+%void = OpTypeVoid
+%func_type = OpTypeFunction %void
+%main = OpFunction %void None %func_type
+%label = OpLabel
+%var = OpVariable %ptr Function
+OpReturn
+OpFunctionEnd
+)";
+  CompileSuccessfully(spirv.c_str(), SPV_ENV_VULKAN_1_1);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_1));
+}
+
+TEST_F(ValidateMemory, VulkanSpecConstantSizedArrayPrivateGood) {
+  std::string spirv = R"(
+OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %main "main"
+OpExecutionMode %main LocalSize 1 1 1
+%float = OpTypeFloat 32
+%uint = OpTypeInt 32 0
+%spec_size = OpSpecConstant %uint 4
+%array_type = OpTypeArray %float %spec_size
+%struct = OpTypeStruct %array_type
+%ptr = OpTypePointer Private %struct
+%var = OpVariable %ptr Private
+%void = OpTypeVoid
+%func_type = OpTypeFunction %void
+%main = OpFunction %void None %func_type
+%label = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+  CompileSuccessfully(spirv.c_str(), SPV_ENV_VULKAN_1_1);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_1));
+}
+
+TEST_F(ValidateMemory, VulkanSpecConstantSizedArrayEqualTypeGood) {
+  std::string spirv = R"(
+OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %main "main" %var
+OpExecutionMode %main OriginUpperLeft
+OpDecorate %var Location 0
+%float = OpTypeFloat 32
+%uint = OpTypeInt 32 0
+%spec_size = OpSpecConstant %uint 4
+%array_type = OpTypeArray %float %spec_size
+%ptr = OpTypePointer Input %array_type
+%var = OpVariable %ptr Input
+%void = OpTypeVoid
+%func_type = OpTypeFunction %void
+%main = OpFunction %void None %func_type
+%label = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+  CompileSuccessfully(spirv.c_str(), SPV_ENV_VULKAN_1_1);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_1));
+}
+
+TEST_F(ValidateMemory, VulkanSpecConstantSizedArrayGeometryArrayedGood) {
+  std::string spirv = R"(
+OpCapability Shader
+OpCapability Geometry
+OpMemoryModel Logical GLSL450
+OpEntryPoint Geometry %main "main" %var
+OpExecutionMode %main Triangles
+OpExecutionMode %main Invocations 1
+OpExecutionMode %main OutputTriangleStrip
+OpExecutionMode %main OutputVertices 3
+OpDecorate %var Location 0
+%float = OpTypeFloat 32
+%uint = OpTypeInt 32 0
+%spec_size = OpSpecConstant %uint 4
+%const_3 = OpConstant %uint 3
+%inner_array = OpTypeArray %float %spec_size
+%outer_array = OpTypeArray %inner_array %const_3
+%ptr = OpTypePointer Input %outer_array
+%var = OpVariable %ptr Input
+%void = OpTypeVoid
+%func_type = OpTypeFunction %void
+%main = OpFunction %void None %func_type
+%label = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+  CompileSuccessfully(spirv.c_str(), SPV_ENV_VULKAN_1_1);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_1));
+}
+
+TEST_F(ValidateMemory, VulkanSpecConstantSizedArrayVertexNonArrayedBad) {
+  std::string spirv = R"(
+OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint Vertex %main "main" %var
+OpDecorate %var Location 0
+%float = OpTypeFloat 32
+%uint = OpTypeInt 32 0
+%spec_size = OpSpecConstant %uint 4
+%const_3 = OpConstant %uint 3
+%inner_array = OpTypeArray %float %spec_size
+%outer_array = OpTypeArray %inner_array %const_3
+%ptr = OpTypePointer Input %outer_array
+%var = OpVariable %ptr Input
+%void = OpTypeVoid
+%func_type = OpTypeFunction %void
+%main = OpFunction %void None %func_type
 %label = OpLabel
 OpReturn
 OpFunctionEnd
