@@ -26,6 +26,16 @@ namespace diff {
 
 namespace {
 
+// Size for the per-id containers below.  The module header's id bound is only
+// authoritative for valid SPIR-V; a malformed module can carry result or
+// reference ids that are >= IdBound(), which would index these vectors out of
+// bounds.  ComputeIdBound() returns one past the largest id actually present,
+// so taking the max of the two keeps every id-indexed access in range while
+// leaving valid modules (where every id < IdBound()) unchanged.
+inline uint32_t IdMapBound(const opt::Module* module) {
+  return std::max(module->IdBound(), module->ComputeIdBound());
+}
+
 // A map from an id to the instruction that defines it.
 using IdToInstructionMap = std::vector<const opt::Instruction*>;
 // A map from an id to the instructions that decorate it, or name it, etc.
@@ -195,10 +205,13 @@ class SrcDstIdMap {
 // Mappings from ids to instructions and metadata, for a single module's ids.
 struct IdInstructions {
   IdInstructions(const opt::Module* module)
-      : inst_map_(module->IdBound(), nullptr),
-        name_map_(module->IdBound()),
-        decoration_map_(module->IdBound()),
-        forward_pointer_map_(module->IdBound()) {
+      : IdInstructions(module, IdMapBound(module)) {}
+
+  IdInstructions(const opt::Module* module, uint32_t id_bound)
+      : inst_map_(id_bound, nullptr),
+        name_map_(id_bound),
+        decoration_map_(id_bound),
+        forward_pointer_map_(id_bound) {
     // Map ids from all sections to instructions that define them.
     MapIdsToInstruction(module->ext_inst_imports());
     MapIdsToInstruction(module->debugs1());
@@ -253,7 +266,7 @@ class Differ {
         out_(out),
         src_id_to_(src_),
         dst_id_to_(dst_),
-        id_map_(src_->IdBound(), dst_->IdBound()) {
+        id_map_(IdMapBound(src_), IdMapBound(dst_)) {
     // Cache function bodies in canonicalization order.
     GetFunctionBodies(src_context_, &src_funcs_, &src_func_insts_);
     GetFunctionBodies(dst_context_, &dst_funcs_, &dst_func_insts_);
