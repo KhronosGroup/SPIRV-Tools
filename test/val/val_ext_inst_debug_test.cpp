@@ -1683,6 +1683,31 @@ TEST_F(ValidateOpenCL100DebugInfo, DebugTypeVector) {
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
+TEST_F(ValidateOpenCL100DebugInfo, DebugTypeVectorOfTypedef) {
+  const std::string src = R"(
+%src = OpString "vector.c"
+%code = OpString "typedef unsigned int uint; typedef uint uint4;"
+%uint_name = OpString "uint"
+%uint4_name = OpString "uint4"
+)";
+
+  const std::string size_const = R"(
+%int_32 = OpConstant %u32 32
+)";
+
+  const std::string dbg_inst_header = R"(
+%dbg_src = OpExtInst %void %DbgExt DebugSource %src %code
+%comp_unit = OpExtInst %void %DbgExt DebugCompilationUnit 1 4 %dbg_src HLSL
+%uint_basic = OpExtInst %void %DbgExt DebugTypeBasic %uint_name %int_32 Unsigned
+%uint_info = OpExtInst %void %DbgExt DebugTypedef %uint_name %uint_basic %dbg_src 1 0 %comp_unit
+%uint4_info = OpExtInst %void %DbgExt DebugTypeVector %uint_info 4
+)";
+
+  CompileSuccessfully(GenerateShaderCodeForDebugInfo(
+      src, size_const, dbg_inst_header, "", opencl_extension, "Vertex"));
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
 TEST_F(ValidateOpenCL100DebugInfo, DebugTypeVectorFail) {
   const std::string src = R"(
 %src = OpString "simple.hlsl"
@@ -1705,8 +1730,8 @@ TEST_F(ValidateOpenCL100DebugInfo, DebugTypeVectorFail) {
       src, size_const, dbg_inst_header, "", opencl_extension, "Vertex"));
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("expected operand Base Type must be a result id of "
-                        "DebugTypeBasic"));
+              HasSubstr("expected operand Base Type is not a valid debug "
+                        "type"));
 }
 
 TEST_F(ValidateOpenCL100DebugInfo, DebugTypeVectorFailComponentZero) {
@@ -1724,15 +1749,15 @@ TEST_F(ValidateOpenCL100DebugInfo, DebugTypeVectorFailComponentZero) {
 %dbg_src = OpExtInst %void %DbgExt DebugSource %src %code
 %comp_unit = OpExtInst %void %DbgExt DebugCompilationUnit 2 4 %dbg_src HLSL
 %float_info = OpExtInst %void %DbgExt DebugTypeBasic %float_name %int_32 Float
-%vfloat_info = OpExtInst %void %DbgExt DebugTypeVector %dbg_src 0
+%vfloat_info = OpExtInst %void %DbgExt DebugTypeVector %float_info 0
 )";
 
   CompileSuccessfully(GenerateShaderCodeForDebugInfo(
       src, size_const, dbg_inst_header, "", opencl_extension, "Vertex"));
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("expected operand Base Type must be a result id of "
-                        "DebugTypeBasic"));
+              HasSubstr("Component Count must be positive "
+                        "integer less than or equal to 4"));
 }
 
 TEST_F(ValidateOpenCL100DebugInfo, DebugTypeVectorFailComponentFive) {
@@ -1750,15 +1775,15 @@ TEST_F(ValidateOpenCL100DebugInfo, DebugTypeVectorFailComponentFive) {
 %dbg_src = OpExtInst %void %DbgExt DebugSource %src %code
 %comp_unit = OpExtInst %void %DbgExt DebugCompilationUnit 2 4 %dbg_src HLSL
 %float_info = OpExtInst %void %DbgExt DebugTypeBasic %float_name %int_32 Float
-%vfloat_info = OpExtInst %void %DbgExt DebugTypeVector %dbg_src 5
+%vfloat_info = OpExtInst %void %DbgExt DebugTypeVector %float_info 5
 )";
 
   CompileSuccessfully(GenerateShaderCodeForDebugInfo(
       src, size_const, dbg_inst_header, "", opencl_extension, "Vertex"));
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("expected operand Base Type must be a result id of "
-                        "DebugTypeBasic"));
+              HasSubstr("Component Count must be positive "
+                        "integer less than or equal to 4"));
 }
 
 TEST_F(ValidateVulkan100DebugInfo, DebugTypeVector) {
@@ -1773,6 +1798,27 @@ TEST_F(ValidateVulkan100DebugInfo, DebugTypeVector) {
 %comp_unit = OpExtInst %void %DbgExt DebugCompilationUnit %u32_2 %u32_4 %dbg_src %u32_5
 %float_info = OpExtInst %void %DbgExt DebugTypeBasic %float_name %u32_32 %u32_3 %u32_0
 %vfloat_info = OpExtInst %void %DbgExt DebugTypeVector %float_info %u32_4
+)";
+
+  CompileSuccessfully(GenerateShaderCodeForDebugInfo(
+      src, "", dbg_inst_header, "", shader_extension_100, "Vertex"));
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+TEST_F(ValidateVulkan100DebugInfo, DebugTypeVectorOfTypedef) {
+  const std::string src = R"(
+%src = OpString "vector.c"
+%code = OpString "typedef unsigned int uint; typedef uint uint4;"
+%uint_name = OpString "uint"
+%uint4_name = OpString "uint4"
+)";
+
+  const std::string dbg_inst_header = R"(
+%dbg_src = OpExtInst %void %DbgExt DebugSource %src %code
+%comp_unit = OpExtInst %void %DbgExt DebugCompilationUnit %u32_1 %u32_4 %dbg_src %u32_0
+%uint_basic = OpExtInst %void %DbgExt DebugTypeBasic %uint_name %u32_32 %u32_2 %u32_0
+%uint_info = OpExtInst %void %DbgExt DebugTypedef %uint_name %uint_basic %dbg_src %u32_1 %u32_0 %comp_unit
+%uint4_info = OpExtInst %void %DbgExt DebugTypeVector %uint_info %u32_4
 )";
 
   CompileSuccessfully(GenerateShaderCodeForDebugInfo(
@@ -1798,8 +1844,8 @@ TEST_F(ValidateVulkan100DebugInfo, DebugTypeVectorFail) {
       src, "", dbg_inst_header, "", shader_extension_100, "Vertex"));
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("expected operand Base Type must be a result id of "
-                        "DebugTypeBasic"));
+              HasSubstr("expected operand Base Type is not a valid debug "
+                        "type"));
 }
 
 TEST_F(ValidateVulkan100DebugInfo, DebugTypeVectorFailComponentZero) {
@@ -2002,6 +2048,31 @@ TEST_F(ValidateOpenCL100DebugInfo, DebugTypedef) {
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
+TEST_F(ValidateOpenCL100DebugInfo, DebugTypedefOfVector) {
+  const std::string src = R"(
+%src = OpString "vector.c"
+%code = OpString "typedef int v4si __attribute__((vector_size(16)));"
+%int_name = OpString "int"
+%v4si_name = OpString "v4si"
+)";
+
+  const std::string size_const = R"(
+%int_32 = OpConstant %u32 32
+)";
+
+  const std::string dbg_inst_header = R"(
+%dbg_src = OpExtInst %void %DbgExt DebugSource %src %code
+%comp_unit = OpExtInst %void %DbgExt DebugCompilationUnit 1 4 %dbg_src HLSL
+%int_info = OpExtInst %void %DbgExt DebugTypeBasic %int_name %int_32 Signed
+%v4si_vec = OpExtInst %void %DbgExt DebugTypeVector %int_info 4
+%v4si_info = OpExtInst %void %DbgExt DebugTypedef %v4si_name %v4si_vec %dbg_src 1 0 %comp_unit
+)";
+
+  CompileSuccessfully(GenerateShaderCodeForDebugInfo(
+      src, size_const, dbg_inst_header, "", opencl_extension, "Vertex"));
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
 TEST_P(ValidateOpenCL100DebugInfoDebugTypedef, Fail) {
   const std::string src = R"(
 %src = OpString "simple.hlsl"
@@ -2027,9 +2098,15 @@ TEST_P(ValidateOpenCL100DebugInfoDebugTypedef, Fail) {
   CompileSuccessfully(GenerateShaderCodeForDebugInfo(
       src, size_const, ss.str(), "", opencl_extension, "Vertex"));
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("expected operand " + param.second +
-                        " must be a result id of "));
+  if (param.second == "Base Type") {
+    EXPECT_THAT(getDiagnosticString(),
+                HasSubstr("expected operand Base Type is not a valid debug "
+                          "type"));
+  } else {
+    EXPECT_THAT(getDiagnosticString(),
+                HasSubstr("expected operand " + param.second +
+                          " must be a result id of "));
+  }
 }
 
 INSTANTIATE_TEST_SUITE_P(
@@ -2065,6 +2142,27 @@ TEST_F(ValidateVulkan100DebugInfo, DebugTypedef) {
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
+TEST_F(ValidateVulkan100DebugInfo, DebugTypedefOfVector) {
+  const std::string src = R"(
+%src = OpString "vector.c"
+%code = OpString "typedef int v4si __attribute__((vector_size(16)));"
+%int_name = OpString "int"
+%v4si_name = OpString "v4si"
+)";
+
+  const std::string dbg_inst_header = R"(
+%dbg_src = OpExtInst %void %DbgExt DebugSource %src %code
+%comp_unit = OpExtInst %void %DbgExt DebugCompilationUnit %u32_1 %u32_4 %dbg_src %u32_0
+%int_info = OpExtInst %void %DbgExt DebugTypeBasic %int_name %u32_32 %u32_4 %u32_0
+%v4si_vec = OpExtInst %void %DbgExt DebugTypeVector %int_info %u32_4
+%v4si_info = OpExtInst %void %DbgExt DebugTypedef %v4si_name %v4si_vec %dbg_src %u32_1 %u32_0 %comp_unit
+)";
+
+  CompileSuccessfully(GenerateShaderCodeForDebugInfo(
+      src, "", dbg_inst_header, "", shader_extension_100, "Vertex"));
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
 TEST_P(ValidateVulkan100DebugInfoDebugTypedef, Fail) {
   const std::string src = R"(
 %src = OpString "simple.hlsl"
@@ -2086,9 +2184,15 @@ TEST_P(ValidateVulkan100DebugInfoDebugTypedef, Fail) {
   CompileSuccessfully(GenerateShaderCodeForDebugInfo(
       src, "", ss.str(), "", shader_extension_100, "Vertex"));
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("expected operand " + param.second +
-                        " must be a result id of "));
+  if (param.second == "Base Type") {
+    EXPECT_THAT(getDiagnosticString(),
+                HasSubstr("expected operand Base Type is not a valid debug "
+                          "type"));
+  } else {
+    EXPECT_THAT(getDiagnosticString(),
+                HasSubstr("expected operand " + param.second +
+                          " must be a result id of "));
+  }
 }
 
 INSTANTIATE_TEST_SUITE_P(
