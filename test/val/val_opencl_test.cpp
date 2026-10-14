@@ -511,13 +511,21 @@ TEST_F(ValidateOpenCL, ImageSampleExplicitLodWithConstOffsetBad) {
 }
 
 
-std::string OpenCLBuiltInWorkDim(const std::string& storage_class) {
-  return R"(
+std::string OpenCLBuiltInWorkDim(const std::string& storage_class,
+                                 bool grouped_decoration = false) {
+  const std::string decoration = grouped_decoration
+                                     ? R"(
+    OpDecorate %group BuiltIn WorkDim
+    %group = OpDecorationGroup
+    OpGroupDecorate %group %work_dim)"
+                                     : R"(
+    OpDecorate %work_dim BuiltIn WorkDim)";
+  return std::string(R"(
     OpCapability Addresses
     OpCapability Kernel
     OpMemoryModel Physical32 OpenCL
-    OpEntryPoint Kernel %main "main" %work_dim
-    OpDecorate %work_dim BuiltIn WorkDim
+    OpEntryPoint Kernel %main "main")") +
+         decoration + R"(
     %uint = OpTypeInt 32 0
     %void = OpTypeVoid
     %ptr = OpTypePointer )" + storage_class +
@@ -547,6 +555,14 @@ TEST_F(ValidateOpenCL, BuiltInCrossWorkgroupStorageClassInvalid) {
 TEST_F(ValidateOpenCL, BuiltInWorkgroupStorageClassInvalid) {
   CompileSuccessfully(OpenCLBuiltInWorkDim("Workgroup"));
   EXPECT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_OPENCL_2_2));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("BuiltIn variables must have Input storage class"));
+}
+
+TEST_F(ValidateOpenCL, GroupedBuiltInCrossWorkgroupStorageClassInvalid) {
+  // OpGroupDecorate must not bypass the storage-class check.
+  CompileSuccessfully(OpenCLBuiltInWorkDim("CrossWorkgroup", true));
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_OPENCL_1_2));
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("BuiltIn variables must have Input storage class"));
 }
