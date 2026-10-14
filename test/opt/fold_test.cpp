@@ -8968,6 +8968,32 @@ INSTANTIATE_TEST_SUITE_P(ReassociateNestedMulDivFloat, MatchingInstructionFoldin
       "%4 = OpFDiv %float %lhs %rhs\n" +
       "OpReturn\n" +
       "OpFunctionEnd\n",
+      4, true),
+    // Test case 32:
+    // (a * {0.5, 0.5}) / (b * {1, -1}) = {0.5, -0.5} * (a / b)
+    InstructionFoldingCase<bool>(
+      Header() +
+      "; CHECK: [[float:%\\w+]] = OpTypeFloat 32\n" +
+      "; CHECK: [[v2float:%\\w+]] = OpTypeVector [[float]] 2\n" +
+      "; CHECK: [[half:%\\w+]] = OpConstant [[float]] 0.5\n" +
+      "; CHECK: [[negative_half:%\\w+]] = OpConstant [[float]] -0.5\n" +
+      "; CHECK: [[merged:%\\w+]] = OpConstantComposite [[v2float]] [[half]] [[negative_half]]\n" +
+      "; CHECK: [[a:%\\w+]] = OpLoad [[v2float]]\n" +
+      "; CHECK: [[b:%\\w+]] = OpLoad [[v2float]]\n" +
+      "; CHECK: [[division:%\\w+]] = OpFDiv [[v2float]] [[a]] [[b]]\n" +
+      "; CHECK: %4 = OpFMul [[v2float]] [[merged]] [[division]]\n" +
+      "%C0 = OpConstantComposite %v2float %float_0p5 %float_0p5\n" +
+      "%C1 = OpConstantComposite %v2float %float_1 %float_n1\n" +
+      "%main = OpFunction %void None %void_func\n" +
+      "%main_lab = OpLabel\n" +
+      "%var = OpVariable %_ptr_v2float Function\n" +
+      "%a = OpLoad %v2float %var\n" +
+      "%b = OpLoad %v2float %var\n" +
+      "%lhs = OpFMul %v2float %C0 %a\n" +
+      "%rhs = OpFMul %v2float %b %C1\n" +
+      "%4 = OpFDiv %v2float %lhs %rhs\n" +
+      "OpReturn\n" +
+      "OpFunctionEnd\n",
       4, true)
   ));
 
