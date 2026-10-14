@@ -2035,6 +2035,230 @@ OpFunctionEnd
               expected);
 }
 
+// Branch targets that are not blocks of the function (malformed CFG) must be
+// ignored when ordering blocks instead of aborting the disassembler.
+TEST_F(IndentTest, ReorderedBranchToMissingBlock) {
+  const std::string input = R"(
+               OpCapability Shader
+               OpMemoryModel Logical Simple
+               OpEntryPoint Fragment %100 "main"
+               OpExecutionMode %100 OriginUpperLeft
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %4 = OpTypeBool
+          %5 = OpConstantNull %4
+          %6 = OpTypeInt 32 0
+          %7 = OpConstant %6 0
+        %100 = OpFunction %2 None %3
+         %10 = OpLabel
+               OpBranch %30
+         %20 = OpLabel
+               OpReturn
+         %30 = OpLabel
+               OpBranch %90
+               OpFunctionEnd
+)";
+  const std::string expected =
+      R"(               OpCapability Shader
+               OpMemoryModel Logical Simple
+               OpEntryPoint Fragment %100 "main"
+               OpExecutionMode %100 OriginUpperLeft
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %4 = OpTypeBool
+          %5 = OpConstantNull %4
+          %6 = OpTypeInt 32 0
+          %7 = OpConstant %6 0
+        %100 = OpFunction %2 None %3
+
+         %10 = OpLabel
+                 OpBranch %30
+
+         %30 = OpLabel
+                 OpBranch %90
+
+         %20 = OpLabel
+                 OpReturn
+               OpFunctionEnd
+)";
+  EXPECT_THAT(EncodeAndDecodeSuccessfully(
+                  input,
+                  SPV_BINARY_TO_TEXT_OPTION_INDENT |
+                      SPV_BINARY_TO_TEXT_OPTION_NESTED_INDENT |
+                      SPV_BINARY_TO_TEXT_OPTION_REORDER_BLOCKS,
+                  SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS),
+              expected);
+}
+
+// The merge block %90 does not exist and the true target %7 is not a block.
+TEST_F(IndentTest, ReorderedBranchConditionalToMissingBlocks) {
+  const std::string input = R"(
+               OpCapability Shader
+               OpMemoryModel Logical Simple
+               OpEntryPoint Fragment %100 "main"
+               OpExecutionMode %100 OriginUpperLeft
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %4 = OpTypeBool
+          %5 = OpConstantNull %4
+          %6 = OpTypeInt 32 0
+          %7 = OpConstant %6 0
+        %100 = OpFunction %2 None %3
+         %10 = OpLabel
+               OpSelectionMerge %90 None
+               OpBranchConditional %5 %7 %30
+         %20 = OpLabel
+               OpReturn
+         %30 = OpLabel
+               OpBranch %20
+               OpFunctionEnd
+)";
+  const std::string expected =
+      R"(               OpCapability Shader
+               OpMemoryModel Logical Simple
+               OpEntryPoint Fragment %100 "main"
+               OpExecutionMode %100 OriginUpperLeft
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %4 = OpTypeBool
+          %5 = OpConstantNull %4
+          %6 = OpTypeInt 32 0
+          %7 = OpConstant %6 0
+        %100 = OpFunction %2 None %3
+
+         %10 = OpLabel
+                 OpSelectionMerge %90 None
+                 OpBranchConditional %5 %7 %30
+
+         %30 =     OpLabel
+                     OpBranch %20
+
+         %20 =     OpLabel
+                     OpReturn
+               OpFunctionEnd
+)";
+  EXPECT_THAT(EncodeAndDecodeSuccessfully(
+                  input,
+                  SPV_BINARY_TO_TEXT_OPTION_INDENT |
+                      SPV_BINARY_TO_TEXT_OPTION_NESTED_INDENT |
+                      SPV_BINARY_TO_TEXT_OPTION_REORDER_BLOCKS,
+                  SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS),
+              expected);
+}
+
+// The merge block %3 is not a block, and the default %90 and case %91 targets
+// do not exist.
+TEST_F(IndentTest, ReorderedSwitchToMissingBlocks) {
+  const std::string input = R"(
+               OpCapability Shader
+               OpMemoryModel Logical Simple
+               OpEntryPoint Fragment %100 "main"
+               OpExecutionMode %100 OriginUpperLeft
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %4 = OpTypeBool
+          %5 = OpConstantNull %4
+          %6 = OpTypeInt 32 0
+          %7 = OpConstant %6 0
+        %100 = OpFunction %2 None %3
+         %10 = OpLabel
+               OpSelectionMerge %3 None
+               OpSwitch %7 %90 1 %30 2 %91
+         %20 = OpLabel
+               OpReturn
+         %30 = OpLabel
+               OpBranch %20
+               OpFunctionEnd
+)";
+  const std::string expected =
+      R"(               OpCapability Shader
+               OpMemoryModel Logical Simple
+               OpEntryPoint Fragment %100 "main"
+               OpExecutionMode %100 OriginUpperLeft
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %4 = OpTypeBool
+          %5 = OpConstantNull %4
+          %6 = OpTypeInt 32 0
+          %7 = OpConstant %6 0
+        %100 = OpFunction %2 None %3
+
+         %10 = OpLabel
+                 OpSelectionMerge %3 None
+                 OpSwitch %7 %90 1 %30 2 %91
+
+         %30 =     OpLabel
+                     OpBranch %20
+
+         %20 =     OpLabel
+                     OpReturn
+               OpFunctionEnd
+)";
+  EXPECT_THAT(EncodeAndDecodeSuccessfully(
+                  input,
+                  SPV_BINARY_TO_TEXT_OPTION_INDENT |
+                      SPV_BINARY_TO_TEXT_OPTION_NESTED_INDENT |
+                      SPV_BINARY_TO_TEXT_OPTION_REORDER_BLOCKS,
+                  SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS),
+              expected);
+}
+
+// Neither the merge block %90 nor the continue target %91 exist.
+TEST_F(IndentTest, ReorderedLoopWithMissingMergeAndContinue) {
+  const std::string input = R"(
+               OpCapability Shader
+               OpMemoryModel Logical Simple
+               OpEntryPoint Fragment %100 "main"
+               OpExecutionMode %100 OriginUpperLeft
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %4 = OpTypeBool
+          %5 = OpConstantNull %4
+          %6 = OpTypeInt 32 0
+          %7 = OpConstant %6 0
+        %100 = OpFunction %2 None %3
+         %10 = OpLabel
+               OpBranch %20
+         %30 = OpLabel
+               OpBranch %20
+         %20 = OpLabel
+               OpLoopMerge %90 %91 None
+               OpBranch %30
+               OpFunctionEnd
+)";
+  const std::string expected =
+      R"(               OpCapability Shader
+               OpMemoryModel Logical Simple
+               OpEntryPoint Fragment %100 "main"
+               OpExecutionMode %100 OriginUpperLeft
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %4 = OpTypeBool
+          %5 = OpConstantNull %4
+          %6 = OpTypeInt 32 0
+          %7 = OpConstant %6 0
+        %100 = OpFunction %2 None %3
+
+         %10 = OpLabel
+                 OpBranch %20
+
+         %20 = OpLabel
+                 OpLoopMerge %90 %91 None
+                 OpBranch %30
+
+         %30 =     OpLabel
+                     OpBranch %20
+               OpFunctionEnd
+)";
+  EXPECT_THAT(EncodeAndDecodeSuccessfully(
+                  input,
+                  SPV_BINARY_TO_TEXT_OPTION_INDENT |
+                      SPV_BINARY_TO_TEXT_OPTION_NESTED_INDENT |
+                      SPV_BINARY_TO_TEXT_OPTION_REORDER_BLOCKS,
+                  SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS),
+              expected);
+}
+
 using FriendlyNameDisassemblyTest = spvtest::TextToBinaryTest;
 
 TEST_F(FriendlyNameDisassemblyTest, Sample) {

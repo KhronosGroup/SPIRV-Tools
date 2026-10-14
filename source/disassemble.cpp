@@ -313,8 +313,13 @@ void Nest(ControlFlowGraph& cfg,
     return;
   }
 
-  const uint32_t block_index = id_to_index.at(id);
-  SingleBlock& block = cfg.blocks[block_index];
+  // The id may not refer to a block in this function if the CFG is malformed.
+  const auto iter = id_to_index.find(id);
+  if (iter == id_to_index.end()) {
+    return;
+  }
+
+  SingleBlock& block = cfg.blocks[iter->second];
 
   if (!block.nest_level_assigned) {
     block.nest_level = level;
@@ -401,9 +406,17 @@ struct StackEntry {
 void VisitSuccesor(std::stack<StackEntry>* dfs_stack,
                    const std::unordered_map<uint32_t, uint32_t>& id_to_index,
                    uint32_t id) {
-  if (id != 0) {
-    dfs_stack->push({id_to_index.at(id), false});
+  if (id == 0) {
+    return;
   }
+
+  // The id may not refer to a block in this function if the CFG is malformed.
+  const auto iter = id_to_index.find(id);
+  if (iter == id_to_index.end()) {
+    return;
+  }
+
+  dfs_stack->push({iter->second, false});
 }
 
 // Given the control flow graph, calculates and returns the reverse post-order
