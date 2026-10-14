@@ -1033,6 +1033,38 @@ TEST_F(FixStorageClassTest, DoNotFailWithMismatchedPointerTypes) {
   SinglePassRunAndMatch<FixStorageClass>(text, false);
 }
 
+TEST_F(FixStorageClassTest, AccessChainIntoLongVector) {
+  // Indexing into an OpTypeVectorIdEXT gives a pointer to its component type.
+  const std::string text = R"(
+               OpCapability Shader
+               OpCapability LongVectorEXT
+               OpExtension "SPV_EXT_long_vector"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %main "main"
+               OpExecutionMode %main LocalSize 1 1 1
+       %void = OpTypeVoid
+         %fn = OpTypeFunction %void
+      %float = OpTypeFloat 32
+       %uint = OpTypeInt 32 0
+     %uint_0 = OpConstant %uint 0
+     %uint_5 = OpConstant %uint 5
+    %float_1 = OpConstant %float 1
+      %v5float = OpTypeVectorIdEXT %float %uint_5
+%_ptr_Function_v5float = OpTypePointer Function %v5float
+%_ptr_Function_float = OpTypePointer Function %float
+       %main = OpFunction %void None %fn
+      %entry = OpLabel
+        %var = OpVariable %_ptr_Function_v5float Function
+; CHECK: OpAccessChain %_ptr_Function_float {{%\w+}} %uint_0
+         %ac = OpAccessChain %_ptr_Function_float %var %uint_0
+               OpStore %ac %float_1
+               OpReturn
+               OpFunctionEnd
+)";
+
+  SinglePassRunAndMatch<FixStorageClass>(text, false);
+}
+
 }  // namespace
 }  // namespace opt
 }  // namespace spvtools
