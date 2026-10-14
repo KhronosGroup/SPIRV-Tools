@@ -510,6 +510,47 @@ TEST_F(ValidateOpenCL, ImageSampleExplicitLodWithConstOffsetBad) {
           "%coord Lod|ConstOffset %float_0 %coord\n"));
 }
 
+
+std::string OpenCLBuiltInWorkDim(const std::string& storage_class) {
+  return R"(
+    OpCapability Addresses
+    OpCapability Kernel
+    OpMemoryModel Physical32 OpenCL
+    OpEntryPoint Kernel %main "main" %work_dim
+    OpDecorate %work_dim BuiltIn WorkDim
+    %uint = OpTypeInt 32 0
+    %void = OpTypeVoid
+    %ptr = OpTypePointer )" + storage_class +
+         R"( %uint
+    %work_dim = OpVariable %ptr )" + storage_class + R"(
+    %fn = OpTypeFunction %void
+    %main = OpFunction %void None %fn
+    %entry = OpLabel
+    %val = OpLoad %uint %work_dim
+    OpReturn
+    OpFunctionEnd
+)";
+}
+
+TEST_F(ValidateOpenCL, BuiltInInputStorageClassValid) {
+  CompileSuccessfully(OpenCLBuiltInWorkDim("Input"));
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_OPENCL_1_2));
+}
+
+TEST_F(ValidateOpenCL, BuiltInCrossWorkgroupStorageClassInvalid) {
+  CompileSuccessfully(OpenCLBuiltInWorkDim("CrossWorkgroup"));
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_OPENCL_1_2));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("BuiltIn variables must have Input storage class"));
+}
+
+TEST_F(ValidateOpenCL, BuiltInWorkgroupStorageClassInvalid) {
+  CompileSuccessfully(OpenCLBuiltInWorkDim("Workgroup"));
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_OPENCL_2_2));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("BuiltIn variables must have Input storage class"));
+}
+
 }  // namespace
 }  // namespace val
 }  // namespace spvtools

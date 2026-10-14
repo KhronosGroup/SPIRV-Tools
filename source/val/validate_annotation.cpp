@@ -170,6 +170,22 @@ spv_result_t ValidateDecorationTarget(ValidationState_t& _, spv::Decoration dec,
         return _.diag(SPV_ERROR_INVALID_ID, inst)
                << fail() << "must be a variable";
       }
+      // OpenCL built-in variables are read-only kernel inputs, regardless
+      // of their BuiltIn value. Keep this check specific to OpenCL; Vulkan
+      // has different storage-class requirements for different built-ins.
+      if (spvIsOpenCLEnv(_.context()->target_env) &&
+          (target->opcode() == spv::Op::OpVariable ||
+           target->opcode() == spv::Op::OpUntypedVariableKHR)) {
+        const auto storage_class =
+            target->opcode() == spv::Op::OpVariable
+                ? target->GetOperandAs<spv::StorageClass>(2)
+                : target->GetOperandAs<spv::StorageClass>(3);
+        if (storage_class != spv::StorageClass::Input) {
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
+                 << "BuiltIn variables must have Input storage class in the "
+                    "OpenCL environment.";
+        }
+      }
       break;
     case spv::Decoration::NoPerspective:
     case spv::Decoration::Flat:
