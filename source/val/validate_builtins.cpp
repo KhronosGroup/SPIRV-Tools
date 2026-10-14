@@ -5243,6 +5243,16 @@ spv_result_t BuiltInsValidator::ValidateTileQCOMBuiltinAtReference(
 spv_result_t BuiltInsValidator::ValidateSingleBuiltInAtDefinition(
     const Decoration& decoration, const Instruction& inst) {
   const spv::BuiltIn label = decoration.builtin();
+  // Validate applied decorations here, not just direct OpDecorate instructions,
+  // to cover built-ins propagated by OpGroupDecorate too.
+  if (spvIsOpenCLEnv(_.context()->target_env) &&
+      (inst.opcode() == spv::Op::OpVariable ||
+       inst.opcode() == spv::Op::OpUntypedVariableKHR) &&
+      GetStorageClass(inst) != spv::StorageClass::Input) {
+    return _.diag(SPV_ERROR_INVALID_DATA, &inst)
+           << "BuiltIn variables must have Input storage class in the "
+              "OpenCL environment.";
+  }
   // Universial checks
   if (label == spv::BuiltIn::WorkgroupSize) {
     return ValidateWorkgroupSizeAtDefinition(decoration, inst);
