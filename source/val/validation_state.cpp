@@ -2241,12 +2241,22 @@ bool ValidationState_t::LogicallyMatch(const Instruction* lhs,
 const Instruction* ValidationState_t::TracePointer(
     const Instruction* inst) const {
   auto base_ptr = inst;
-  while (base_ptr->opcode() == spv::Op::OpAccessChain ||
-         base_ptr->opcode() == spv::Op::OpInBoundsAccessChain ||
-         base_ptr->opcode() == spv::Op::OpPtrAccessChain ||
-         base_ptr->opcode() == spv::Op::OpInBoundsPtrAccessChain ||
-         base_ptr->opcode() == spv::Op::OpCopyObject) {
-    base_ptr = FindDef(base_ptr->GetOperandAs<uint32_t>(2u));
+  while (true) {
+    const spv::Op opcode = base_ptr->opcode();
+    if (opcode == spv::Op::OpAccessChain ||
+        opcode == spv::Op::OpInBoundsAccessChain ||
+        opcode == spv::Op::OpPtrAccessChain ||
+        opcode == spv::Op::OpInBoundsPtrAccessChain ||
+        opcode == spv::Op::OpCopyObject) {
+      base_ptr = FindDef(base_ptr->GetOperandAs<uint32_t>(2u));
+    } else if (opcode == spv::Op::OpUntypedAccessChainKHR ||
+               opcode == spv::Op::OpUntypedInBoundsAccessChainKHR ||
+               opcode == spv::Op::OpUntypedPtrAccessChainKHR ||
+               opcode == spv::Op::OpUntypedInBoundsPtrAccessChainKHR) {
+      base_ptr = FindDef(base_ptr->GetOperandAs<uint32_t>(3u));
+    } else {
+      break;
+    }
   }
   return base_ptr;
 }
@@ -2406,18 +2416,39 @@ std::string ValidationState_t::InspectShaderDebugInfo(const Instruction& inst) {
     } else if (opcode == spv::Op::OpReturnValue ||
                opcode == spv::Op::OpFunctionParameter) {
       InspectLineAndFunctionDefinition(ss, *func, inst);
+    } else if (opcode == spv::Op::OpLoad || opcode == spv::Op::OpStore ||
+               opcode == spv::Op::OpAccessChain ||
+               opcode == spv::Op::OpInBoundsAccessChain ||
+               opcode == spv::Op::OpPtrAccessChain ||
+               opcode == spv::Op::OpInBoundsPtrAccessChain ||
+               opcode == spv::Op::OpUntypedAccessChainKHR ||
+               opcode == spv::Op::OpUntypedInBoundsAccessChainKHR ||
+               opcode == spv::Op::OpUntypedPtrAccessChainKHR ||
+               opcode == spv::Op::OpUntypedInBoundsPtrAccessChainKHR) {
+      InspectLineAndVariable(ss, inst);
     } else {
       // Currently a fall back for anything in a function
       InspectDebugLine(ss, inst);
     }
-  } else if (opcode == spv::Op::OpVariable) {
+  } else if (opcode == spv::Op::OpVariable ||
+             opcode == spv::Op::OpUntypedVariableKHR) {
     // Know are global because not in any function
-    // TODO - test with OpUntypedVariable as well
     InspectDebugGlobalVariable(ss, inst);
+  } else if (spvOpcodeIsDecoration(opcode)) {
+    // Print the global variable being decorated
+    const Instruction* target = FindDef(inst.GetOperandAs<uint32_t>(0));
+    if (target &&
+        (target->opcode() == spv::Op::OpVariable ||
+         target->opcode() == spv::Op::OpUntypedVariableKHR) &&
+        target->function() == nullptr) {
+      InspectDebugGlobalVariable(ss, *target);
+    }
   } else if (opcode == spv::Op::OpExecutionMode ||
              opcode == spv::Op::OpExecutionModeId ||
              opcode == spv::Op::OpEntryPoint) {
     InspectEntryPoint(ss, inst);
+  } else if (opcode == spv::Op::OpFunction) {
+    InspectDebugFunctionDefinition(ss, inst);
   }
 
   return ss.str();
@@ -2647,6 +2678,37 @@ void ValidationState_t::InspectLineAndFunctionDefinition(
   const Instruction* function_inst = FindDef(func.id());
   if (function_inst) {
     InspectDebugFunctionDefinition(ss, *function_inst);
+  }
+}
+
+// For memory accesses, print both the line of the access and where the
+// variable was declared
+void ValidationState_t::InspectLineAndVariable(std::ostringstream& ss,
+                                               const Instruction& inst) {
+  InspectDebugLine(ss, inst);
+
+  // OpStore has no result, so the pointer is the first operand.
+  // UntypedAccessChain have the Base Type operand before the Base.
+  size_t pointer_index = 2;
+  if (inst.opcode() == spv::Op::OpStore) {
+    pointer_index = 0;
+  } else if (spvOpcodeGeneratesUntypedPointer(inst.opcode())) {
+    pointer_index = 3;
+  }
+  const Instruction* pointer =
+      FindDef(inst.GetOperandAs<uint32_t>(pointer_index));
+  if (!pointer) return;
+
+  const Instruction* variable = TracePointer(pointer);
+  if (!variable || (variable->opcode() != spv::Op::OpVariable &&
+                    variable->opcode() != spv::Op::OpUntypedVariableKHR)) {
+    return;
+  }
+
+  if (variable->function()) {
+    InspectDebugLocalVariable(ss, *variable->function(), *variable);
+  } else {
+    InspectDebugGlobalVariable(ss, *variable);
   }
 }
 
