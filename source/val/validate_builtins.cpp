@@ -773,6 +773,10 @@ class BuiltInsValidator {
   bool IsBulitinInEntryPoint(const Instruction& inst, uint32_t entry_point) {
     auto get_underlying_type_id = [&](const Instruction* ifx_var) {
       auto pointer_type_inst = _.FindDef(ifx_var->type_id());
+      // Untyped pointers have no pointee type.
+      if (pointer_type_inst->opcode() != spv::Op::OpTypePointer) {
+        return uint32_t(0);
+      }
       auto type_inst = _.FindDef(pointer_type_inst->GetOperandAs<uint32_t>(2));
       while (type_inst->opcode() == spv::Op::OpTypeArray) {
         type_inst = _.FindDef(type_inst->GetOperandAs<uint32_t>(1));
@@ -803,6 +807,10 @@ class BuiltInsValidator {
       std::map<uint32_t, uint32_t>& entry_point_interface_id) {
     auto get_underlying_type_id = [&](const Instruction* ifx_var) {
       auto pointer_type_inst = _.FindDef(ifx_var->type_id());
+      // Untyped pointers have no pointee type.
+      if (pointer_type_inst->opcode() != spv::Op::OpTypePointer) {
+        return uint32_t(0);
+      }
       auto type_inst = _.FindDef(pointer_type_inst->GetOperandAs<uint32_t>(2));
       while (type_inst->opcode() == spv::Op::OpTypeArray) {
         type_inst = _.FindDef(type_inst->GetOperandAs<uint32_t>(1));
