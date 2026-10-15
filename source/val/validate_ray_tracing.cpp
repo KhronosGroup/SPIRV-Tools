@@ -22,6 +22,80 @@
 namespace spvtools {
 namespace val {
 
+spv_result_t ValidateRayFlagsValue(ValidationState_t& _,
+                                   const Instruction* inst,
+                                   uint32_t ray_flags_index) {
+  uint64_t ray_flags = 0;
+  if (!_.EvalConstantValUint64(inst->GetOperandAs<uint32_t>(ray_flags_index),
+                               &ray_flags)) {
+    return SPV_SUCCESS;
+  }
+
+  const auto HasMoreThanOneBitSet = [ray_flags](spv::RayFlagsMask flags) {
+    const uint64_t set_bits = ray_flags & static_cast<uint64_t>(flags);
+    return (set_bits & (set_bits - 1)) != 0;
+  };
+
+  if (HasMoreThanOneBitSet(spv::RayFlagsMask::SkipTrianglesKHR |
+                           spv::RayFlagsMask::SkipAABBsKHR)) {
+    return _.diag(SPV_ERROR_INVALID_DATA, inst)
+           << "Ray Flags contains both SkipTrianglesKHR and SkipAABBsKHR";
+  }
+
+  if (HasMoreThanOneBitSet(spv::RayFlagsMask::SkipTrianglesKHR |
+                           spv::RayFlagsMask::CullBackFacingTrianglesKHR |
+                           spv::RayFlagsMask::CullFrontFacingTrianglesKHR)) {
+    return _.diag(SPV_ERROR_INVALID_DATA, inst)
+           << "Ray Flags contains more than one of SkipTrianglesKHR, "
+              "CullBackFacingTrianglesKHR, and CullFrontFacingTrianglesKHR";
+  }
+
+  if (HasMoreThanOneBitSet(spv::RayFlagsMask::OpaqueKHR |
+                           spv::RayFlagsMask::NoOpaqueKHR |
+                           spv::RayFlagsMask::CullOpaqueKHR |
+                           spv::RayFlagsMask::CullNoOpaqueKHR)) {
+    return _.diag(SPV_ERROR_INVALID_DATA, inst)
+           << "Ray Flags contains more than one of OpaqueKHR, NoOpaqueKHR, "
+              "CullOpaqueKHR, and CullNoOpaqueKHR";
+  }
+
+  return SPV_SUCCESS;
+}
+
+spv_result_t ValidateRayTMinTMaxValue(ValidationState_t& _,
+                                      const Instruction* inst,
+                                      uint32_t ray_tmin_index,
+                                      uint32_t ray_tmax_index,
+                                      uint32_t non_negative_vuid,
+                                      uint32_t tmin_tmax_order_vuid) {
+  float ray_tmin = 0.0f;
+  float ray_tmax = 0.0f;
+  const bool is_tmin_const = _.EvalConstantValFloat32(
+      inst->GetOperandAs<uint32_t>(ray_tmin_index), &ray_tmin);
+  const bool is_tmax_const = _.EvalConstantValFloat32(
+      inst->GetOperandAs<uint32_t>(ray_tmax_index), &ray_tmax);
+
+  if (is_tmin_const && ray_tmin < 0.0f) {
+    return _.diag(SPV_ERROR_INVALID_DATA, inst)
+           << _.VkErrorID(non_negative_vuid) << "Ray TMin (" << ray_tmin
+           << ") must be non-negative";
+  }
+
+  if (is_tmax_const && ray_tmax < 0.0f) {
+    return _.diag(SPV_ERROR_INVALID_DATA, inst)
+           << _.VkErrorID(non_negative_vuid) << "Ray TMax (" << ray_tmax
+           << ") must be non-negative";
+  }
+
+  if (is_tmin_const && is_tmax_const && ray_tmin > ray_tmax) {
+    return _.diag(SPV_ERROR_INVALID_DATA, inst)
+           << _.VkErrorID(tmin_tmax_order_vuid) << "Ray TMin (" << ray_tmin
+           << ") must be less than or equal to Ray TMax (" << ray_tmax << ")";
+  }
+
+  return SPV_SUCCESS;
+}
+
 spv_result_t ValidateTraceRay(ValidationState_t& _, const Instruction* inst) {
   _.function(inst->function()->id())
       ->RegisterExecutionModelLimitation(
@@ -64,6 +138,8 @@ spv_result_t ValidateTraceRay(ValidationState_t& _, const Instruction* inst) {
               "RayTracingOpacityMicromapKHR and RayQueryKHR or "
               "RayTracingKHR capabilities";
   }
+
+  if (auto error = ValidateRayFlagsValue(_, inst, 1)) return error;
 
   const uint32_t sbt_offset = _.GetOperandTypeId(inst, 3);
   if (!_.IsIntScalarType(sbt_offset, 32)) {
@@ -108,6 +184,10 @@ spv_result_t ValidateTraceRay(ValidationState_t& _, const Instruction* inst) {
   if (!_.IsFloatScalarType(ray_tmax, 32)) {
     return _.diag(SPV_ERROR_INVALID_DATA, inst)
            << "Ray TMax must be a 32-bit float scalar";
+  }
+
+  if (auto error = ValidateRayTMinTMaxValue(_, inst, 7, 9, 6356, 6357)) {
+    return error;
   }
 
   const Instruction* payload = _.FindDef(inst->GetOperandAs<uint32_t>(10));

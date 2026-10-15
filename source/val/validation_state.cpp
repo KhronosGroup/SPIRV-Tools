@@ -30,6 +30,7 @@
 #include "source/spirv_endian.h"
 #include "source/spirv_target_env.h"
 #include "source/table2.h"
+#include "source/util/bitutils.h"
 #include "source/util/make_unique.h"
 #include "source/val/basic_block.h"
 #include "source/val/construct.h"
@@ -2032,6 +2033,26 @@ bool ValidationState_t::EvalConstantValInt64(uint32_t id, int64_t* val) const {
   return true;
 }
 
+bool ValidationState_t::EvalConstantValFloat32(uint32_t id, float* val) const {
+  const Instruction* inst = FindDef(id);
+  if (!inst) {
+    assert(0 && "Instruction not found");
+    return false;
+  }
+
+  if (!IsFloatScalarType(inst->type_id(), 32)) return false;
+
+  if (inst->opcode() == spv::Op::OpConstantNull) {
+    *val = 0.0f;
+  } else if (inst->opcode() == spv::Op::OpConstant) {
+    *val = spvtools::utils::BitwiseCast<float>(inst->word(3));
+  } else {
+    // Spec constant values cannot be evaluated
+    return false;
+  }
+  return true;
+}
+
 // <is_int32, is_const_int32, value>
 std::tuple<bool, bool, uint32_t> ValidationState_t::EvalInt32IfConst(
     uint32_t id) const {
@@ -3478,6 +3499,14 @@ std::string ValidationState_t::VkErrorID(uint32_t id,
       return VUID_WRAP(VUID-StandaloneSpirv-OpTypeImage-06214);
     case 6314:
       return VUID_WRAP(VUID-StandaloneSpirv-PhysicalStorageBuffer64-06314);
+    case 6349:
+      return VUID_WRAP(VUID-RuntimeSpirv-OpRayQueryInitializeKHR-06349);
+    case 6350:
+      return VUID_WRAP(VUID-RuntimeSpirv-OpRayQueryInitializeKHR-06350);
+    case 6356:
+      return VUID_WRAP(VUID-RuntimeSpirv-OpTraceRayKHR-06356);
+    case 6357:
+      return VUID_WRAP(VUID-RuntimeSpirv-OpTraceRayKHR-06357);
     case 6491:
       return VUID_WRAP(VUID-StandaloneSpirv-DescriptorSet-06491);
     case 6671:
@@ -3574,6 +3603,10 @@ std::string ValidationState_t::VkErrorID(uint32_t id,
       return VUID_WRAP(VUID-StandaloneSpirv-Base-07652);
     case 7703:
       return VUID_WRAP(VUID-StandaloneSpirv-Component-07703);
+    case 7706:
+      return VUID_WRAP(VUID-RuntimeSpirv-OpHitObjectTraceRayNV-07706);
+    case 7707:
+      return VUID_WRAP(VUID-RuntimeSpirv-OpHitObjectTraceRayNV-07707);
     case 7951:
       return VUID_WRAP(VUID-StandaloneSpirv-SubgroupVoteKHR-07951);
     case 8720:
@@ -3763,6 +3796,10 @@ std::string ValidationState_t::VkErrorID(uint32_t id,
       return VUID_WRAP(VUID-StandaloneSpirv-DescriptorHeapEXT-11482);
     case 11805:
       return VUID_WRAP(VUID-StandaloneSpirv-OpArrayLength-11805);
+    case 11879:
+      return VUID_WRAP(VUID-RuntimeSpirv-OpHitObjectTraceRayEXT-11879);
+    case 11880:
+      return VUID_WRAP(VUID-RuntimeSpirv-OpHitObjectTraceRayEXT-11880);
     case 12243:
       return VUID_WRAP(VUID-StandaloneSpirv-Scope-12243);
     case 12294:

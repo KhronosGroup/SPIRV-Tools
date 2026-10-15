@@ -903,6 +903,8 @@ class ValidationState_t {
   bool EvalConstantValUint64(uint32_t id, uint64_t* val) const;
   // Same as EvalConstantValUint64 but returns a signed int
   bool EvalConstantValInt64(uint32_t id, int64_t* val) const;
+  // Tries to evaluate a 32-bit scalar float OpConstant
+  bool EvalConstantValFloat32(uint32_t id, float* val) const;
 
   // Tries to evaluate a 32-bit signed or unsigned scalar integer constant.
   // Returns tuple <is_int32, is_const_int32, value>.

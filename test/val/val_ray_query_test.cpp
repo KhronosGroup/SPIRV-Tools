@@ -1252,6 +1252,245 @@ TEST_F(ValidateRayQuery, RayQueryArrayGood) {
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_2));
 }
 
+TEST_F(ValidateRayQuery, InitializeMinMoreThanMax) {
+  const std::string declarations = R"(
+%f32_1 = OpConstant %f32 1
+%f32_2 = OpConstant %f32 2
+)";
+
+  const std::string body = R"(
+%as = OpLoad %type_as %top_level_as
+OpRayQueryInitializeKHR %ray_query %as %u32_0 %u32_0 %f32vec3_0 %f32_2 %f32vec3_0 %f32_1
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body, "", "", declarations).c_str(),
+                      SPV_ENV_VULKAN_1_1);
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_VULKAN_1_1));
+  EXPECT_THAT(getDiagnosticString(),
+              AnyVUID("VUID-RuntimeSpirv-OpRayQueryInitializeKHR-06350"));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("Ray TMin (2) must be less than or equal to Ray TMax (1)"));
+}
+
+TEST_F(ValidateRayQuery, InitializeMinMoreThanMaxSpecConstant) {
+  const std::string declarations = R"(
+%f32_1 = OpSpecConstant %f32 1
+%f32_2 = OpConstant %f32 2
+)";
+
+  const std::string body = R"(
+%as = OpLoad %type_as %top_level_as
+OpRayQueryInitializeKHR %ray_query %as %u32_0 %u32_0 %f32vec3_0 %f32_2 %f32vec3_0 %f32_1
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body, "", "", declarations).c_str(),
+                      SPV_ENV_VULKAN_1_1);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_1));
+}
+
+TEST_F(ValidateRayQuery, InitializeMinMoreThanMaxRuntime) {
+  const std::string declarations = R"(
+%f32_1 = OpConstant %f32 1
+)";
+
+  const std::string body = R"(
+%f32_var = OpVariable %ptr_function_f32 Function
+%as = OpLoad %type_as %top_level_as
+%tmin = OpLoad %f32 %f32_var
+OpRayQueryInitializeKHR %ray_query %as %u32_0 %u32_0 %f32vec3_0 %tmin %f32vec3_0 %f32_1
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body, "", "", declarations).c_str(),
+                      SPV_ENV_VULKAN_1_1);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_1));
+}
+
+TEST_F(ValidateRayQuery, InitializeMinNegative) {
+  const std::string declarations = R"(
+%f32_1 = OpConstant %f32 1
+%f32_n1 = OpConstant %f32 -1
+)";
+
+  const std::string body = R"(
+%as = OpLoad %type_as %top_level_as
+OpRayQueryInitializeKHR %ray_query %as %u32_0 %u32_0 %f32vec3_0 %f32_n1 %f32vec3_0 %f32_1
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body, "", "", declarations).c_str(),
+                      SPV_ENV_VULKAN_1_1);
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_VULKAN_1_1));
+  EXPECT_THAT(getDiagnosticString(),
+              AnyVUID("VUID-RuntimeSpirv-OpRayQueryInitializeKHR-06349"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Ray TMin (-1) must be non-negative"));
+}
+
+TEST_F(ValidateRayQuery, InitializeMaxNegative) {
+  const std::string declarations = R"(
+%f32_n1 = OpConstant %f32 -1
+)";
+
+  const std::string body = R"(
+%f32_var = OpVariable %ptr_function_f32 Function
+%as = OpLoad %type_as %top_level_as
+%tmin = OpLoad %f32 %f32_var
+OpRayQueryInitializeKHR %ray_query %as %u32_0 %u32_0 %f32vec3_0 %tmin %f32vec3_0 %f32_n1
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body, "", "", declarations).c_str(),
+                      SPV_ENV_VULKAN_1_1);
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_VULKAN_1_1));
+  EXPECT_THAT(getDiagnosticString(),
+              AnyVUID("VUID-RuntimeSpirv-OpRayQueryInitializeKHR-06349"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Ray TMax (-1) must be non-negative"));
+}
+
+TEST_F(ValidateRayQuery, InitializeRayFlagsBothSkipPrimitiveCulling) {
+  const std::string capabilities = R"(
+OpCapability RayTraversalPrimitiveCullingKHR
+)";
+
+  // SkipTrianglesKHR | SkipAABBsKHR
+  const std::string declarations = R"(
+%u32_768 = OpConstant %u32 768
+)";
+
+  const std::string body = R"(
+%load = OpLoad %type_as %top_level_as
+OpRayQueryInitializeKHR %ray_query %load %u32_768 %u32_0 %f32vec3_0 %f32_0 %f32vec3_0 %f32_0
+)";
+
+  CompileSuccessfully(
+      GenerateShaderCode(body, capabilities, "", declarations).c_str());
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("contains both SkipTrianglesKHR and SkipAABBsKHR"));
+}
+
+TEST_F(ValidateRayQuery, InitializeRayFlagsSkipAABBs) {
+  const std::string capabilities = R"(
+OpCapability RayTraversalPrimitiveCullingKHR
+)";
+
+  // only SkipAABBsKHR
+  const std::string declarations = R"(
+%u32_512 = OpConstant %u32 512
+)";
+
+  const std::string body = R"(
+%load = OpLoad %type_as %top_level_as
+OpRayQueryInitializeKHR %ray_query %load %u32_512 %u32_0 %f32vec3_0 %f32_0 %f32vec3_0 %f32_0
+)";
+
+  CompileSuccessfully(
+      GenerateShaderCode(body, capabilities, "", declarations).c_str());
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+TEST_F(ValidateRayQuery, InitializeRayFlagsSkipTriangleCullBack) {
+  const std::string capabilities = R"(
+OpCapability RayTraversalPrimitiveCullingKHR
+)";
+
+  // SkipTrianglesKHR | CullBackFacingTrianglesKHR
+  const std::string declarations = R"(
+%u32_272 = OpConstant %u32 272
+)";
+
+  const std::string body = R"(
+%load = OpLoad %type_as %top_level_as
+OpRayQueryInitializeKHR %ray_query %load %u32_272 %u32_0 %f32vec3_0 %f32_0 %f32vec3_0 %f32_0
+)";
+
+  CompileSuccessfully(
+      GenerateShaderCode(body, capabilities, "", declarations).c_str());
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("contains more than one of SkipTrianglesKHR, "
+                "CullBackFacingTrianglesKHR, and CullFrontFacingTrianglesKHR"));
+}
+
+TEST_F(ValidateRayQuery, InitializeRayFlagsSkipTriangleCullFrontAndBack) {
+  const std::string capabilities = R"(
+OpCapability RayTraversalPrimitiveCullingKHR
+)";
+
+  // SkipTrianglesKHR | CullFrontFacingTrianglesKHR |
+  // CullBackFacingTrianglesKHR
+  const std::string declarations = R"(
+%u32_304 = OpConstant %u32 304
+)";
+
+  const std::string body = R"(
+%load = OpLoad %type_as %top_level_as
+OpRayQueryInitializeKHR %ray_query %load %u32_304 %u32_0 %f32vec3_0 %f32_0 %f32vec3_0 %f32_0
+)";
+
+  CompileSuccessfully(
+      GenerateShaderCode(body, capabilities, "", declarations).c_str());
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("contains more than one of SkipTrianglesKHR, "
+                "CullBackFacingTrianglesKHR, and CullFrontFacingTrianglesKHR"));
+}
+
+TEST_F(ValidateRayQuery, InitializeRayFlagsSkipAABBCullBack) {
+  const std::string capabilities = R"(
+OpCapability RayTraversalPrimitiveCullingKHR
+)";
+
+  // SkipAABBsKHR | CullBackFacingTrianglesKHR (valid)
+  const std::string declarations = R"(
+%u32_528 = OpConstant %u32 528
+)";
+
+  const std::string body = R"(
+%load = OpLoad %type_as %top_level_as
+OpRayQueryInitializeKHR %ray_query %load %u32_528 %u32_0 %f32vec3_0 %f32_0 %f32vec3_0 %f32_0
+)";
+
+  CompileSuccessfully(
+      GenerateShaderCode(body, capabilities, "", declarations).c_str());
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+TEST_F(ValidateRayQuery, InitializeRayFlagsOpaqueAndCullNoOpaque) {
+  // OpaqueKHR | CullNoOpaqueKHR
+  const std::string declarations = R"(
+%u32_129 = OpConstant %u32 129
+)";
+
+  const std::string body = R"(
+%load = OpLoad %type_as %top_level_as
+OpRayQueryInitializeKHR %ray_query %load %u32_129 %u32_0 %f32vec3_0 %f32_0 %f32vec3_0 %f32_0
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body, "", "", declarations).c_str());
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("contains more than one of OpaqueKHR, NoOpaqueKHR, "
+                        "CullOpaqueKHR, and CullNoOpaqueKHR"));
+}
+
+TEST_F(ValidateRayQuery, InitializeRayFlagsOpaqueAndCullBack) {
+  // OpaqueKHR | CullBackFacingTrianglesKHR (legal)
+  const std::string declarations = R"(
+%u32_17 = OpConstant %u32 17
+)";
+
+  const std::string body = R"(
+%load = OpLoad %type_as %top_level_as
+OpRayQueryInitializeKHR %ray_query %load %u32_17 %u32_0 %f32vec3_0 %f32_0 %f32vec3_0 %f32_0
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body, "", "", declarations).c_str());
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
 }  // namespace
 }  // namespace val
 }  // namespace spvtools

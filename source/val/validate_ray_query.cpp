@@ -107,6 +107,8 @@ spv_result_t RayQueryPass(ValidationState_t& _, const Instruction* inst) {
                   "RayTracingKHR capabilities";
       }
 
+      if (auto error = ValidateRayFlagsValue(_, inst, 2)) return error;
+
       const uint32_t cull_mask = _.GetOperandTypeId(inst, 3);
       if (!_.IsIntScalarType(cull_mask, 32)) {
         return _.diag(SPV_ERROR_INVALID_DATA, inst)
@@ -138,6 +140,10 @@ spv_result_t RayQueryPass(ValidationState_t& _, const Instruction* inst) {
       if (!_.IsFloatScalarType(ray_tmax, 32)) {
         return _.diag(SPV_ERROR_INVALID_DATA, inst)
                << "Ray TMax must be a 32-bit float scalar";
+      }
+
+      if (auto error = ValidateRayTMinTMaxValue(_, inst, 5, 7, 6349, 6350)) {
+        return error;
       }
       break;
     }
