@@ -1065,6 +1065,40 @@ TEST_F(FixStorageClassTest, AccessChainIntoLongVector) {
   SinglePassRunAndMatch<FixStorageClass>(text, false);
 }
 
+TEST_F(FixStorageClassTest, AccessChainIntoCooperativeMatrixNV) {
+  // Indexing into an OpTypeCooperativeMatrixNV gives a pointer to its component
+  // type.
+  const std::string text = R"(
+               OpCapability Shader
+               OpCapability CooperativeMatrixNV
+               OpExtension "SPV_NV_cooperative_matrix"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %main "main"
+               OpExecutionMode %main LocalSize 1 1 1
+       %void = OpTypeVoid
+         %fn = OpTypeFunction %void
+      %float = OpTypeFloat 32
+       %uint = OpTypeInt 32 0
+     %uint_0 = OpConstant %uint 0
+     %uint_3 = OpConstant %uint 3
+     %uint_8 = OpConstant %uint 8
+    %float_1 = OpConstant %float 1
+        %mat = OpTypeCooperativeMatrixNV %float %uint_3 %uint_8 %uint_8
+%_ptr_Function_mat = OpTypePointer Function %mat
+%_ptr_Function_float = OpTypePointer Function %float
+       %main = OpFunction %void None %fn
+      %entry = OpLabel
+        %var = OpVariable %_ptr_Function_mat Function
+; CHECK: OpAccessChain %_ptr_Function_float {{%\w+}} %uint_0
+         %ac = OpAccessChain %_ptr_Function_float %var %uint_0
+               OpStore %ac %float_1
+               OpReturn
+               OpFunctionEnd
+)";
+
+  SinglePassRunAndMatch<FixStorageClass>(text, false);
+}
+
 }  // namespace
 }  // namespace opt
 }  // namespace spvtools
