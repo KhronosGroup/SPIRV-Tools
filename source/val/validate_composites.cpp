@@ -99,7 +99,8 @@ spv_result_t GetExtractInsertValueType(ValidationState_t& _,
         }
 
         if (!_.EvalConstantValUint64(type_inst->word(3), &array_size)) {
-          assert(0 && "Array type definition is corrupt");
+          assert(size->opcode() == spv::Op::OpConstantSizeOfEXT);
+          break;
         }
         if (component_index >= array_size) {
           return _.diag(SPV_ERROR_INVALID_DATA, inst)
@@ -310,7 +311,8 @@ spv_result_t ValidateCompositeConstruct(ValidationState_t& _,
 
       uint64_t array_size = 0;
       if (!_.EvalConstantValUint64(array_inst->word(3), &array_size)) {
-        assert(0 && "Array type definition is corrupt");
+        assert(size->opcode() == spv::Op::OpConstantSizeOfEXT);
+        break;
       }
 
       if (array_size + 2 != num_operands) {
