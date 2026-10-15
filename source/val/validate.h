@@ -228,6 +228,21 @@ spv_result_t RayQueryPass(ValidationState_t& _, const Instruction* inst);
 /// Validates correctness of ray tracing instructions.
 spv_result_t RayTracingPass(ValidationState_t& _, const Instruction* inst);
 
+/// Validates the value of a constant Ray Flags operand against the flag
+/// combinations that SPV_KHR_ray_tracing and SPV_KHR_ray_query disallow.
+spv_result_t ValidateRayFlagsValue(ValidationState_t& _,
+                                   const Instruction* inst,
+                                   uint32_t ray_flags_index);
+
+/// Validates that constant Ray TMin and Ray TMax operands are non-negative and
+/// that TMin is not larger than TMax.
+spv_result_t ValidateRayTMinTMaxValue(ValidationState_t& _,
+                                      const Instruction* inst,
+                                      uint32_t ray_tmin_index,
+                                      uint32_t ray_tmax_index,
+                                      uint32_t non_negative_vuid,
+                                      uint32_t tmin_tmax_order_vuid);
+
 /// Validates correctness of shader execution reorder instructions.
 spv_result_t RayReorderNVPass(ValidationState_t& _, const Instruction* inst);
 

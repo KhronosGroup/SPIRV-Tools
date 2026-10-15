@@ -364,10 +364,12 @@ OpFunctionEnd
 
 std::string GenerateRayTraceCode(
     const std::string& body,
-    const std::string execution_model = "RayGenerationKHR") {
+    const std::string execution_model = "RayGenerationKHR",
+    const std::string& declarations = "") {
   std::ostringstream ss;
   ss << R"(
 OpCapability RayTracingKHR
+OpCapability RayTraversalPrimitiveCullingKHR
 OpCapability Float64
 OpExtension "SPV_KHR_ray_tracing"
 OpMemoryModel Logical GLSL450
@@ -402,6 +404,11 @@ OpDecorate %top_level_as Binding 0
 %var_float = OpVariable %ptr_float Private
 %ptr_f32vec3 = OpTypePointer Private %f32vec3
 %var_f32vec3 = OpVariable %ptr_f32vec3 Private
+)";
+
+  ss << declarations;
+
+  ss << R"(
 %main = OpFunction %void None %func
 %label = OpLabel
 )";
@@ -736,6 +743,213 @@ TEST_F(ValidateRayTracing, ForceOpacityMicromap2StateKHRCapabilityCheck) {
               HasSubstr("The ForceOpacityMicromap2StateKHR flag requires the "
                         "RayTracingOpacityMicromapKHR and RayQueryKHR or "
                         "RayTracingKHR capabilities"));
+}
+
+TEST_F(ValidateRayTracing, TraceRayMinMoreThanMax) {
+  const std::string declarations = R"(
+%float_1 = OpConstant %float 1
+%float_2 = OpConstant %float 2
+)";
+
+  const std::string body = R"(
+%as = OpLoad %type_as %top_level_as
+OpTraceRayKHR %as %uint_1 %uint_1 %uint_1 %uint_1 %uint_1 %v3composite %float_2 %v3composite %float_1 %payload
+)";
+
+  CompileSuccessfully(
+      GenerateRayTraceCode(body, "RayGenerationKHR", declarations).c_str(),
+      SPV_ENV_VULKAN_1_1);
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_VULKAN_1_1));
+  EXPECT_THAT(getDiagnosticString(),
+              AnyVUID("VUID-RuntimeSpirv-OpTraceRayKHR-06357"));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("Ray TMin (2) must be less than or equal to Ray TMax (1)"));
+}
+
+TEST_F(ValidateRayTracing, TraceRayMinNegative) {
+  const std::string declarations = R"(
+%float_n1 = OpConstant %float -1
+)";
+
+  const std::string body = R"(
+%as = OpLoad %type_as %top_level_as
+OpTraceRayKHR %as %uint_1 %uint_1 %uint_1 %uint_1 %uint_1 %v3composite %float_n1 %v3composite %float_0 %payload
+)";
+
+  CompileSuccessfully(
+      GenerateRayTraceCode(body, "RayGenerationKHR", declarations).c_str(),
+      SPV_ENV_VULKAN_1_1);
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_VULKAN_1_1));
+  EXPECT_THAT(getDiagnosticString(),
+              AnyVUID("VUID-RuntimeSpirv-OpTraceRayKHR-06356"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Ray TMin (-1) must be non-negative"));
+}
+
+TEST_F(ValidateRayTracing, TraceRayMaxNegative) {
+  // TMin is not known, but TMax alone is still negative
+  const std::string declarations = R"(
+%float_n1 = OpConstant %float -1
+)";
+
+  const std::string body = R"(
+%tmin = OpLoad %float %var_float
+%as = OpLoad %type_as %top_level_as
+OpTraceRayKHR %as %uint_1 %uint_1 %uint_1 %uint_1 %uint_1 %v3composite %tmin %v3composite %float_n1 %payload
+)";
+
+  CompileSuccessfully(
+      GenerateRayTraceCode(body, "RayGenerationKHR", declarations).c_str(),
+      SPV_ENV_VULKAN_1_1);
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_VULKAN_1_1));
+  EXPECT_THAT(getDiagnosticString(),
+              AnyVUID("VUID-RuntimeSpirv-OpTraceRayKHR-06356"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Ray TMax (-1) must be non-negative"));
+}
+
+TEST_F(ValidateRayTracing, TraceRayMinMaxNull) {
+  // OpConstantNull is zero, which is a valid TMin and TMax
+  const std::string declarations = R"(
+%float_null = OpConstantNull %float
+)";
+
+  const std::string body = R"(
+%as = OpLoad %type_as %top_level_as
+OpTraceRayKHR %as %uint_1 %uint_1 %uint_1 %uint_1 %uint_1 %v3composite %float_null %v3composite %float_null %payload
+)";
+
+  CompileSuccessfully(
+      GenerateRayTraceCode(body, "RayGenerationKHR", declarations).c_str(),
+      SPV_ENV_VULKAN_1_1);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_1));
+}
+
+TEST_F(ValidateRayTracing, TraceRayRayFlagsBothSkipPrimitiveCulling) {
+  // SkipTrianglesKHR | SkipAABBsKHR
+  const std::string declarations = R"(
+%uint_768 = OpConstant %uint 768
+)";
+
+  const std::string body = R"(
+%as = OpLoad %type_as %top_level_as
+OpTraceRayKHR %as %uint_768 %uint_1 %uint_1 %uint_1 %uint_1 %v3composite %float_0 %v3composite %float_0 %payload
+)";
+
+  CompileSuccessfully(
+      GenerateRayTraceCode(body, "RayGenerationKHR", declarations).c_str());
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("contains both SkipTrianglesKHR and SkipAABBsKHR"));
+}
+
+TEST_F(ValidateRayTracing, TraceRayRayFlagsSkipAABBs) {
+  // only SkipAABBsKHR
+  const std::string declarations = R"(
+%uint_512 = OpConstant %uint 512
+)";
+
+  const std::string body = R"(
+%as = OpLoad %type_as %top_level_as
+OpTraceRayKHR %as %uint_512 %uint_1 %uint_1 %uint_1 %uint_1 %v3composite %float_0 %v3composite %float_0 %payload
+)";
+
+  CompileSuccessfully(
+      GenerateRayTraceCode(body, "RayGenerationKHR", declarations).c_str());
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+TEST_F(ValidateRayTracing, TraceRayRayFlagsSkipTriangleCullBack) {
+  // SkipTrianglesKHR | CullBackFacingTrianglesKHR
+  const std::string declarations = R"(
+%uint_272 = OpConstant %uint 272
+)";
+
+  const std::string body = R"(
+%as = OpLoad %type_as %top_level_as
+OpTraceRayKHR %as %uint_272 %uint_1 %uint_1 %uint_1 %uint_1 %v3composite %float_0 %v3composite %float_0 %payload
+)";
+
+  CompileSuccessfully(
+      GenerateRayTraceCode(body, "RayGenerationKHR", declarations).c_str());
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("contains more than one of SkipTrianglesKHR, "
+                "CullBackFacingTrianglesKHR, and CullFrontFacingTrianglesKHR"));
+}
+
+TEST_F(ValidateRayTracing, TraceRayRayFlagsSkipTriangleCullFrontAndBack) {
+  // SkipTrianglesKHR | CullFrontFacingTrianglesKHR |
+  // CullBackFacingTrianglesKHR
+  const std::string declarations = R"(
+%uint_304 = OpConstant %uint 304
+)";
+
+  const std::string body = R"(
+%as = OpLoad %type_as %top_level_as
+OpTraceRayKHR %as %uint_304 %uint_1 %uint_1 %uint_1 %uint_1 %v3composite %float_0 %v3composite %float_0 %payload
+)";
+
+  CompileSuccessfully(
+      GenerateRayTraceCode(body, "RayGenerationKHR", declarations).c_str());
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("contains more than one of SkipTrianglesKHR, "
+                "CullBackFacingTrianglesKHR, and CullFrontFacingTrianglesKHR"));
+}
+
+TEST_F(ValidateRayTracing, TraceRayRayFlagsSkipAABBCullBack) {
+  // SkipAABBsKHR | CullBackFacingTrianglesKHR (legal)
+  const std::string declarations = R"(
+%uint_528 = OpConstant %uint 528
+)";
+
+  const std::string body = R"(
+%as = OpLoad %type_as %top_level_as
+OpTraceRayKHR %as %uint_528 %uint_1 %uint_1 %uint_1 %uint_1 %v3composite %float_0 %v3composite %float_0 %payload
+)";
+
+  CompileSuccessfully(
+      GenerateRayTraceCode(body, "RayGenerationKHR", declarations).c_str());
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+TEST_F(ValidateRayTracing, TraceRayRayFlagsOpaqueAndCullNoOpaque) {
+  // OpaqueKHR | CullNoOpaqueKHR
+  const std::string declarations = R"(
+%uint_129 = OpConstant %uint 129
+)";
+
+  const std::string body = R"(
+%as = OpLoad %type_as %top_level_as
+OpTraceRayKHR %as %uint_129 %uint_1 %uint_1 %uint_1 %uint_1 %v3composite %float_0 %v3composite %float_0 %payload
+)";
+
+  CompileSuccessfully(
+      GenerateRayTraceCode(body, "RayGenerationKHR", declarations).c_str());
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("contains more than one of OpaqueKHR, NoOpaqueKHR, "
+                        "CullOpaqueKHR, and CullNoOpaqueKHR"));
+}
+
+TEST_F(ValidateRayTracing, TraceRayRayFlagsOpaqueAndCullBack) {
+  // OpaqueKHR | CullBackFacingTrianglesKHR (legal)
+  const std::string declarations = R"(
+%uint_17 = OpConstant %uint 17
+)";
+
+  const std::string body = R"(
+%as = OpLoad %type_as %top_level_as
+OpTraceRayKHR %as %uint_17 %uint_1 %uint_1 %uint_1 %uint_1 %v3composite %float_0 %v3composite %float_0 %payload
+)";
+
+  CompileSuccessfully(
+      GenerateRayTraceCode(body, "RayGenerationKHR", declarations).c_str());
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
 }  // namespace
