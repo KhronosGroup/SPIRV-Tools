@@ -1578,6 +1578,31 @@ spv_result_t ValidateImageTexelPointer(ValidationState_t& _,
                 "R32i, or R32ui for Vulkan environment using Op"
              << spvOpcodeString(inst->opcode());
     }
+
+    if (isUntyped) {
+      const uint32_t image_id = inst->GetOperandAs<uint32_t>(3);
+      const Instruction* base_variable =
+          _.FindUntypedBaseVariable(_.FindDef(image_id));
+      if (base_variable &&
+          (base_variable->opcode() == spv::Op::OpVariable ||
+           base_variable->opcode() == spv::Op::OpUntypedVariableKHR)) {
+        const uint32_t base_id = base_variable->id();
+        const bool descriptor_set =
+            _.HasDecoration(base_id, spv::Decoration::DescriptorSet) &&
+            _.HasDecoration(base_id, spv::Decoration::Binding);
+        if (!descriptor_set &&
+            !_.IsBuiltin(base_id, spv::BuiltIn::ResourceHeapEXT)) {
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
+                 << _.VkErrorID(13743)
+                 << "OpUntypedImageTexelPointerEXT Image <id> "
+                 << _.getIdName(image_id)
+                 << " is derived from the variable <id> "
+                 << _.getIdName(base_id)
+                 << ", which must be decorated with Binding and DescriptorSet, "
+                    "or decorated with BuiltIn ResourceHeapEXT";
+        }
+      }
+    }
   }
 
   return SPV_SUCCESS;
