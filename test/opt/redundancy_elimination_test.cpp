@@ -186,7 +186,8 @@ TEST_F(RedundancyEliminationTest, RemoveRedundantAddInSideNode) {
 
 // Inherit dominating values in every sibling, keeping branch-local values
 // confined to that branch's descendants.
-TEST_F(RedundancyEliminationTest, PreserveInheritedValuesAcrossSiblingSubtrees) {
+TEST_F(RedundancyEliminationTest,
+       PreserveInheritedValuesAcrossSiblingSubtrees) {
   const std::string text = R"(
                OpCapability Shader
                OpMemoryModel Logical GLSL450

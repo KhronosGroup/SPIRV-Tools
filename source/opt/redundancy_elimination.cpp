@@ -60,7 +60,8 @@ bool RedundancyEliminationPass::EliminateRedundanciesFrom(
         todo.push_back({children[child_index],
                         std::move(todo[next_node].value_to_id_map)});
       } else {
-        todo.push_back({children[child_index], todo[next_node].value_to_id_map});
+        todo.push_back(
+            {children[child_index], todo[next_node].value_to_id_map});
       }
     }
     todo[next_node].value_to_id_map.clear();
