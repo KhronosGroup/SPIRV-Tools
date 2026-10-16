@@ -367,15 +367,6 @@ spv_result_t ValidateDebugInfoOperand(
   } while (0)
 
 // Check that the operand of a debug info instruction |inst| at |word_index|
-// is a result id of an debug info instruction with DebugTypeBasic.
-spv_result_t ValidateOperandBaseType(ValidationState_t& _,
-                                     const Instruction* inst,
-                                     uint32_t word_index) {
-  return ValidateDebugInfoOperand(_, "Base Type", CommonDebugInfoDebugTypeBasic,
-                                  inst, word_index);
-}
-
-// Check that the operand of a debug info instruction |inst| at |word_index|
 // is a result id of a debug lexical scope instruction which is one of
 // DebugCompilationUnit, DebugFunction, DebugLexicalBlock, or
 // DebugTypeComposite.
@@ -3810,7 +3801,8 @@ spv_result_t ValidateExtInstDebugInfo(ValidationState_t& _,
         break;
       }
       case CommonDebugInfoDebugTypeVector: {
-        auto validate_base_type = ValidateOperandBaseType(_, inst, 5);
+        auto validate_base_type =
+            ValidateOperandDebugType(_, "Base Type", inst, 5, false);
         if (validate_base_type != SPV_SUCCESS) return validate_base_type;
 
         CHECK_CONST_UINT_OPERAND("Component Count", 6);
@@ -3899,7 +3891,8 @@ spv_result_t ValidateExtInstDebugInfo(ValidationState_t& _,
       }
       case CommonDebugInfoDebugTypedef: {
         CHECK_OPERAND("Name", spv::Op::OpString, 5);
-        auto validate_base_type = ValidateOperandBaseType(_, inst, 6);
+        auto validate_base_type =
+            ValidateOperandDebugType(_, "Base Type", inst, 6, false);
         if (validate_base_type != SPV_SUCCESS) return validate_base_type;
         CHECK_DEBUG_OPERAND("Source", CommonDebugInfoDebugSource, 7);
         CHECK_CONST_UINT_OPERAND("Line", 8);
