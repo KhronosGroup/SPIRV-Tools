@@ -30,6 +30,7 @@
 #include "source/opt/convert_to_half_pass.h"
 #include "source/opt/convert_to_sampled_image_pass.h"
 #include "source/opt/convert_to_untyped.h"
+#include "source/opt/convert_ubo_to_push_constant_pass.h"
 #include "source/opt/copy_prop_arrays.h"
 #include "source/opt/dead_branch_elim_pass.h"
 #include "source/opt/dead_insert_elim_pass.h"

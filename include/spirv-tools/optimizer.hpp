@@ -960,6 +960,39 @@ Optimizer::PassToken CreateTrimCapabilitiesPass();
 Optimizer::PassToken CreateStructPackingPass(const char* structToPack,
                                              const char* packingRule);
 
+// Creates an opt-in pass that converts one Uniform variable pointing directly
+// to a Block-decorated struct to PushConstant storage. Selects the variable by
+// its OpName or the OpName of its block type. The selection must be
+// unambiguous. Binding, DescriptorSet, and redundant NonWritable decorations
+// are removed from the selected variable; block layout, names, and other
+// variables sharing its types are preserved. Access chains and pointer copies
+// are updated without changing loaded values.
+//
+// Fails with a diagnostic if no unique UBO matches, a push constant variable
+// already exists, the selected variable has an initializer or NonReadable
+// decoration, the block contains a runtime array or requires missing push
+// constant capabilities, or a pointer has an unsupported use. Supported uses
+// are OpAccessChain, OpInBoundsAccessChain, OpCopyObject, OpLoad, and the
+// source of OpCopyMemory. Memory operands are preserved, but NonPrivatePointer
+// is not supported for loads or either copy-memory mask. The latter restriction
+// also applies to target-only flags because of current validator limitations.
+// Pointer arguments to functions must be inlined before running this pass.
+//
+// Intended for Vulkan shaders. Explicit OpenGL target environments are
+// rejected. Universal target environments are accepted, but the caller must
+// ensure that the runtime environment supports push constants. The pass does
+// not add capabilities or change block member offsets. The caller must update
+// the pipeline layout and supply push constant data within device limits. This
+// interface-changing pass is not part of optimization presets.
+Optimizer::PassToken CreateConvertUBOToPushConstantPass(
+    const std::string& name);
+
+// Same transformation, selecting a UBO by DescriptorSet and Binding
+// decorations. This overload does not require debug names, and supports
+// decoration groups.
+Optimizer::PassToken CreateConvertUBOToPushConstantPass(uint32_t descriptor_set,
+                                                        uint32_t binding);
+
 // Creates a switch-descriptorset pass.
 // This pass changes any DescriptorSet decorations with the value |ds_from| to
 // use the new value |ds_to|.

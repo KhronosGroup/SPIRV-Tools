@@ -45,7 +45,8 @@ AUTHORS = ['The Khronos Group Inc.',
            'ZHOU He',
            'Nintendo',
            'Epic Games, Inc.',
-           'NVIDIA Corporation']
+           'NVIDIA Corporation',
+           'Diligent Graphics LLC']
 CURRENT_YEAR = 2025
 
 FIRST_YEAR = 2014
