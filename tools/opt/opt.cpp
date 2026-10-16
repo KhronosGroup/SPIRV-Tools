@@ -152,6 +152,20 @@ Options (in lexicographical order):)",
                descriptor set and binding that is one of the given pairs, it
                will be converted to a sampled image.)");
   printf(R"(
+  --convert-ubo-to-push-constant=name
+               Convert the unique uniform buffer with the given variable or
+               block name to push constants, preserving its layout. Remove its
+               Binding, DescriptorSet, and redundant NonWritable decorations.
+               The module must not already contain a push constant variable.
+               Inline pointer arguments first. Intended for Vulkan shaders;
+               explicit OpenGL target environments are rejected. The application
+               must update its pipeline layout and respect push constant limits.
+               This changes the shader interface.)");
+  printf(R"(
+  --convert-ubo-to-push-constant-by-binding=set:binding
+               Like --convert-ubo-to-push-constant, but selects by descriptor set
+               and binding instead of a debug name.)");
+  printf(R"(
   --copy-propagate-arrays
                Does propagation of memory references when an array is a copy of
                another.  It will only propagate an array if the source is never
