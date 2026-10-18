@@ -37,3 +37,4 @@ MODULE.bazel.lock
 
 # VSCode
 /.vscode/*
+install-*/

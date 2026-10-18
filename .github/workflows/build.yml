@@ -1,0 +1,82 @@
+name: Build SPIRV-Tools Multi-Arch
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build ${{ matrix.target }}
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: linux-x86-64
+            cmake-flags: >-
+              -DCMAKE_SYSTEM_NAME=Linux
+              -DCMAKE_BUILD_TYPE=Release
+              -DSPIRV_SKIP_TESTS=ON
+
+          - target: linux-aarch64
+            cmake-flags: >-
+              -DCMAKE_SYSTEM_NAME=Linux
+              -DCMAKE_SYSTEM_PROCESSOR=aarch64
+              -DCMAKE_C_COMPILER=aarch64-linux-gnu-gcc
+              -DCMAKE_CXX_COMPILER=aarch64-linux-gnu-g++
+              -DCMAKE_BUILD_TYPE=Release
+              -DSPIRV_SKIP_TESTS=ON
+
+          - target: android-arm64
+            cmake-flags: >-
+              -DCMAKE_TOOLCHAIN_FILE=${ANDROID_NDK_LATEST_HOME}/build/cmake/android.toolchain.cmake
+              -DANDROID_ABI=arm64-v8a
+              -DANDROID_PLATFORM=android-26
+              -DANDROID_STL=c++_static
+              -DCMAKE_BUILD_TYPE=MinSizeRel
+              -DCMAKE_INTERPROCEDURAL_OPTIMIZATION=ON
+              -DCMAKE_CXX_FLAGS="-ffunction-sections -fdata-sections -g0"
+              -DSPIRV_CHECK_CONTEXT=OFF
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+            submodules: recursive
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Install Build Tools (Ninja)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ninja-build
+
+      - name: Install AArch64 Cross Compiler
+        if: matrix.target == 'linux-aarch64'
+        run: |
+          sudo apt-get install -y gcc-aarch64-linux-gnu g++-aarch64-linux-gnu
+
+      - name: Configure CMake
+        run: |
+          cmake -B build -G Ninja \
+            ${{ matrix.cmake-flags }} \
+            -DCMAKE_INSTALL_PREFIX=${{ github.workspace }}/install-${{ matrix.target }}
+
+      - name: Build
+        run: |
+          cmake --build build -j $(nproc)
+
+      - name: Install
+        run: |
+          cmake --install build
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: spirv-tools-${{ matrix.target }}
+          path: ${{ github.workspace }}/install-${{ matrix.target }}

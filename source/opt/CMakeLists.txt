@@ -290,6 +290,8 @@ target_include_directories(SPIRV-Tools-opt
 target_link_libraries(SPIRV-Tools-opt
   PUBLIC ${SPIRV_TOOLS_FULL_VISIBILITY})
 
+target_compile_options(SPIRV-Tools-opt PRIVATE -Wno-error=unused-const-variable)
+
 set_property(TARGET SPIRV-Tools-opt PROPERTY FOLDER "SPIRV-Tools libraries")
 spvtools_check_symbol_exports(SPIRV-Tools-opt)
 

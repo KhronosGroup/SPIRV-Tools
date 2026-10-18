@@ -5,7 +5,7 @@ opt() {
   FILE_OPT="${FILE%.*}_opt.spv"
 
   echo "Optimizing $FILE"
-  host_build/tools/spirv-opt \
+  install-x86-64/bin/spirv-opt \
       --remove-clip-cull-dist --fix-mali-spec-constant-composite --mali-optimization-barrier \
       $FILE -o $FILE_OPT
   spirv-dis $FILE > $FILE_OPT.txt
@@ -19,3 +19,4 @@ opt gta_vertex.spv
 opt shader.spv
 opt opselect.spv
 opt optbarrier.spv
+opt failing_shader.spv
