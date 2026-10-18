@@ -1338,6 +1338,104 @@ INSTANTIATE_TEST_SUITE_P(
         // clang-format on
     })));
 
+// Tests for OpSelect with a scalar condition and vector objects, which is
+// allowed since SPIR-V 1.4.
+// Regression test for https://github.com/KhronosGroup/SPIRV-Tools/issues/6976
+INSTANTIATE_TEST_SUITE_P(
+    ScalarConditionVectorSelect, FoldSpecConstantOpAndCompositePassTest,
+    ::testing::ValuesIn(
+        std::vector<FoldSpecConstantOpAndCompositePassTestCase>({
+            // clang-format off
+            // scalar bool -> int vector
+            {
+              // original
+              {
+                "%spec_int_one_vec = OpSpecConstantOp %v2int Select %bool_true %signed_one_vec %signed_zero_vec",
+                "%spec_int_zero_vec = OpSpecConstantOp %v2int Select %bool_false %signed_one_vec %signed_zero_vec",
+                "%spec_int_from_null = OpSpecConstantOp %v2int Select %bool_null %signed_one_vec %signed_zero_vec",
+              },
+              // expected
+              {
+                "%spec_int_one_vec = OpConstantComposite %v2int %signed_one %signed_one",
+                "%spec_int_zero_vec = OpConstantComposite %v2int %signed_zero %signed_zero",
+                "%spec_int_from_null = OpConstantComposite %v2int %signed_zero %signed_zero",
+              },
+            },
+
+            // scalar bool -> uint vector
+            {
+              // original
+              {
+                "%spec_uint_one_vec = OpSpecConstantOp %v2uint Select %bool_true %unsigned_one_vec %unsigned_zero_vec",
+                "%spec_uint_zero_vec = OpSpecConstantOp %v2uint Select %bool_false %unsigned_one_vec %unsigned_zero_vec",
+                "%spec_uint_from_null = OpSpecConstantOp %v2uint Select %bool_null %unsigned_one_vec %unsigned_zero_vec",
+              },
+              // expected
+              {
+                "%spec_uint_one_vec = OpConstantComposite %v2uint %unsigned_one %unsigned_one",
+                "%spec_uint_zero_vec = OpConstantComposite %v2uint %unsigned_zero %unsigned_zero",
+                "%spec_uint_from_null = OpConstantComposite %v2uint %unsigned_zero %unsigned_zero",
+              },
+            },
+
+            // objects with different components
+            {
+              // original
+              {
+                "%v2int_1_2 = OpConstantComposite %v2int %signed_one %signed_two",
+                "%v2int_3_0 = OpConstantComposite %v2int %signed_three %signed_zero",
+                "%v4int_3_2_1_0 = OpConstantComposite %v4int %signed_three %signed_two %signed_one %signed_zero",
+                "%spec_sel_t = OpSpecConstantOp %v2int Select %bool_true %v2int_1_2 %v2int_3_0",
+                "%spec_sel_f = OpSpecConstantOp %v2int Select %bool_false %v2int_1_2 %v2int_3_0",
+                "%spec_sel_null = OpSpecConstantOp %v2int Select %bool_null %v2int_1_2 %v2int_3_0",
+                "%spec_v4_t = OpSpecConstantOp %v4int Select %bool_true %v4int_0_1_2_3 %v4int_3_2_1_0",
+                "%spec_v4_f = OpSpecConstantOp %v4int Select %bool_false %v4int_0_1_2_3 %v4int_3_2_1_0",
+              },
+              // expected
+              {
+                "%v2int_1_2 = OpConstantComposite %v2int %signed_one %signed_two",
+                "%v2int_3_0 = OpConstantComposite %v2int %signed_three %signed_zero",
+                "%v4int_3_2_1_0 = OpConstantComposite %v4int %signed_three %signed_two %signed_one %signed_zero",
+                "%spec_sel_t = OpConstantComposite %v2int %signed_one %signed_two",
+                "%spec_sel_f = OpConstantComposite %v2int %signed_three %signed_zero",
+                "%spec_sel_null = OpConstantComposite %v2int %signed_three %signed_zero",
+                "%spec_v4_t = OpConstantComposite %v4int %signed_zero %signed_one %signed_two %signed_three",
+                "%spec_v4_f = OpConstantComposite %v4int %signed_three %signed_two %signed_one %signed_zero",
+              },
+            },
+
+            // null vector object
+            {
+              // original
+              {
+                "%spec_sel_null_obj = OpSpecConstantOp %v2int Select %bool_false %signed_one_vec %signed_null_vec",
+              },
+              // expected
+              {
+                "%spec_sel_null_obj = OpConstantNull %v2int",
+              },
+            },
+
+            // condition folded from another OpSpecConstantOp
+            {
+              // original
+              {
+                "%cond_t = OpSpecConstantOp %bool SLessThan %signed_zero %signed_one",
+                "%cond_f = OpSpecConstantOp %bool SGreaterThan %signed_zero %signed_one",
+                "%spec_sel_t = OpSpecConstantOp %v2int Select %cond_t %signed_one_vec %signed_zero_vec",
+                "%spec_sel_f = OpSpecConstantOp %v2int Select %cond_f %signed_one_vec %signed_zero_vec",
+              },
+              // expected
+              {
+                "%cond_t = OpConstantTrue %bool",
+                "%cond_f = OpConstantFalse %bool",
+                "%spec_sel_t = OpConstantComposite %v2int %signed_one %signed_one",
+                "%spec_sel_f = OpConstantComposite %v2int %signed_zero %signed_zero",
+              },
+            },
+            // clang-format on
+        })));
+
 // Tests about boolean scalar logical operations and comparison operations with
 // scalar int/uint type.
 INSTANTIATE_TEST_SUITE_P(

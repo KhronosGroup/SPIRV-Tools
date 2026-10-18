@@ -315,6 +315,18 @@ Instruction* FoldSpecConstantOpAndCompositePass::DoComponentWiseOperation(
           }))
     return nullptr;
 
+  // Since SPIR-V 1.4, OpSelect can take a scalar condition with vector
+  // objects. Such a condition selects one of the two objects as a whole. A
+  // null condition is false, so it selects the second object.
+  if (spec_opcode == spv::Op::OpSelect && result_type->AsVector() &&
+      operands[0]->type()->AsBool()) {
+    const analysis::BoolConstant* condition = operands[0]->AsBoolConstant();
+    const analysis::Constant* selected =
+        condition != nullptr && condition->value() ? operands[1] : operands[2];
+    return const_mgr->BuildInstructionAndAddToModule(selected, pos,
+                                                     inst->type_id());
+  }
+
   if (result_type->AsInteger() || result_type->AsBool()) {
     // Scalar operation
     const uint32_t result_val =
