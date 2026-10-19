@@ -1992,7 +1992,7 @@ const analysis::Constant* FoldNClamp3(
   return nullptr;
 }
 
-UnaryScalarFoldingRule FoldFTranscendentalUnary(double (*fp)(double)) {
+UnaryScalarFoldingRule FoldUnaryFloatingPointOperation(double (*fp)(double)) {
   return
       [fp](const analysis::Type* result_type, const analysis::Constant* a,
            analysis::ConstantManager* const_mgr) -> const analysis::Constant* {
@@ -2017,8 +2017,8 @@ UnaryScalarFoldingRule FoldFTranscendentalUnary(double (*fp)(double)) {
       };
 }
 
-BinaryScalarFoldingRule FoldFTranscendentalBinary(double (*fp)(double,
-                                                               double)) {
+BinaryScalarFoldingRule FoldBinaryFloatingPointOperation(double (*fp)(double,
+                                                         double)) {
   return
       [fp](const analysis::Type* result_type, const analysis::Constant* a,
            const analysis::Constant* b,
@@ -2314,41 +2314,41 @@ void ConstantFoldingRules::AddFoldingRules() {
     ext_rules_[{ext_inst_glslstd450_id, GLSLstd450NClamp}].push_back(
         FoldNClamp3);
     ext_rules_[{ext_inst_glslstd450_id, GLSLstd450Sin}].push_back(
-        FoldFPUnaryOp(FoldFTranscendentalUnary(std::sin)));
+        FoldFPUnaryOp(FoldUnaryFloatingPointOperation(std::sin)));
     ext_rules_[{ext_inst_glslstd450_id, GLSLstd450Cos}].push_back(
-        FoldFPUnaryOp(FoldFTranscendentalUnary(std::cos)));
+        FoldFPUnaryOp(FoldUnaryFloatingPointOperation(std::cos)));
     ext_rules_[{ext_inst_glslstd450_id, GLSLstd450Tan}].push_back(
-        FoldFPUnaryOp(FoldFTranscendentalUnary(std::tan)));
+        FoldFPUnaryOp(FoldUnaryFloatingPointOperation(std::tan)));
     ext_rules_[{ext_inst_glslstd450_id, GLSLstd450Asin}].push_back(
-        FoldFPUnaryOp(FoldFTranscendentalUnary(std::asin)));
+        FoldFPUnaryOp(FoldUnaryFloatingPointOperation(std::asin)));
     ext_rules_[{ext_inst_glslstd450_id, GLSLstd450Acos}].push_back(
-        FoldFPUnaryOp(FoldFTranscendentalUnary(std::acos)));
+        FoldFPUnaryOp(FoldUnaryFloatingPointOperation(std::acos)));
     ext_rules_[{ext_inst_glslstd450_id, GLSLstd450Atan}].push_back(
-        FoldFPUnaryOp(FoldFTranscendentalUnary(std::atan)));
+        FoldFPUnaryOp(FoldUnaryFloatingPointOperation(std::atan)));
     ext_rules_[{ext_inst_glslstd450_id, GLSLstd450Sinh}].push_back(
-        FoldFPUnaryOp(FoldFTranscendentalUnary(std::sinh)));
+        FoldFPUnaryOp(FoldUnaryFloatingPointOperation(std::sinh)));
     ext_rules_[{ext_inst_glslstd450_id, GLSLstd450Cosh}].push_back(
-        FoldFPUnaryOp(FoldFTranscendentalUnary(std::cosh)));
+        FoldFPUnaryOp(FoldUnaryFloatingPointOperation(std::cosh)));
     ext_rules_[{ext_inst_glslstd450_id, GLSLstd450Tanh}].push_back(
-        FoldFPUnaryOp(FoldFTranscendentalUnary(std::tanh)));
+        FoldFPUnaryOp(FoldUnaryFloatingPointOperation(std::tanh)));
     ext_rules_[{ext_inst_glslstd450_id, GLSLstd450Asinh}].push_back(
-        FoldFPUnaryOp(FoldFTranscendentalUnary(std::asinh)));
+        FoldFPUnaryOp(FoldUnaryFloatingPointOperation(std::asinh)));
     ext_rules_[{ext_inst_glslstd450_id, GLSLstd450Acosh}].push_back(
-        FoldFPUnaryOp(FoldFTranscendentalUnary(std::acosh)));
-    // std::atanh semantics differ from GLSL.std.450 semantics at |v| = 1.
-    // C++ defines those as +-INF, while GLSL.std.450 returns NaN.
-    auto atanh_shim = [](double v) -> double {
-      return v == 1.0 || v == -1.0 ? NAN : std::atanh(v);
-    };
+        FoldFPUnaryOp(FoldUnaryFloatingPointOperation(std::acosh)));
     ext_rules_[{ext_inst_glslstd450_id, GLSLstd450Atanh}].push_back(
-        FoldFPUnaryOp(FoldFTranscendentalUnary(atanh_shim)));
-    auto inversesqrt_shim = [](double v) -> double { return 1.0 / sqrt(v); };
+        FoldFPUnaryOp(FoldUnaryFloatingPointOperation([](double v) -> double {
+          // std::atanh semantics differ from GLSL.std.450 semantics at |v| = 1.
+          // C++ defines those as +-INF, while GLSL.std.450 defines NaN.
+          return v == 1.0 || v == -1.0 ? NAN : std::atanh(v);
+        })));
     ext_rules_[{ext_inst_glslstd450_id, GLSLstd450InverseSqrt}].push_back(
-        FoldFPUnaryOp(FoldFTranscendentalUnary(inversesqrt_shim)));
+        FoldFPUnaryOp(FoldUnaryFloatingPointOperation([](double v) -> double {
+          return 1.0 / sqrt(v);
+        })));
     ext_rules_[{ext_inst_glslstd450_id, GLSLstd450Exp}].push_back(
-        FoldFPUnaryOp(FoldFTranscendentalUnary(std::exp)));
+        FoldFPUnaryOp(FoldUnaryFloatingPointOperation(std::exp)));
     ext_rules_[{ext_inst_glslstd450_id, GLSLstd450Log}].push_back(
-        FoldFPUnaryOp(FoldFTranscendentalUnary(std::log)));
+        FoldFPUnaryOp(FoldUnaryFloatingPointOperation(std::log)));
 
 #ifdef __ANDROID__
     // Android NDK r15c targeting ABI 15 doesn't have full support for C++11
@@ -2356,29 +2356,60 @@ void ConstantFoldingRules::AddFoldingRules() {
     // available up until ABI 18 so we use a shim
     auto log2_shim = [](double v) -> double { return log(v) / log(2.0); };
     ext_rules_[{ext_inst_glslstd450_id, GLSLstd450Exp2}].push_back(
-        FoldFPUnaryOp(FoldFTranscendentalUnary(::exp2)));
+        FoldFPUnaryOp(FoldUnaryFloatingPointOperation(::exp2)));
     ext_rules_[{ext_inst_glslstd450_id, GLSLstd450Log2}].push_back(
-        FoldFPUnaryOp(FoldFTranscendentalUnary(log2_shim)));
+        FoldFPUnaryOp(FoldUnaryFloatingPointOperation(log2_shim)));
 #else
     ext_rules_[{ext_inst_glslstd450_id, GLSLstd450Exp2}].push_back(
-        FoldFPUnaryOp(FoldFTranscendentalUnary(std::exp2)));
+        FoldFPUnaryOp(FoldUnaryFloatingPointOperation(std::exp2)));
     ext_rules_[{ext_inst_glslstd450_id, GLSLstd450Log2}].push_back(
-        FoldFPUnaryOp(FoldFTranscendentalUnary(std::log2)));
+        FoldFPUnaryOp(FoldUnaryFloatingPointOperation(std::log2)));
 #endif
 
     ext_rules_[{ext_inst_glslstd450_id, GLSLstd450Sqrt}].push_back(
-        FoldFPUnaryOp(FoldFTranscendentalUnary(std::sqrt)));
+        FoldFPUnaryOp(FoldUnaryFloatingPointOperation(std::sqrt)));
     ext_rules_[{ext_inst_glslstd450_id, GLSLstd450Atan2}].push_back(
-        FoldFPBinaryOp(FoldFTranscendentalBinary(std::atan2)));
+        FoldFPBinaryOp(FoldBinaryFloatingPointOperation(std::atan2)));
     ext_rules_[{ext_inst_glslstd450_id, GLSLstd450Pow}].push_back(
-        FoldFPBinaryOp(FoldFTranscendentalBinary(std::pow)));
+        FoldFPBinaryOp(FoldBinaryFloatingPointOperation(std::pow)));
     ext_rules_[{ext_inst_glslstd450_id, GLSLstd450FAbs}].push_back(
-        FoldFPUnaryOp(FoldFTranscendentalUnary(std::fabs)));
+        FoldFPUnaryOp(FoldUnaryFloatingPointOperation(std::fabs)));
 
     ext_rules_[{ext_inst_glslstd450_id, GLSLstd450SAbs}].push_back(
         FoldUnaryOp(FoldUnaryIntegerOperation<Signed>([](uint64_t a) {
           int64_t value = static_cast<int64_t>(a);
           return static_cast<uint64_t>(value >= 0 ? value : -value);
+        })));
+    ext_rules_[{ext_inst_glslstd450_id, GLSLstd450Round}].push_back(
+        FoldFPUnaryOp(FoldUnaryFloatingPointOperation(std::round)));
+    ext_rules_[{ext_inst_glslstd450_id, GLSLstd450Trunc}].push_back(
+        FoldFPUnaryOp(FoldUnaryFloatingPointOperation(std::trunc)));
+    ext_rules_[{ext_inst_glslstd450_id, GLSLstd450Floor}].push_back(
+        FoldFPUnaryOp(FoldUnaryFloatingPointOperation(std::floor)));
+    ext_rules_[{ext_inst_glslstd450_id, GLSLstd450Ceil}].push_back(
+        FoldFPUnaryOp(FoldUnaryFloatingPointOperation(std::ceil)));
+    ext_rules_[{ext_inst_glslstd450_id, GLSLstd450Fract}].push_back(
+        FoldFPUnaryOp(FoldUnaryFloatingPointOperation([](double v) -> double {
+          return v - std::floor(v);
+        })));
+    ext_rules_[{ext_inst_glslstd450_id, GLSLstd450FSign}].push_back(
+        FoldFPUnaryOp(FoldUnaryFloatingPointOperation([](double v) -> double { 
+          if (v == 0.0) return v; // retain sign of zero
+          return v < 0 ? -1.0 : 1.0;
+        })));
+    ext_rules_[{ext_inst_glslstd450_id, GLSLstd450SSign}].push_back(
+        FoldUnaryOp(FoldUnaryIntegerOperation<Signed>([](uint64_t a) -> uint64_t {
+          int64_t value = static_cast<int64_t>(a);
+          if (value == 0) return 0;
+          return static_cast<uint64_t>(value < 0 ? int64_t(-1) : int64_t(1));
+        })));
+    ext_rules_[{ext_inst_glslstd450_id, GLSLstd450Radians}].push_back(
+        FoldFPUnaryOp(FoldUnaryFloatingPointOperation([](double v) -> double { 
+          return v * M_PI / 180.0;
+        })));
+    ext_rules_[{ext_inst_glslstd450_id, GLSLstd450Degrees}].push_back(
+        FoldFPUnaryOp(FoldUnaryFloatingPointOperation([](double v) -> double { 
+          return v * 180.0 / M_PI;
         })));
   }
 }
