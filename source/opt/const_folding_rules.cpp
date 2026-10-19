@@ -2325,6 +2325,26 @@ void ConstantFoldingRules::AddFoldingRules() {
         FoldFPUnaryOp(FoldFTranscendentalUnary(std::acos)));
     ext_rules_[{ext_inst_glslstd450_id, GLSLstd450Atan}].push_back(
         FoldFPUnaryOp(FoldFTranscendentalUnary(std::atan)));
+    ext_rules_[{ext_inst_glslstd450_id, GLSLstd450Sinh}].push_back(
+        FoldFPUnaryOp(FoldFTranscendentalUnary(std::sinh)));
+    ext_rules_[{ext_inst_glslstd450_id, GLSLstd450Cosh}].push_back(
+        FoldFPUnaryOp(FoldFTranscendentalUnary(std::cosh)));
+    ext_rules_[{ext_inst_glslstd450_id, GLSLstd450Tanh}].push_back(
+        FoldFPUnaryOp(FoldFTranscendentalUnary(std::tanh)));
+    ext_rules_[{ext_inst_glslstd450_id, GLSLstd450Asinh}].push_back(
+        FoldFPUnaryOp(FoldFTranscendentalUnary(std::asinh)));
+    ext_rules_[{ext_inst_glslstd450_id, GLSLstd450Acosh}].push_back(
+        FoldFPUnaryOp(FoldFTranscendentalUnary(std::acosh)));
+    // std::atanh semantics differ from GLSL.std.450 semantics at |v| = 1.
+    // C++ defines those as +-INF, while GLSL.std.450 returns NaN.
+    auto atanh_shim = [](double v) -> double {
+      return v == 1.0 || v == -1.0 ? NAN : std::atanh(v);
+    };
+    ext_rules_[{ext_inst_glslstd450_id, GLSLstd450Atanh}].push_back(
+        FoldFPUnaryOp(FoldFTranscendentalUnary(atanh_shim)));
+    auto inversesqrt_shim = [](double v) -> double { return 1.0 / sqrt(v); };
+    ext_rules_[{ext_inst_glslstd450_id, GLSLstd450InverseSqrt}].push_back(
+        FoldFPUnaryOp(FoldFTranscendentalUnary(inversesqrt_shim)));
     ext_rules_[{ext_inst_glslstd450_id, GLSLstd450Exp}].push_back(
         FoldFPUnaryOp(FoldFTranscendentalUnary(std::exp)));
     ext_rules_[{ext_inst_glslstd450_id, GLSLstd450Log}].push_back(
