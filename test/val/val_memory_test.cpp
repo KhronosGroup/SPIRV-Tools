@@ -689,6 +689,126 @@ OpFunctionEnd
               AnyVUID("VUID-StandaloneSpirv-Function-04681"));
 }
 
+TEST_F(ValidateMemory, VulkanSpecConstantSizedArrayStorageBufferBad) {
+  std::string spirv = R"(
+OpCapability Shader
+OpExtension "SPV_KHR_storage_buffer_storage_class"
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %main "main"
+OpExecutionMode %main LocalSize 1 1 1
+OpDecorate %struct Block
+OpMemberDecorate %struct 0 Offset 0
+OpDecorate %array_type ArrayStride 4
+OpDecorate %var DescriptorSet 0
+OpDecorate %var Binding 0
+%float = OpTypeFloat 32
+%uint = OpTypeInt 32 0
+%spec_size = OpSpecConstant %uint 4
+%array_type = OpTypeArray %float %spec_size
+%struct = OpTypeStruct %array_type
+%ptr = OpTypePointer StorageBuffer %struct
+%var = OpVariable %ptr StorageBuffer
+%void = OpTypeVoid
+%func_type = OpTypeFunction %void
+%main = OpFunction %void None %func_type
+%label = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+  CompileSuccessfully(spirv.c_str(), SPV_ENV_VULKAN_1_1);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_VULKAN_1_1));
+  EXPECT_THAT(getDiagnosticString(),
+              AnyVUID("VUID-StandaloneSpirv-Function-04681"));
+}
+
+TEST_F(ValidateMemory, VulkanSpecConstantSizedArrayPushConstantBad) {
+  std::string spirv = R"(
+OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %main "main"
+OpExecutionMode %main LocalSize 1 1 1
+OpDecorate %struct Block
+OpMemberDecorate %struct 0 Offset 0
+OpDecorate %array_type ArrayStride 4
+%float = OpTypeFloat 32
+%uint = OpTypeInt 32 0
+%spec_size = OpSpecConstant %uint 4
+%array_type = OpTypeArray %float %spec_size
+%struct = OpTypeStruct %array_type
+%ptr = OpTypePointer PushConstant %struct
+%var = OpVariable %ptr PushConstant
+%void = OpTypeVoid
+%func_type = OpTypeFunction %void
+%main = OpFunction %void None %func_type
+%label = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+  CompileSuccessfully(spirv.c_str(), SPV_ENV_VULKAN_1_1);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_VULKAN_1_1));
+  EXPECT_THAT(getDiagnosticString(),
+              AnyVUID("VUID-StandaloneSpirv-Function-04681"));
+}
+
+TEST_F(ValidateMemory, VulkanSpecConstantSizedArrayTessControlArrayedGood) {
+  std::string spirv = R"(
+OpCapability Shader
+OpCapability Tessellation
+OpMemoryModel Logical GLSL450
+OpEntryPoint TessellationControl %main "main" %var
+OpExecutionMode %main OutputVertices 3
+OpDecorate %var Location 0
+%float = OpTypeFloat 32
+%uint = OpTypeInt 32 0
+%spec_size = OpSpecConstant %uint 4
+%const_3 = OpConstant %uint 3
+%inner_array = OpTypeArray %float %spec_size
+%outer_array = OpTypeArray %inner_array %const_3
+%ptr = OpTypePointer Input %outer_array
+%var = OpVariable %ptr Input
+%void = OpTypeVoid
+%func_type = OpTypeFunction %void
+%main = OpFunction %void None %func_type
+%label = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+  CompileSuccessfully(spirv.c_str(), SPV_ENV_VULKAN_1_1);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_1));
+}
+
+TEST_F(ValidateMemory, VulkanSpecConstantSizedArrayGeometryOutputBad) {
+  std::string spirv = R"(
+OpCapability Shader
+OpCapability Geometry
+OpMemoryModel Logical GLSL450
+OpEntryPoint Geometry %main "main" %var
+OpExecutionMode %main Triangles
+OpExecutionMode %main Invocations 1
+OpExecutionMode %main OutputTriangleStrip
+OpExecutionMode %main OutputVertices 3
+OpDecorate %var Location 0
+%float = OpTypeFloat 32
+%uint = OpTypeInt 32 0
+%spec_size = OpSpecConstant %uint 4
+%const_3 = OpConstant %uint 3
+%inner_array = OpTypeArray %float %spec_size
+%outer_array = OpTypeArray %inner_array %const_3
+%ptr = OpTypePointer Output %outer_array
+%var = OpVariable %ptr Output
+%void = OpTypeVoid
+%func_type = OpTypeFunction %void
+%main = OpFunction %void None %func_type
+%label = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+  CompileSuccessfully(spirv.c_str(), SPV_ENV_VULKAN_1_1);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_VULKAN_1_1));
+  EXPECT_THAT(getDiagnosticString(),
+              AnyVUID("VUID-StandaloneSpirv-Function-04681"));
+}
+
 TEST_F(ValidateMemory, UniversalInitializerWithDisallowedStorageClassesBad) {
   std::string spirv = R"(
 OpCapability Shader
