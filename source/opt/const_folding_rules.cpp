@@ -854,7 +854,6 @@ ConstantFoldingRule FoldTernaryOp(TernaryScalarFoldingRule scalar_rule) {
   return [scalar_rule](IRContext* context, Instruction* inst,
                        const std::vector<const analysis::Constant*>& constants)
              -> const analysis::Constant* {
-    assert(constants.size() == inst->NumInOperands());
     assert(constants.size() == (inst->opcode() == spv::Op::OpExtInst ? 4 : 3));
     analysis::ConstantManager* const_mgr = context->get_constant_mgr();
     analysis::TypeManager* type_mgr = context->get_type_mgr();
