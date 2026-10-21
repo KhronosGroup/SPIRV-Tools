@@ -139,6 +139,10 @@ CodeGenerator GetInMainCodeGenerator(const char* const built_in,
       execution_modes << "OpExecutionMode %" << entry_point.name
                       << " DepthReplacing\n";
     }
+    if (0 == std::strcmp(built_in, "FragStencilRefEXT")) {
+      execution_modes << "OpExecutionMode %" << entry_point.name
+                      << " StencilRefReplacingEXT\n";
+    }
   }
   if (0 == std::strcmp(execution_model, "Geometry")) {
     execution_modes << "OpExecutionMode %" << entry_point.name
@@ -309,6 +313,10 @@ CodeGenerator GetInFunctionCodeGenerator(const char* const built_in,
       execution_modes << "OpExecutionMode %" << entry_point.name
                       << " DepthReplacing\n";
     }
+    if (0 == std::strcmp(built_in, "FragStencilRefEXT")) {
+      execution_modes << "OpExecutionMode %" << entry_point.name
+                      << " StencilRefReplacingEXT\n";
+    }
   }
   if (0 == std::strcmp(execution_model, "Geometry")) {
     execution_modes << "OpExecutionMode %" << entry_point.name
@@ -465,6 +473,10 @@ CodeGenerator GetVariableCodeGenerator(const char* const built_in,
     if (0 == std::strcmp(built_in, "FragDepth")) {
       execution_modes << "OpExecutionMode %" << entry_point.name
                       << " DepthReplacing\n";
+    }
+    if (0 == std::strcmp(built_in, "FragStencilRefEXT")) {
+      execution_modes << "OpExecutionMode %" << entry_point.name
+                      << " StencilRefReplacingEXT\n";
     }
   }
   if (0 == std::strcmp(execution_model, "Geometry")) {
@@ -2748,6 +2760,10 @@ CodeGenerator GetArrayedVariableCodeGenerator(const char* const built_in,
       execution_modes << "OpExecutionMode %" << entry_point.name
                       << " DepthReplacing\n";
     }
+    if (0 == std::strcmp(built_in, "FragStencilRefEXT")) {
+      execution_modes << "OpExecutionMode %" << entry_point.name
+                      << " StencilRefReplacingEXT\n";
+    }
   }
   if (0 == std::strcmp(execution_model, "Geometry")) {
     execution_modes << "OpExecutionMode %" << entry_point.name
@@ -3634,6 +3650,36 @@ TEST_F(ValidateBuiltIns,
               HasSubstr("VUID-FragDepth-FragDepth-04216"));
 }
 
+TEST_F(ValidateBuiltIns, VulkanFragStencilRefNoExecutionMode) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpCapability StencilExportEXT
+OpExtension "SPV_EXT_shader_stencil_export"
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %main "main" %stencil
+OpExecutionMode %main OriginUpperLeft
+OpDecorate %stencil BuiltIn FragStencilRefEXT
+%void = OpTypeVoid
+%function = OpTypeFunction %void
+%int = OpTypeInt 32 1
+%pointer = OpTypePointer Output %int
+%one = OpConstant %int 1
+%stencil = OpVariable %pointer Output
+%main = OpFunction %void None %function
+%entry = OpLabel
+OpStore %stencil %one
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_VULKAN_1_0);
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_VULKAN_1_0));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Vulkan spec requires StencilRefReplacingEXT execution "
+                        "mode to be declared when using BuiltIn "
+                        "FragStencilRefEXT"));
+}
+
 TEST_F(ValidateBuiltIns, AllowInstanceIdWithIntersectionShader) {
   CodeGenerator generator = CodeGenerator::GetDefaultShaderCodeGenerator();
   generator.capabilities_ += R"(
@@ -3798,6 +3844,10 @@ OpCapability GroupNonUniformBallot
     if (0 == std::strcmp(built_in, "FragDepth")) {
       execution_modes << "OpExecutionMode %" << entry_point.name
                       << " DepthReplacing\n";
+    }
+    if (0 == std::strcmp(built_in, "FragStencilRefEXT")) {
+      execution_modes << "OpExecutionMode %" << entry_point.name
+                      << " StencilRefReplacingEXT\n";
     }
   }
   if (0 == std::strcmp(execution_model, "Geometry")) {
