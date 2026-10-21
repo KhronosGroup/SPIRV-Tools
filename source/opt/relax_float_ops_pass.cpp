@@ -65,6 +65,9 @@ bool RelaxFloatOpsPass::ProcessInst(Instruction* r_inst) {
 }
 
 bool RelaxFloatOpsPass::ProcessFunction(Function* func) {
+  if (func->IsDeclaration()) {
+    return false;
+  }
   bool modified = false;
   cfg()->ForEachBlockInReversePostOrder(
       func->entry().get(), [&modified, this](BasicBlock* bb) {
