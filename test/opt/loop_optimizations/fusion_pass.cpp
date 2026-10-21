@@ -128,6 +128,67 @@ TEST_F(FusionPassTest, SimpleFusion) {
   SinglePassRunAndMatch<LoopFusionPass>(text, true, 20);
 }
 
+// The decorations of the loop phis are users that belong to no basic block.
+TEST_F(FusionPassTest, DecoratedLoopValues) {
+  const std::string text = R"(
+; CHECK: OpLoopMerge
+; CHECK-NOT: OpLoopMerge
+; CHECK: OpFunctionEnd
+
+               OpCapability Shader
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %main "main" %out
+               OpExecutionMode %main OriginUpperLeft
+               OpDecorate %out Location 0
+               OpDecorate %i RelaxedPrecision
+               OpDecorate %j RelaxedPrecision
+       %void = OpTypeVoid
+         %fn = OpTypeFunction %void
+       %bool = OpTypeBool
+        %int = OpTypeInt 32 1
+      %int_0 = OpConstant %int 0
+      %int_1 = OpConstant %int 1
+     %int_10 = OpConstant %int 10
+    %ptr_out = OpTypePointer Output %int
+        %out = OpVariable %ptr_out Output
+       %main = OpFunction %void None %fn
+      %entry = OpLabel
+               OpBranch %h0
+         %h0 = OpLabel
+          %i = OpPhi %int %int_0 %entry %i1 %c0
+               OpLoopMerge %m0 %c0 None
+               OpBranch %t0
+         %t0 = OpLabel
+       %cmp0 = OpSLessThan %bool %i %int_10
+               OpBranchConditional %cmp0 %b0 %m0
+         %b0 = OpLabel
+               OpBranch %c0
+         %c0 = OpLabel
+         %i1 = OpIAdd %int %i %int_1
+               OpBranch %h0
+         %m0 = OpLabel
+               OpBranch %h1
+         %h1 = OpLabel
+          %j = OpPhi %int %int_0 %m0 %j1 %c1
+               OpLoopMerge %m1 %c1 None
+               OpBranch %t1
+         %t1 = OpLabel
+       %cmp1 = OpSLessThan %bool %j %int_10
+               OpBranchConditional %cmp1 %b1 %m1
+         %b1 = OpLabel
+               OpBranch %c1
+         %c1 = OpLabel
+         %j1 = OpIAdd %int %j %int_1
+               OpBranch %h1
+         %m1 = OpLabel
+               OpStore %out %j
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  SinglePassRunAndMatch<LoopFusionPass>(text, true, 5);
+}
+
 /*
 Generated from the following GLSL + --eliminate-local-multi-store
 

@@ -1097,6 +1097,56 @@ TEST_F(PeelingPassTest, PeelingNoChanges) {
   }
 }
 
+// The decorations of the loop phi are users that belong to no basic block.
+TEST_F(PeelingPassTest, DecoratedLoopValueUsedAfterLoop) {
+  const std::string text = R"(
+; CHECK: OpLoopMerge [[merge:%\w+]] %{{\w+}} None
+; CHECK: [[merge]] = OpLabel
+; CHECK-NEXT: [[phi:%\w+]] = OpPhi %int
+; CHECK-NEXT: OpConvertSToF %float [[phi]]
+
+               OpCapability Shader
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %main "main" %out
+               OpExecutionMode %main OriginUpperLeft
+               OpDecorate %out Location 0
+               OpDecorate %i RelaxedPrecision
+               OpDecorate %inc RelaxedPrecision
+       %void = OpTypeVoid
+         %fn = OpTypeFunction %void
+       %bool = OpTypeBool
+        %int = OpTypeInt 32 1
+      %float = OpTypeFloat 32
+      %int_0 = OpConstant %int 0
+      %int_1 = OpConstant %int 1
+     %int_10 = OpConstant %int 10
+    %ptr_out = OpTypePointer Output %float
+        %out = OpVariable %ptr_out Output
+       %main = OpFunction %void None %fn
+      %entry = OpLabel
+               OpBranch %header
+     %header = OpLabel
+          %i = OpPhi %int %int_0 %entry %inc %continue
+               OpLoopMerge %merge %continue None
+               OpBranch %cond
+       %cond = OpLabel
+        %cmp = OpSLessThan %bool %i %int_10
+               OpBranchConditional %cmp %body %merge
+       %body = OpLabel
+               OpBranch %continue
+   %continue = OpLabel
+        %inc = OpIAdd %int %i %int_1
+               OpBranch %header
+      %merge = OpLabel
+          %f = OpConvertSToF %float %i
+               OpStore %out %f
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  SinglePassRunAndMatch<LoopPeelingPass>(text, true);
+}
+
 }  // namespace
 }  // namespace opt
 }  // namespace spvtools

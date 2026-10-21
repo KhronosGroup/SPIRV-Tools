@@ -443,7 +443,8 @@ bool Loop::IsLCSSA() const {
               &insn,
               [&exit_blocks, ir_context, this](Instruction* use) -> bool {
                 BasicBlock* parent = ir_context->get_instr_block(use);
-                assert(parent && "Invalid analysis");
+                // Annotations and debug names are not in any block.
+                if (!parent) return true;
                 if (IsInsideLoop(parent)) return true;
                 if (use->opcode() != spv::Op::OpPhi) return false;
                 return exit_blocks.count(parent->id());

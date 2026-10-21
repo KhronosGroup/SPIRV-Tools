@@ -87,8 +87,10 @@ bool LoopFusion::UsedInContinueOrConditionBlock(Instruction* phi_instruction,
   auto not_used = context_->get_def_use_mgr()->WhileEachUser(
       phi_instruction,
       [this, condition_block, continue_block](Instruction* instruction) {
-        auto block_id = context_->get_instr_block(instruction)->id();
-        return block_id != condition_block && block_id != continue_block;
+        // Annotations and debug names are not in any block.
+        BasicBlock* block = context_->get_instr_block(instruction);
+        if (!block) return true;
+        return block->id() != condition_block && block->id() != continue_block;
       });
 
   return !not_used;
@@ -381,10 +383,8 @@ LoopFusion::GetLoadsAndStoresInLoop(Loop* loop) {
 
 bool LoopFusion::IsUsedInLoop(Instruction* instruction, Loop* loop) {
   auto not_used = context_->get_def_use_mgr()->WhileEachUser(
-      instruction, [this, loop](Instruction* user) {
-        auto block_id = context_->get_instr_block(user)->id();
-        return !loop->IsInsideLoop(block_id);
-      });
+      instruction,
+      [loop](Instruction* user) { return !loop->IsInsideLoop(user); });
 
   return !not_used;
 }
