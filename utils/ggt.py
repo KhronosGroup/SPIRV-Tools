@@ -21,14 +21,14 @@ import re
 import sys
 from typing import Dict, List, Tuple, Any
 
-# Find modules relative to the directory containing this script.
+# Find modules relative to the root directory of the repository.
 # This is needed for hermetic Bazel builds, where the Table files are bundled
 # together with this script, while keeping their relative locations.
-sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from Table.Context import Context
-from Table.IndexRange import IndexRange
-from Table.Operand import Operand
+from utils.Table.Context import Context
+from utils.Table.IndexRange import IndexRange
+from utils.Table.Operand import Operand
 
 class GrammarError(Exception):
     pass
