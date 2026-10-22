@@ -46,6 +46,14 @@ Pass::Status FoldSpecConstantOpAndCompositePass::Process() {
   // dependee Spec Constant. When we encounter the dependee Spec Constants, all
   // its dependent constants must have been processed and all its dependent Spec
   // Constants should have been folded if possible.
+  //
+  // A folded constant is inserted where its Spec Constant was, so it must only
+  // refer to constants declared before that point. The constant manager starts
+  // out knowing every constant in the module, so forget them here and map each
+  // one again when the traversal reaches it.
+  for (Instruction* inst : get_module()->GetConstants()) {
+    const_mgr->RemoveId(inst->result_id());
+  }
   Module::inst_iterator next_inst = context()->types_values_begin();
   for (Module::inst_iterator inst_iter = next_inst;
        // Need to re-evaluate the end iterator since we may modify the list of
@@ -53,6 +61,9 @@ Pass::Status FoldSpecConstantOpAndCompositePass::Process() {
        inst_iter != context()->types_values_end(); inst_iter = next_inst) {
     ++next_inst;
     Instruction* inst = &*inst_iter;
+    if (IsConstantInst(inst->opcode())) {
+      const_mgr->MapInst(inst);
+    }
     // Collect constant values of normal constants and process the
     // OpSpecConstantOp, OpSpecConstantComposite, and
     // OpSpecConstantCompositeReplicateEXT instructions if possible. The
@@ -108,6 +119,8 @@ Pass::Status FoldSpecConstantOpAndCompositePass::Process() {
       case spv::Op::OpSpecConstantOp: {
         const auto status = ProcessOpSpecConstantOp(&inst_iter);
         if (status == Status::Failure) {
+          // The constants after this point were never mapped again.
+          context()->InvalidateAnalyses(IRContext::kAnalysisConstants);
           return Status::Failure;
         }
         if (status == Status::SuccessWithChange) {
@@ -131,6 +144,7 @@ Pass::Status FoldSpecConstantOpAndCompositePass::ProcessOpSpecConstantOp(
          "The first in-operand of OpSpecConstantOp instruction must be of "
          "SPV_OPERAND_TYPE_SPEC_CONSTANT_OP_NUMBER type");
 
+  const uint32_t id_bound = get_module()->IdBound();
   folded_inst = FoldWithInstructionFolder(pos);
   if (context()->id_overflow()) {
     return Status::Failure;
@@ -142,7 +156,11 @@ Pass::Status FoldSpecConstantOpAndCompositePass::ProcessOpSpecConstantOp(
       return Status::Failure;
     }
   }
-  if (!folded_inst) return Status::SuccessWithoutChange;
+  if (!folded_inst) {
+    // The folder may have added constants before failing.
+    return get_module()->IdBound() != id_bound ? Status::SuccessWithChange
+                                               : Status::SuccessWithoutChange;
+  }
 
   // Replace the original constant with the new folded constant, kill the
   // original constant.
@@ -189,14 +207,13 @@ Instruction* FoldSpecConstantOpAndCompositePass::FoldWithInstructionFolder(
       context()->get_instruction_folder().FoldInstructionToConstant(
           inst.get(), identity_map);
 
-  // new_const_inst == null indicates we cannot fold this spec constant
-  if (!new_const_inst) return nullptr;
-
   // Get the instruction before |pos| to insert after.  |pos| cannot be the
   // first instruction in the list because its type has to come first.
   Instruction* insert_pos = (*inst_iter_ptr)->PreviousNode();
   assert(insert_pos != nullptr &&
          "pos is the first instruction in the types and values.");
+  // Move the constants created by the folder before |pos|, even if the folding
+  // failed, so that later folds that reuse them do not refer forward.
   bool need_to_clone = true;
   for (Instruction* i = last_type_value->NextNode(); i != nullptr;
        i = last_type_value->NextNode()) {
@@ -206,6 +223,9 @@ Instruction* FoldSpecConstantOpAndCompositePass::FoldWithInstructionFolder(
     i->InsertAfter(insert_pos);
     insert_pos = insert_pos->NextNode();
   }
+
+  // new_const_inst == null indicates we cannot fold this spec constant
+  if (!new_const_inst) return nullptr;
 
   if (need_to_clone) {
     uint32_t new_id = TakeNextId();
