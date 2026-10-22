@@ -698,6 +698,46 @@ TEST_F(ValidateRayTracing, RayTracingPositionFetchCapability) {
                         "RayTracingPositionFetchKHR"));
 }
 
+TEST_F(ValidateRayTracing, ForceOpacityMicromap2StateKHRCapabilityCheck) {
+  const std::string shader = R"(
+               OpCapability Shader
+               OpCapability RayTracingKHR
+               OpExtension "SPV_KHR_opacity_micromap"
+               OpExtension "SPV_KHR_ray_tracing"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint RayGenerationKHR %main "main" %4725 %payload
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+       %uint = OpTypeInt 32 0
+   %_st_4530 = OpTypeStruct %uint
+       %_ptr = OpTypePointer RayPayloadKHR %_st_4530
+      %float = OpTypeFloat 32
+    %v3float = OpTypeVector %float 3
+       %4723 = OpTypeAccelerationStructureKHR
+%_ptr_UniformConstant_4723 = OpTypePointer UniformConstant %4723
+       %4725 = OpVariable %_ptr_UniformConstant_4723 UniformConstant
+    %payload = OpVariable %_ptr RayPayloadKHR
+     %uint_1 = OpConstant %uint 1
+     %uint_2 = OpConstant %uint 2
+       %flag = OpConstant %uint 1024
+    %float_1 = OpConstant %float 1
+  %v3float_1 = OpConstantComposite %v3float %float_1 %float_1 %float_1
+       %main = OpFunction %void None %3
+ %main_label = OpLabel
+       %4726 = OpLoad %4723 %4725
+               OpTraceRayKHR %4726 %flag %uint_1 %uint_2 %uint_1 %uint_2 %v3float_1 %float_1 %v3float_1 %float_1 %payload
+               OpReturn
+               OpFunctionEnd
+)";
+  CompileSuccessfully(shader.c_str(), SPV_ENV_UNIVERSAL_1_4);
+  ASSERT_EQ(SPV_ERROR_INVALID_CAPABILITY,
+            ValidateInstructions(SPV_ENV_UNIVERSAL_1_4));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("The ForceOpacityMicromap2StateKHR flag requires the "
+                        "RayTracingOpacityMicromapKHR and RayQueryKHR or "
+                        "RayTracingKHR capabilities"));
+}
+
 }  // namespace
 }  // namespace val
 }  // namespace spvtools

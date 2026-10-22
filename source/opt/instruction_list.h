@@ -116,11 +116,48 @@ class InstructionList : public utils::IntrusiveList<Instruction> {
   // on the preceding debug line instructions.
   inline void ForEachInst(const std::function<void(Instruction*)>& f,
                           bool run_on_debug_line_insts) {
+    WhileEachInst(
+        [&f](Instruction* inst) {
+          f(inst);
+          return true;
+        },
+        run_on_debug_line_insts);
+  }
+
+  inline void ForEachInst(const std::function<void(const Instruction*)>& f,
+                          bool run_on_debug_line_insts) const {
+    WhileEachInst(
+        [&f](const Instruction* inst) {
+          f(inst);
+          return true;
+        },
+        run_on_debug_line_insts);
+  }
+
+  // Runs the given function |f| on the instructions in the list and optionally
+  // on the preceding debug line instructions. Terminates early if |f| returns
+  // false. Returns true if all invocations of |f| returned true; otherwise
+  // returns false.
+  inline bool WhileEachInst(const std::function<bool(Instruction*)>& f,
+                            bool run_on_debug_line_insts) {
     auto next = begin();
     for (auto i = next; i != end(); i = next) {
       ++next;
-      i->ForEachInst(f, run_on_debug_line_insts);
+      if (!i->WhileEachInst(f, run_on_debug_line_insts)) {
+        return false;
+      }
     }
+    return true;
+  }
+
+  inline bool WhileEachInst(const std::function<bool(const Instruction*)>& f,
+                            bool run_on_debug_line_insts) const {
+    for (const auto& i : *this) {
+      if (!i.WhileEachInst(f, run_on_debug_line_insts)) {
+        return false;
+      }
+    }
+    return true;
   }
 };
 

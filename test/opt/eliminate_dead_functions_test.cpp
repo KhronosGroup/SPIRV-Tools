@@ -398,7 +398,7 @@ OpFunctionEnd
 OpReturn
 OpFunctionEnd
 %non_semantic2 = OpExtInst %void %ext 2 %foo
-%non_semantic3 = OpExtInst %void %ext 3 
+%non_semantic3 = OpExtInst %void %ext 3
 )";
 
   SinglePassRunAndMatch<EliminateDeadFunctionsPass>(text, true);
@@ -431,7 +431,7 @@ OpFunctionEnd
 OpReturn
 OpFunctionEnd
 %non_semantic2 = OpExtInst %void %ext 2 %foo
-%non_semantic3 = OpExtInst %void %ext 3 
+%non_semantic3 = OpExtInst %void %ext 3
 %non_semantic4 = OpExtInst %void %ext 4 %non_semantic2
 %non_semantic5 = OpExtInst %void %ext 5 %non_semantic4
 )";
@@ -450,7 +450,7 @@ TEST_F(EliminateDeadFunctionsBasicTest, NonSemanticInfoRemoveDebugPrintf) {
 ; CHECK-NOT: OpStore %c % 27
 ; CHECK-NOT: % 31 = OpAccessChain %_ptr_Function_float %c %uint_0
 ; CHECK-NOT: % 32 = OpLoad %float %31
-; CHECK-NOT: % 34 = OpExtInst %void %33 1 % 28 % 32
+; CHECK-NOT: % 34 = OpExtInst %void %33 DebugPrintf % 28 % 32
 OpCapability RayTracingKHR
 OpExtension "SPV_KHR_non_semantic_info"
 OpExtension "SPV_KHR_ray_tracing"
@@ -496,7 +496,7 @@ OpDecorate %samplers Binding 0
 OpStore %36 %40
 %41 = OpAccessChain %_ptr_Function_float %36 %uint_0
 %42 = OpLoad %float %41
-%43 = OpExtInst %void %33 1 %28 %42
+%43 = OpExtInst %void %33 DebugPrintf %28 %42
 OpReturn
 OpFunctionEnd
 %foo_ = OpFunction %void None %3
@@ -508,7 +508,7 @@ OpFunctionEnd
 OpStore %c %27
 %31 = OpAccessChain %_ptr_Function_float %c %uint_0
 %32 = OpLoad %float %31
-%34 = OpExtInst %void %33 1 %28 %32
+%34 = OpExtInst %void %33 DebugPrintf %28 %32
 OpReturn
 OpFunctionEnd
 )";
@@ -547,6 +547,79 @@ OpFunctionEnd
 )";
 
   SetTargetEnv(SPV_ENV_VULKAN_1_0);
+  SinglePassRunAndMatch<EliminateDeadFunctionsPass>(text, true);
+}
+
+TEST_F(EliminateDeadFunctionsBasicTest, UAF_DebugLine) {
+  const std::string text = R"(
+; CHECK: OpEntryPoint Vertex [[main:%\w+]]
+; CHECK: [[main]] = OpFunction
+; CHECK: OpFunctionEnd
+; CHECK-NOT: = OpFunction
+OpCapability Shader
+OpExtension "SPV_KHR_non_semantic_info"
+%nsdi = OpExtInstImport "NonSemantic.Shader.DebugInfo.9999"
+OpMemoryModel Logical GLSL450
+OpEntryPoint Vertex %main "main"
+%file = OpString "poc.hlsl"
+%void = OpTypeVoid
+%fn = OpTypeFunction %void
+%uint = OpTypeInt 32 0
+%u1 = OpConstant %uint 1
+%src = OpExtInst %void %nsdi DebugSource %file
+%main = OpFunction %void None %fn
+%main_l = OpLabel
+OpReturn
+OpFunctionEnd
+%F = OpFunction %void None %fn
+%F_l = OpLabel
+%x = OpIAdd %uint %u1 %u1
+%dl = OpExtInst %void %nsdi DebugLine %src %u1 %u1 %u1 %u1 %x
+%y = OpIAdd %uint %u1 %u1
+%dnl = OpExtInst %void %nsdi DebugNoLine
+OpReturn
+OpFunctionEnd
+)";
+
+  SinglePassRunAndMatch<EliminateDeadFunctionsPass>(text, true);
+}
+
+TEST_F(EliminateDeadFunctionsBasicTest, NonSemanticDebugFunctionRemoved) {
+  const std::string text = R"(
+; CHECK: OpEntryPoint Vertex [[main:%\w+]]
+; CHECK: [[main]] = OpFunction
+; CHECK: OpFunctionEnd
+; CHECK-NOT: DebugFunction
+; CHECK-NOT: DebugFunctionDefinition
+OpCapability Shader
+OpExtension "SPV_KHR_non_semantic_info"
+%nsdi = OpExtInstImport "NonSemantic.Shader.DebugInfo.100"
+OpMemoryModel Logical GLSL450
+OpEntryPoint Vertex %main "main"
+%file = OpString "poc.hlsl"
+%void = OpTypeVoid
+%fn = OpTypeFunction %void
+%name = OpString "foo"
+%uint = OpTypeInt 32 0
+%uint_1 = OpConstant %uint 1
+%uint_3 = OpConstant %uint 3
+%uint_4 = OpConstant %uint 4
+%uint_5 = OpConstant %uint 5
+%src = OpExtInst %void %nsdi DebugSource %file
+%cu = OpExtInst %void %nsdi DebugCompilationUnit %uint_1 %uint_4 %src %uint_5
+%type_fn = OpExtInst %void %nsdi DebugTypeFunction %uint_3 %void
+%dbg_fn = OpExtInst %void %nsdi DebugFunction %name %type_fn %src %uint_1 %uint_1 %cu %name %uint_3 %uint_1
+%main = OpFunction %void None %fn
+%main_l = OpLabel
+OpReturn
+OpFunctionEnd
+%F = OpFunction %void None %fn
+%F_l = OpLabel
+%dbg_def = OpExtInst %void %nsdi DebugFunctionDefinition %dbg_fn %F
+OpReturn
+OpFunctionEnd
+)";
+
   SinglePassRunAndMatch<EliminateDeadFunctionsPass>(text, true);
 }
 

@@ -54,6 +54,7 @@ SPVTOOLS_SRC_FILES := \
 		source/val/validate_decorations.cpp \
 		source/val/validate_derivatives.cpp \
 		source/val/validate_dot_product.cpp \
+		source/val/validate_explicit_layout.cpp \
 		source/val/validate_extensions.cpp \
 		source/val/validate_execution_limitations.cpp \
 		source/val/validate_function.cpp \
@@ -105,6 +106,7 @@ SPVTOOLS_OPT_SRC_FILES := \
 		source/opt/control_dependence.cpp \
 		source/opt/convert_to_sampled_image_pass.cpp \
 		source/opt/convert_to_half_pass.cpp \
+		source/opt/convert_to_untyped.cpp \
 		source/opt/copy_prop_arrays.cpp \
 		source/opt/dataflow.cpp \
 		source/opt/dead_branch_elim_pass.cpp \

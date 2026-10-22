@@ -34,6 +34,8 @@ set(EI_ns_vkspreflect "${GRAMMAR_DIR}/extinst.nonsemantic.vkspreflection.grammar
 set(EI_tosa_001000_1 "${GRAMMAR_DIR}/extinst.tosa.001000.1.grammar.json")
 set(EI_arm_motion_engine_100 "${GRAMMAR_DIR}/extinst.arm.motion-engine.100.grammar.json")
 set(EI_ns_graph_debug_info "${GRAMMAR_DIR}/extinst.nonsemantic.graph.debuginfo.grammar.json")
+set(EI_arm_experimental_ml_operations "${GRAMMAR_DIR}/extinst.arm.experimental-ml-operations.grammar.json")
+set(EI_ns_debugprintf "${GRAMMAR_DIR}/extinst.nonsemantic.debugprintf.grammar.json")
 
 set(CORE_TABLES_BODY_INC_FILE ${spirv-tools_BINARY_DIR}/core_tables_body.inc)
 set(CORE_TABLES_HEADER_INC_FILE ${spirv-tools_BINARY_DIR}/core_tables_header.inc)
@@ -56,6 +58,8 @@ add_custom_command(OUTPUT ${CORE_TABLES_BODY_INC_FILE} ${CORE_TABLES_HEADER_INC_
       --extinst=TOSA_,${EI_tosa_001000_1}
       --extinst=,${EI_arm_motion_engine_100}
       --extinst=,${EI_ns_graph_debug_info}
+      --extinst=,${EI_arm_experimental_ml_operations}
+      --extinst=,${EI_ns_debugprintf}
     DEPENDS ${GGT_SCRIPT}
             ${SPIRV_CORE_GRAMMAR_JSON_FILE}
 	    ${EI_glsl}
@@ -72,6 +76,8 @@ add_custom_command(OUTPUT ${CORE_TABLES_BODY_INC_FILE} ${CORE_TABLES_HEADER_INC_
 	    ${EI_tosa_001000_1}
 	    ${EI_arm_motion_engine_100}
 	    ${EI_ns_graph_debug_info}
+	    ${EI_arm_experimental_ml_operations}
+	    ${EI_ns_debugprintf}
     COMMENT "Generate grammar tables")
 add_custom_target(spirv-tools-tables DEPENDS ${CORE_TABLES_BODY_INC_FILE} ${CORE_TABLES_HEADER_INC_FILE})
 
@@ -260,6 +266,7 @@ set(SPIRV_SOURCES
   ${CMAKE_CURRENT_SOURCE_DIR}/val/validate_dot_product.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/val/validate_extensions.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/val/validate_execution_limitations.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/val/validate_explicit_layout.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/val/validate_function.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/val/validate_graph.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/val/validate_group.cpp

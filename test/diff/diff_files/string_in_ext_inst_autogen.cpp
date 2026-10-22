@@ -71,7 +71,7 @@ constexpr char kDst[] = R"(               OpCapability Shader
         %foo = OpVariable %_ptr_Function_uint Function
                OpStore %foo %uint_127
          %11 = OpLoad %uint %foo
-         %13 = OpExtInst %void %12 1 %10 %11
+         %13 = OpExtInst %void %12 DebugPrintf %10 %11
                OpReturn
                OpFunctionEnd
 )";
@@ -106,8 +106,8 @@ TEST(DiffTest, StringInExtInst) {
  %4 = OpVariable %8 Function
  OpStore %4 %9
  %11 = OpLoad %7 %4
--%13 = OpExtInst %6 %12 1 %10 %11
-+%13 = OpExtInst %6 %12 1 %14 %11
+-%13 = OpExtInst %6 %12 DebugPrintf %10 %11
++%13 = OpExtInst %6 %12 DebugPrintf %14 %11
  OpReturn
  OpFunctionEnd
 )";
@@ -136,7 +136,7 @@ TEST(DiffTest, StringInExtInstNoDebug) {
         %foo = OpVariable %_ptr_Function_uint Function
                OpStore %foo %uint_127
          %11 = OpLoad %uint %foo
-         %13 = OpExtInst %void %12 1 %10 %11
+         %13 = OpExtInst %void %12 DebugPrintf %10 %11
                OpReturn
                OpFunctionEnd
 )";
@@ -160,7 +160,7 @@ TEST(DiffTest, StringInExtInstNoDebug) {
         %foo = OpVariable %_ptr_Function_uint Function
                OpStore %foo %uint_127
          %11 = OpLoad %uint %foo
-         %13 = OpExtInst %void %12 1 %10 %11
+         %13 = OpExtInst %void %12 DebugPrintf %10 %11
                OpReturn
                OpFunctionEnd
 )";
@@ -191,8 +191,8 @@ TEST(DiffTest, StringInExtInstNoDebug) {
  %9 = OpVariable %7 Function
  OpStore %9 %8
  %11 = OpLoad %6 %9
--%13 = OpExtInst %4 %12 1 %10 %11
-+%13 = OpExtInst %4 %12 1 %14 %11
+-%13 = OpExtInst %4 %12 DebugPrintf %10 %11
++%13 = OpExtInst %4 %12 DebugPrintf %14 %11
  OpReturn
  OpFunctionEnd
 )";

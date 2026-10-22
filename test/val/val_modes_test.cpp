@@ -1,6 +1,7 @@
 // Copyright (c) 2018 Google LLC.
 // Modifications Copyright (C) 2024 Advanced Micro Devices, Inc. All rights
 // reserved.
+// Copyright (C) 2026 Qualcomm Technologies, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -3040,6 +3041,8 @@ OpExecutionMode %main LocalSize 16 16 1
   CompileSuccessfully(spirv, env);
   EXPECT_THAT(SPV_ERROR_INVALID_DATA, ValidateInstructions(env));
   EXPECT_THAT(getDiagnosticString(),
+              AnyVUID("VUID-StandaloneSpirv-TileShadingRateQCOM-10692"));
+  EXPECT_THAT(getDiagnosticString(),
               HasSubstr("If the TileShadingRateQCOM execution mode is used, "
                         "LocalSize and LocalSizeId must not be specified."));
 }
@@ -3060,6 +3063,8 @@ OpExecutionModeId %main LocalSizeId %int_1 %int_1 %int_1
   spv_target_env env = SPV_ENV_VULKAN_1_4;
   CompileSuccessfully(spirv, env);
   EXPECT_THAT(SPV_ERROR_INVALID_DATA, ValidateInstructions(env));
+  EXPECT_THAT(getDiagnosticString(),
+              AnyVUID("VUID-StandaloneSpirv-TileShadingRateQCOM-10692"));
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("If the TileShadingRateQCOM execution mode is used, "
                         "LocalSize and LocalSizeId must not be specified."));
@@ -3101,6 +3106,8 @@ OpDecorate %gl_GlobalInvocationID BuiltIn GlobalInvocationId
   CompileSuccessfully(spirv, env);
   EXPECT_THAT(SPV_ERROR_INVALID_DATA, ValidateInstructions(env));
   EXPECT_THAT(getDiagnosticString(),
+              AnyVUID("VUID-StandaloneSpirv-Execution-10687"));
+  EXPECT_THAT(getDiagnosticString(),
               HasSubstr("The NonCoherentTileAttachmentQCOM execution mode must "
                         "not be used in any stage other than fragment"));
 }
@@ -3139,6 +3146,8 @@ OpExecutionMode %main OriginUpperLeft
   spv_target_env env = SPV_ENV_VULKAN_1_4;
   CompileSuccessfully(spirv, env);
   EXPECT_THAT(SPV_ERROR_INVALID_DATA, ValidateInstructions(env));
+  EXPECT_THAT(getDiagnosticString(),
+              AnyVUID("VUID-StandaloneSpirv-Execution-10688"));
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("The TileShadingRateQCOM execution mode must not be "
                         "used in any stage other than compute"));

@@ -45,11 +45,11 @@ SPIRV-Tools project version numbers are of the form `v`*year*`.`*index* and with
 an optional `-dev` suffix to indicate work in progress.  For example, the
 following versions are ordered from oldest to newest:
 
-* `v2016.0`
-* `v2016.1-dev`
-* `v2016.1`
-* `v2016.2-dev`
-* `v2016.2`
+* `v2026.0`
+* `v2026.1-dev`
+* `v2026.1`
+* `v2026.2-dev`
+* `v2026.2`
 
 Use the `--version` option on each command line tool to see the software
 version.  An API call reports the software version as a C-style string.
@@ -402,7 +402,7 @@ option, like so:
 
 ```sh
 # In <spirv-dir> (the SPIRV-Tools repo root):
-git clone --depth=1 --branch v3.13.0.1 https://github.com/protocolbuffers/protobuf external/protobuf
+git clone --depth=1 --branch v35.1 https://github.com/protocolbuffers/protobuf external/protobuf
 
 # In your build directory:
 cmake [-G <platform-generator>] <spirv-dir> -DSPIRV_BUILD_FUZZER=ON
@@ -455,7 +455,7 @@ targets, you need to install CMake Version 2.8.12 or later.
 - [Python 3](http://www.python.org/): for utility scripts and running the test
 suite.
 - [Bazel](https://bazel.build/) (optional): if building the source with Bazel,
-you need to install Bazel Version 7.4.0 on your machine. Other versions may
+you need to install Bazel Version 8.7.0 on your machine. Other versions may
 also work, but are not verified.
 - [Emscripten SDK](https://emscripten.org) (optional): if building the
   WebAssembly module.

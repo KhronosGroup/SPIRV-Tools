@@ -15,11 +15,8 @@
 // Tests for OpExtension validator rules.
 
 #include <string>
-#include <vector>
 
 #include "gmock/gmock.h"
-#include "source/spirv_target_env.h"
-#include "test/unit_spirv.h"
 #include "test/val/val_fixtures.h"
 
 namespace spvtools {
@@ -254,6 +251,322 @@ TEST_F(ValidateSpvKHRAbort, MismatchedCompositeOperandTypes) {
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("Type of Message operand does not logically match "
                         "the type of the Message Type operand"));
+}
+
+TEST_F(ValidateSpvKHRAbort, MessageTypeConcreteAggregate) {
+  const std::string str = R"(
+               OpCapability Shader
+               OpCapability AbortKHR
+               OpExtension "SPV_KHR_abort"
+               OpMemoryModel Logical Simple
+               OpEntryPoint GLCompute %main "main"
+               OpExecutionMode %main LocalSize 1 1 1
+               OpMemberDecorate %inner 0 Offset 0
+               OpMemberDecorate %inner 1 ColMajor
+               OpMemberDecorate %inner 1 Offset 16
+               OpMemberDecorate %inner 1 MatrixStride 16
+               OpMemberDecorate %message 0 Offset 0
+               OpMemberDecorate %message 1 Offset 80
+       %void = OpTypeVoid
+  %void_func = OpTypeFunction %void
+       %uint = OpTypeInt 32 0
+      %float = OpTypeFloat 32
+     %v4uint = OpTypeVector %uint 4
+    %v4float = OpTypeVector %float 4
+       %mat4 = OpTypeMatrix %v4float 4
+      %inner = OpTypeStruct %v4uint %mat4
+    %message = OpTypeStruct %inner %uint
+     %uint_1 = OpConstant %uint 1
+    %float_1 = OpConstant %float 1
+   %v4uint_1 = OpConstantComposite %v4uint %uint_1 %uint_1 %uint_1 %uint_1
+  %v4float_1 = OpConstantComposite %v4float %float_1 %float_1 %float_1 %float_1
+     %mat4_1 = OpConstantComposite %mat4 %v4float_1 %v4float_1 %v4float_1 %v4float_1
+    %inner_1 = OpConstantComposite %inner %v4uint_1 %mat4_1
+  %message_1 = OpConstantComposite %message %inner_1 %uint_1
+       %main = OpFunction %void None %void_func
+ %main_label = OpLabel
+               OpAbortKHR %message %message_1
+               OpFunctionEnd
+  )";
+  CompileSuccessfully(str.c_str());
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+TEST_F(ValidateSpvKHRAbort, MessageTypePhysicalPointer) {
+  const std::string str = R"(
+               OpCapability Shader
+               OpCapability Int64
+               OpCapability PhysicalStorageBufferAddresses
+               OpCapability AbortKHR
+               OpExtension "SPV_KHR_abort"
+               OpExtension "SPV_KHR_physical_storage_buffer"
+               OpMemoryModel PhysicalStorageBuffer64 GLSL450
+               OpEntryPoint GLCompute %main "main"
+               OpExecutionMode %main LocalSize 1 1 1
+               OpMemberDecorate %message 0 Offset 0
+               OpMemberDecorate %message 1 Offset 8
+       %void = OpTypeVoid
+  %void_func = OpTypeFunction %void
+       %uint = OpTypeInt 32 0
+      %ulong = OpTypeInt 64 0
+        %ptr = OpTypePointer PhysicalStorageBuffer %uint
+    %message = OpTypeStruct %ptr %uint
+     %uint_1 = OpConstant %uint 1
+    %address = OpConstant %ulong 4096
+       %main = OpFunction %void None %void_func
+ %main_label = OpLabel
+   %void_ptr = OpConvertUToPtr %ptr %address
+  %message_1 = OpCompositeConstruct %message %void_ptr %uint_1
+               OpAbortKHR %message %message_1
+               OpFunctionEnd
+  )";
+  CompileSuccessfully(str.c_str());
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+TEST_F(ValidateSpvKHRAbort, MessageTypeBool) {
+  const std::string str = R"(
+               OpCapability Shader
+               OpCapability AbortKHR
+               OpExtension "SPV_KHR_abort"
+               OpMemoryModel Logical Simple
+               OpEntryPoint GLCompute %main "main"
+               OpExecutionMode %main LocalSize 1 1 1
+       %void = OpTypeVoid
+  %void_func = OpTypeFunction %void
+       %bool = OpTypeBool
+       %true = OpConstantTrue %bool
+       %main = OpFunction %void None %void_func
+ %main_label = OpLabel
+               OpAbortKHR %bool %true
+               OpFunctionEnd
+  )";
+  CompileSuccessfully(str.c_str());
+  EXPECT_NE(SPV_SUCCESS, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Message Type operand '4[%bool]' must be a concrete "
+                        "type"));
+}
+
+TEST_F(ValidateSpvKHRAbort, MessageTypeStructWithBool) {
+  const std::string str = R"(
+               OpCapability Shader
+               OpCapability AbortKHR
+               OpExtension "SPV_KHR_abort"
+               OpMemoryModel Logical Simple
+               OpEntryPoint GLCompute %main "main"
+               OpExecutionMode %main LocalSize 1 1 1
+               OpMemberDecorate %message 0 Offset 0
+               OpMemberDecorate %message 1 Offset 4
+       %void = OpTypeVoid
+  %void_func = OpTypeFunction %void
+       %uint = OpTypeInt 32 0
+       %bool = OpTypeBool
+    %message = OpTypeStruct %uint %bool
+     %uint_1 = OpConstant %uint 1
+       %true = OpConstantTrue %bool
+  %message_1 = OpConstantComposite %message %uint_1 %true
+       %main = OpFunction %void None %void_func
+ %main_label = OpLabel
+               OpAbortKHR %message %message_1
+               OpFunctionEnd
+  )";
+  CompileSuccessfully(str.c_str());
+  EXPECT_NE(SPV_SUCCESS, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(), HasSubstr("must be a concrete type"));
+}
+
+TEST_F(ValidateSpvKHRAbort, MessageTypeOpaque) {
+  const std::string str = R"(
+               OpCapability Shader
+               OpCapability AbortKHR
+               OpExtension "SPV_KHR_abort"
+               OpMemoryModel Logical Simple
+               OpEntryPoint GLCompute %main "main" %tex
+               OpExecutionMode %main LocalSize 1 1 1
+               OpDecorate %tex DescriptorSet 0
+               OpDecorate %tex Binding 0
+       %void = OpTypeVoid
+  %void_func = OpTypeFunction %void
+      %float = OpTypeFloat 32
+        %img = OpTypeImage %float 2D 0 0 0 1 Unknown
+    %sampled = OpTypeSampledImage %img
+        %ptr = OpTypePointer UniformConstant %sampled
+        %tex = OpVariable %ptr UniformConstant
+       %main = OpFunction %void None %void_func
+ %main_label = OpLabel
+       %load = OpLoad %sampled %tex
+               OpAbortKHR %sampled %load
+               OpFunctionEnd
+  )";
+  CompileSuccessfully(str.c_str());
+  EXPECT_NE(SPV_SUCCESS, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(), HasSubstr("must be a concrete type"));
+}
+
+TEST_F(ValidateSpvKHRAbort, MessageTypeVectorOfBool) {
+  const std::string str = R"(
+               OpCapability Shader
+               OpCapability AbortKHR
+               OpExtension "SPV_KHR_abort"
+               OpMemoryModel Logical Simple
+               OpEntryPoint GLCompute %main "main"
+               OpExecutionMode %main LocalSize 1 1 1
+       %void = OpTypeVoid
+  %void_func = OpTypeFunction %void
+       %bool = OpTypeBool
+     %v2bool = OpTypeVector %bool 2
+       %true = OpConstantTrue %bool
+  %message_1 = OpConstantComposite %v2bool %true %true
+       %main = OpFunction %void None %void_func
+ %main_label = OpLabel
+               OpAbortKHR %v2bool %message_1
+               OpFunctionEnd
+  )";
+  CompileSuccessfully(str.c_str());
+  EXPECT_NE(SPV_SUCCESS, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Message Type operand '5[%v2bool]' must be a concrete "
+                        "type"));
+}
+
+TEST_F(ValidateSpvKHRAbort, MessageTypeArrayOfBool) {
+  const std::string str = R"(
+               OpCapability Shader
+               OpCapability AbortKHR
+               OpExtension "SPV_KHR_abort"
+               OpMemoryModel Logical Simple
+               OpEntryPoint GLCompute %main "main"
+               OpExecutionMode %main LocalSize 1 1 1
+               OpDecorate %array ArrayStride 4
+       %void = OpTypeVoid
+  %void_func = OpTypeFunction %void
+       %uint = OpTypeInt 32 0
+     %uint_2 = OpConstant %uint 2
+       %bool = OpTypeBool
+      %array = OpTypeArray %bool %uint_2
+       %true = OpConstantTrue %bool
+  %message_1 = OpConstantComposite %array %true %true
+       %main = OpFunction %void None %void_func
+ %main_label = OpLabel
+               OpAbortKHR %array %message_1
+               OpFunctionEnd
+  )";
+  CompileSuccessfully(str.c_str());
+  EXPECT_NE(SPV_SUCCESS, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(), HasSubstr("must be a concrete type"));
+}
+
+TEST_F(ValidateSpvKHRAbort, MessageTypeNestedStructWithBool) {
+  const std::string str = R"(
+               OpCapability Shader
+               OpCapability AbortKHR
+               OpExtension "SPV_KHR_abort"
+               OpMemoryModel Logical Simple
+               OpEntryPoint GLCompute %main "main"
+               OpExecutionMode %main LocalSize 1 1 1
+               OpMemberDecorate %inner 0 Offset 0
+               OpDecorate %array ArrayStride 4
+               OpMemberDecorate %message 0 Offset 0
+       %void = OpTypeVoid
+  %void_func = OpTypeFunction %void
+       %uint = OpTypeInt 32 0
+     %uint_2 = OpConstant %uint 2
+       %bool = OpTypeBool
+      %inner = OpTypeStruct %bool
+      %array = OpTypeArray %inner %uint_2
+    %message = OpTypeStruct %array
+       %true = OpConstantTrue %bool
+    %inner_1 = OpConstantComposite %inner %true
+    %array_1 = OpConstantComposite %array %inner_1 %inner_1
+  %message_1 = OpConstantComposite %message %array_1
+       %main = OpFunction %void None %void_func
+ %main_label = OpLabel
+               OpAbortKHR %message %message_1
+               OpFunctionEnd
+  )";
+  CompileSuccessfully(str.c_str());
+  EXPECT_NE(SPV_SUCCESS, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(), HasSubstr("must be a concrete type"));
+}
+
+TEST_F(ValidateSpvKHRAbort, MessageTypeNestedStructConcrete) {
+  const std::string str = R"(
+               OpCapability Shader
+               OpCapability AbortKHR
+               OpExtension "SPV_KHR_abort"
+               OpMemoryModel Logical Simple
+               OpEntryPoint GLCompute %main "main"
+               OpExecutionMode %main LocalSize 1 1 1
+               OpMemberDecorate %inner 0 Offset 0
+               OpDecorate %array ArrayStride 16
+               OpMemberDecorate %message 0 Offset 0
+       %void = OpTypeVoid
+  %void_func = OpTypeFunction %void
+       %uint = OpTypeInt 32 0
+      %float = OpTypeFloat 32
+    %v4float = OpTypeVector %float 4
+     %uint_2 = OpConstant %uint 2
+      %inner = OpTypeStruct %v4float
+      %array = OpTypeArray %inner %uint_2
+    %message = OpTypeStruct %array
+    %float_1 = OpConstant %float 1
+  %v4float_1 = OpConstantComposite %v4float %float_1 %float_1 %float_1 %float_1
+    %inner_1 = OpConstantComposite %inner %v4float_1
+    %array_1 = OpConstantComposite %array %inner_1 %inner_1
+  %message_1 = OpConstantComposite %message %array_1
+       %main = OpFunction %void None %void_func
+ %main_label = OpLabel
+               OpAbortKHR %message %message_1
+               OpFunctionEnd
+  )";
+  CompileSuccessfully(str.c_str());
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+TEST_F(ValidateSpvKHRAbort, MessageTypeLogicalPointer) {
+  const std::string str = R"(
+               OpCapability Shader
+               OpCapability AbortKHR
+               OpExtension "SPV_KHR_abort"
+               OpMemoryModel Logical Simple
+               OpEntryPoint GLCompute %main "main"
+               OpExecutionMode %main LocalSize 1 1 1
+       %void = OpTypeVoid
+  %void_func = OpTypeFunction %void
+       %uint = OpTypeInt 32 0
+        %ptr = OpTypePointer Function %uint
+       %main = OpFunction %void None %void_func
+ %main_label = OpLabel
+  %message_1 = OpVariable %ptr Function
+               OpAbortKHR %ptr %message_1
+               OpFunctionEnd
+  )";
+  CompileSuccessfully(str.c_str());
+  EXPECT_NE(SPV_SUCCESS, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(), HasSubstr("must be a concrete type"));
+}
+
+TEST_F(ValidateSpvKHRAbort, MessageTypePhysicalAddressingPointer) {
+  const std::string str = R"(
+               OpCapability Addresses
+               OpCapability Kernel
+               OpCapability AbortKHR
+               OpExtension "SPV_KHR_abort"
+               OpMemoryModel Physical32 OpenCL
+               OpEntryPoint Kernel %main "main"
+       %void = OpTypeVoid
+  %void_func = OpTypeFunction %void
+       %uint = OpTypeInt 32 0
+        %ptr = OpTypePointer CrossWorkgroup %uint
+  %message_1 = OpConstantNull %ptr
+       %main = OpFunction %void None %void_func
+ %main_label = OpLabel
+               OpAbortKHR %ptr %message_1
+               OpFunctionEnd
+  )";
+  CompileSuccessfully(str.c_str());
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
 TEST_F(ValidateSpvKHRAbort, ConstantDataNonArray) {
@@ -683,6 +996,196 @@ TEST_F(ValidateSpvKHRAbort, ConstantDataLengthUnderUint64) {
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("contains 2 words of data, but needs to have 4 words "
                         "to match the array of 2 of 64-bit ints"));
+}
+
+TEST_F(ValidateSpvKHRAbort, ExplicitLayout) {
+  const std::string str = R"(
+               OpCapability Shader
+               OpCapability Int8
+               OpCapability AbortKHR
+               OpCapability ConstantDataKHR
+               OpExtension "SPV_KHR_abort"
+               OpExtension "SPV_KHR_constant_data"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %main "main"
+               OpExecutionMode %main LocalSize 1 1 1
+               OpMemberDecorate %abortMessageLoadType 0 Offset 0
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+       %char = OpTypeInt 8 1
+       %uint = OpTypeInt 32 0
+    %uint_12 = OpConstant %uint 12
+%_arr_char_uint_12 = OpTypeArray %char %uint_12
+%_arr_char_uint_12_0 = OpTypeArray %char %uint_12
+         %11 = OpConstantDataKHR %_arr_char_uint_12 1919902305 1870091380 0
+%abortMessageLoadType = OpTypeStruct %_arr_char_uint_12_0
+%abortMessage = OpTypeStruct %_arr_char_uint_12
+       %main = OpFunction %void None %3
+          %5 = OpLabel
+         %14 = OpCompositeConstruct %abortMessage %11
+               OpAbortKHR %abortMessageLoadType %14
+               OpFunctionEnd
+)";
+  CompileSuccessfully(str.c_str(), SPV_ENV_VULKAN_1_3);
+  EXPECT_NE(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_3));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Array must be explicitly laid out"));
+}
+
+TEST_F(ValidateSpvKHRAbort, ConstantDataArrayStride) {
+  const std::string str = R"(
+               OpCapability Shader
+               OpCapability ConstantDataKHR
+               OpExtension "SPV_KHR_constant_data"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %main "main"
+               OpExecutionMode %main LocalSize 1 1 1
+               OpDecorate %uint_array ArrayStride 4
+       %void = OpTypeVoid
+       %uint = OpTypeInt 32 0
+  %uint_size = OpConstant %uint 1
+ %uint_array = OpTypeArray %uint %uint_size
+       %data = OpConstantDataKHR %uint_array 1
+  %void_func = OpTypeFunction %void
+       %main = OpFunction %void None %void_func
+ %main_label = OpLabel
+               OpReturn
+               OpFunctionEnd
+)";
+  CompileSuccessfully(str.c_str());
+  EXPECT_NE(SPV_SUCCESS, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Result type must not be decorated with ArrayStride"));
+}
+
+TEST_F(ValidateSpvKHRAbort, SpecConstantDataArrayStride) {
+  const std::string str = R"(
+               OpCapability Shader
+               OpCapability ConstantDataKHR
+               OpExtension "SPV_KHR_constant_data"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %main "main"
+               OpExecutionMode %main LocalSize 1 1 1
+               OpDecorate %uint_array ArrayStride 4
+       %void = OpTypeVoid
+       %uint = OpTypeInt 32 0
+  %uint_size = OpConstant %uint 1
+ %uint_array = OpTypeArray %uint %uint_size
+       %data = OpSpecConstantDataKHR %uint_array 1
+  %void_func = OpTypeFunction %void
+       %main = OpFunction %void None %void_func
+ %main_label = OpLabel
+               OpReturn
+               OpFunctionEnd
+)";
+  CompileSuccessfully(str.c_str());
+  EXPECT_NE(SPV_SUCCESS, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Result type must not be decorated with ArrayStride"));
+}
+
+TEST_F(ValidateSpvKHRAbort, UTFEncodeGood) {
+  const std::string str = R"(
+               OpCapability Shader
+               OpCapability Int8
+               OpCapability ConstantDataKHR
+               OpExtension "SPV_KHR_constant_data"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %main "main"
+               OpExecutionMode %main LocalSize 1 1 1
+               OpDecorate %char_array UTFEncodedKHR
+       %void = OpTypeVoid
+       %uint = OpTypeInt 32 0
+       %char = OpTypeInt 8 0
+  %uint_size = OpConstant %uint 4
+ %char_array = OpTypeArray %char %uint_size
+       %data = OpConstantDataKHR %char_array 0x74736574
+  %void_func = OpTypeFunction %void
+       %main = OpFunction %void None %void_func
+ %main_label = OpLabel
+               OpReturn
+               OpFunctionEnd
+)";
+  CompileSuccessfully(str.c_str());
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+TEST_F(ValidateSpvKHRAbort, UTFEncodedNonArray) {
+  const std::string str = R"(
+               OpCapability Shader
+               OpCapability ConstantDataKHR
+               OpExtension "SPV_KHR_constant_data"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %main "main"
+               OpExecutionMode %main LocalSize 1 1 1
+               OpDecorate %struct UTFEncodedKHR
+       %void = OpTypeVoid
+       %uint = OpTypeInt 32 0
+     %struct = OpTypeStruct %uint
+  %void_func = OpTypeFunction %void
+       %main = OpFunction %void None %void_func
+ %main_label = OpLabel
+               OpReturn
+               OpFunctionEnd
+)";
+  CompileSuccessfully(str.c_str());
+  EXPECT_NE(SPV_SUCCESS, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("UTFEncodedKHR decoration on target <id> "
+                        "'2[%_struct_2]' must be an array type"));
+}
+
+TEST_F(ValidateSpvKHRAbort, UTFEncodedFloatElement) {
+  const std::string str = R"(
+               OpCapability Shader
+               OpCapability ConstantDataKHR
+               OpExtension "SPV_KHR_constant_data"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %main "main"
+               OpExecutionMode %main LocalSize 1 1 1
+               OpDecorate %float_array UTFEncodedKHR
+       %void = OpTypeVoid
+       %uint = OpTypeInt 32 0
+      %float = OpTypeFloat 32
+  %uint_size = OpConstant %uint 4
+%float_array = OpTypeArray %float %uint_size
+  %void_func = OpTypeFunction %void
+       %main = OpFunction %void None %void_func
+ %main_label = OpLabel
+               OpReturn
+               OpFunctionEnd
+)";
+  CompileSuccessfully(str.c_str());
+  EXPECT_NE(SPV_SUCCESS, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("must be an array of scalar integer type"));
+}
+
+TEST_F(ValidateSpvKHRAbort, UTFEncodedWrongWidth) {
+  const std::string str = R"(
+               OpCapability Shader
+               OpCapability ConstantDataKHR
+               OpExtension "SPV_KHR_constant_data"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %main "main"
+               OpExecutionMode %main LocalSize 1 1 1
+               OpDecorate %uint_array UTFEncodedKHR
+       %void = OpTypeVoid
+       %uint = OpTypeInt 32 0
+  %uint_size = OpConstant %uint 4
+ %uint_array = OpTypeArray %uint %uint_size
+       %data = OpConstantDataKHR %uint_array 1 2 3 4
+  %void_func = OpTypeFunction %void
+       %main = OpFunction %void None %void_func
+ %main_label = OpLabel
+               OpReturn
+               OpFunctionEnd
+)";
+  CompileSuccessfully(str.c_str());
+  EXPECT_NE(SPV_SUCCESS, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("must have elements with a Width of 8, but the element "
+                        "type has a Width of 32"));
 }
 
 }  // namespace

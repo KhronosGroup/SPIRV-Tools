@@ -50,9 +50,10 @@ spv_result_t ValidateConstantOperand(ValidationState_t& _,
   const bool is_constant = spvOpcodeIsConstantOrUndef(operand_opcode);
   const bool is_spec_constant = spvOpcodeIsSpecConstant(operand_opcode);
   if (!is_constant) {
-    // All operands must be constant or undef.
+    // All operands must be constant, undef, or poison.
     return _.diag(SPV_ERROR_INVALID_ID, inst)
-           << opcode_name << " must only have constant or undef operands: <id> "
+           << opcode_name
+           << " must only have constant, undef, or poison operands: <id> "
            << _.getIdName(operand_id);
   } else if (!inst_is_spec_constant && is_spec_constant) {
     // Spec constants are only allowed for spec constant opcodes.
@@ -632,6 +633,10 @@ spv_result_t ValidateSpecConstantOp(ValidationState_t& _,
     case spv::Op::OpInBoundsAccessChain:
     case spv::Op::OpPtrAccessChain:
     case spv::Op::OpInBoundsPtrAccessChain:
+    case spv::Op::OpUntypedAccessChainKHR:
+    case spv::Op::OpUntypedInBoundsAccessChainKHR:
+    case spv::Op::OpUntypedPtrAccessChainKHR:
+    case spv::Op::OpUntypedInBoundsPtrAccessChainKHR:
       if (!_.HasCapability(spv::Capability::Kernel)) {
         return _.diag(SPV_ERROR_INVALID_ID, inst)
                << "Specialization constant operation " << spvOpcodeString(op)
@@ -708,6 +713,13 @@ spv_result_t ValidateConstantData(ValidationState_t& _,
            << "Result type must be an array of integer scalar type.";
   }
 
+  // The Data literals are tightly packed, so an explicit layout stride on the
+  // result type would contradict how the constant is encoded.
+  if (_.HasDecoration(array_inst->id(), spv::Decoration::ArrayStride)) {
+    return _.diag(SPV_ERROR_INVALID_ID, inst)
+           << "Result type must not be decorated with ArrayStride.";
+  }
+
   const uint32_t int_width = element_type_inst->word(2);
   const uint32_t data_words = static_cast<uint32_t>(inst->words().size() - 3);
 
@@ -775,6 +787,7 @@ spv_result_t ConstantPass(ValidationState_t& _, const Instruction* inst) {
         return error;
       break;
     case spv::Op::OpConstantDataKHR:
+    case spv::Op::OpSpecConstantDataKHR:
       if (auto error = ValidateConstantData(_, inst)) return error;
       break;
     default:

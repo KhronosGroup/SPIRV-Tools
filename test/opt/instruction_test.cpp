@@ -315,6 +315,46 @@ TEST(InstructionTest, LessThanOperator) {
   EXPECT_TRUE(i2 < *clone);
 }
 
+TEST(InstructionTest, TooBigInstruction_64k_ReleaseBuild) {
+  IRContext context(SPV_ENV_UNIVERSAL_1_0, nullptr);
+#ifdef NDEBUG
+  // Add 65535 operands, so the instruction word count is 65536.
+  const uint32_t num_operand_words = 65535;
+  Instruction::OperandList operands;
+  operands.reserve(num_operand_words);
+  for (uint32_t i = 0; i < num_operand_words; i++) {
+    operands.push_back(Operand(SPV_OPERAND_TYPE_LITERAL_INTEGER, {i}));
+  }
+  Instruction inst(&context, spv::Op::OpNop, 0, 0, operands);
+  inst.SetInOperands(std::move(operands));
+
+  std::vector<uint32_t> binary;
+  inst.ToBinaryWithoutAttachedDebugInsts(&binary);
+  EXPECT_THAT(binary,
+              Eq(std::vector<uint32_t>{static_cast<uint32_t>(spv::Op::OpNop)}));
+#endif
+}
+
+TEST(InstructionTest, TooBigInstruction_64kPlus1_ReleaseBuild) {
+  IRContext context(SPV_ENV_UNIVERSAL_1_0, nullptr);
+#ifdef NDEBUG
+  // Add 65536 operands, so the instruction word count is 65537.
+  const uint32_t num_operand_words = 65536;
+  Instruction::OperandList operands;
+  operands.reserve(num_operand_words);
+  for (uint32_t i = 0; i < num_operand_words; i++) {
+    operands.push_back(Operand(SPV_OPERAND_TYPE_LITERAL_INTEGER, {i}));
+  }
+  Instruction inst(&context, spv::Op::OpNop, 0, 0, {});
+  inst.SetInOperands(std::move(operands));
+
+  std::vector<uint32_t> binary;
+  inst.ToBinaryWithoutAttachedDebugInsts(&binary);
+  EXPECT_THAT(binary,
+              Eq(std::vector<uint32_t>{static_cast<uint32_t>(spv::Op::OpNop)}));
+#endif
+}
+
 TEST_F(DescriptorTypeTest, StorageImage) {
   const std::string text = R"(
                OpCapability Shader

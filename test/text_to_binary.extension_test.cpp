@@ -1600,6 +1600,53 @@ INSTANTIATE_TEST_SUITE_P(
                  MakeInstruction(spv::Op::OpGraphSetOutputARM, {1, 2, 3})},
             })));
 
+// SPV_EXT_ocp_microscaling_types
+INSTANTIATE_TEST_SUITE_P(
+    SPV_EXT_ocp_microscaling_types, ExtensionRoundTripTest,
+    Combine(
+        Values(SPV_ENV_UNIVERSAL_1_0, SPV_ENV_UNIVERSAL_1_6, SPV_ENV_VULKAN_1_0,
+               SPV_ENV_VULKAN_1_1, SPV_ENV_VULKAN_1_2, SPV_ENV_VULKAN_1_3,
+               SPV_ENV_OPENCL_2_1),
+        ValuesIn(std::vector<AssemblyCase>{
+            {"OpExtension \"SPV_EXT_ocp_microscaling_types\"\n",
+             MakeInstruction(spv::Op::OpExtension,
+                             MakeVector("SPV_EXT_ocp_microscaling_types"))},
+            {"OpCapability Float6EXT\n",
+             MakeInstruction(spv::Op::OpCapability,
+                             {(uint32_t)spv::Capability::Float6EXT})},
+            {"OpCapability Float4EXT\n",
+             MakeInstruction(spv::Op::OpCapability,
+                             {(uint32_t)spv::Capability::Float4EXT})},
+            {"OpCapability Float8UnsignedE8M0EXT\n",
+             MakeInstruction(
+                 spv::Op::OpCapability,
+                 {(uint32_t)spv::Capability::Float8UnsignedE8M0EXT})},
+            {"OpCapability MXInt8EXT\n",
+             MakeInstruction(spv::Op::OpCapability,
+                             {(uint32_t)spv::Capability::MXInt8EXT})},
+            {"OpCapability BitcastExtractEXT\n",
+             MakeInstruction(spv::Op::OpCapability,
+                             {(uint32_t)spv::Capability::BitcastExtractEXT})},
+            {"%1 = OpTypeFloat 6 Float6E2M3EXT\n",
+             MakeInstruction(spv::Op::OpTypeFloat,
+                             {1, 6, (uint32_t)spv::FPEncoding::Float6E2M3EXT})},
+            {"%1 = OpTypeFloat 6 Float6E3M2EXT\n",
+             MakeInstruction(spv::Op::OpTypeFloat,
+                             {1, 6, (uint32_t)spv::FPEncoding::Float6E3M2EXT})},
+            {"%1 = OpTypeFloat 4 Float4E2M1EXT\n",
+             MakeInstruction(spv::Op::OpTypeFloat,
+                             {1, 4, (uint32_t)spv::FPEncoding::Float4E2M1EXT})},
+            {"%1 = OpTypeFloat 8 Float8UnsignedE8M0EXT\n",
+             MakeInstruction(
+                 spv::Op::OpTypeFloat,
+                 {1, 8, (uint32_t)spv::FPEncoding::Float8UnsignedE8M0EXT})},
+            {"%1 = OpTypeFloat 8 MXInt8EXT\n",
+             MakeInstruction(spv::Op::OpTypeFloat,
+                             {1, 8, (uint32_t)spv::FPEncoding::MXInt8EXT})},
+            {"%2 = OpBitcastExtractEXT %1 %3 %4\n",
+             MakeInstruction(spv::Op::OpBitcastExtractEXT, {1, 2, 3, 4})},
+        })));
+
 // SPV_KHR_abort
 INSTANTIATE_TEST_SUITE_P(
     SPV_KHR_abort, ExtensionRoundTripTest,
@@ -1679,6 +1726,32 @@ TEST_F(TextToBinaryTest, ConstantDataNonUTF) {
   spvBinaryDestroy(binary);
   spvContextDestroy(context);
 }
+
+// SPV_QCOM_image_processing3
+INSTANTIATE_TEST_SUITE_P(
+    SPV_QCOM_image_processing3, ExtensionRoundTripTest,
+    Combine(
+        Values(SPV_ENV_UNIVERSAL_1_4, SPV_ENV_UNIVERSAL_1_6, SPV_ENV_VULKAN_1_1,
+               SPV_ENV_VULKAN_1_4),
+        ValuesIn(std::vector<AssemblyCase>{
+            {"OpExtension \"SPV_QCOM_image_processing3\"\n",
+             MakeInstruction(spv::Op::OpExtension,
+                             MakeVector("SPV_QCOM_image_processing3"))},
+            {"OpCapability ImageGatherLinearQCOM\n",
+             MakeInstruction(
+                 spv::Op::OpCapability,
+                 {(uint32_t)spv::Capability::ImageGatherLinearQCOM})},
+            {"OpCapability ImageGatherExtendedModesQCOM\n",
+             MakeInstruction(
+                 spv::Op::OpCapability,
+                 {(uint32_t)spv::Capability::ImageGatherExtendedModesQCOM})},
+            {"%2 = OpImageGatherQCOM %1 %3 %4 %5 %6\n",
+             MakeInstruction(spv::Op::OpImageGatherQCOM, {1, 2, 3, 4, 5, 6})},
+            // Prove that we parse image operands afterward
+            {"%2 = OpImageGatherQCOM %1 %3 %4 %5 %6 Lod %7\n",
+             MakeInstruction(spv::Op::OpImageGatherQCOM,
+                             {1, 2, 3, 4, 5, 6, 2, 7})},
+        })));
 
 }  // namespace
 }  // namespace spvtools

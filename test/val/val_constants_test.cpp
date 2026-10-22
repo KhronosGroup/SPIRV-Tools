@@ -655,7 +655,7 @@ TEST_F(ValidateConstant, ConstantCompositeReplicateNotConstant) {
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("OpConstantCompositeReplicateEXT must only have "
-                        "constant or undef operands: <id>"));
+                        "constant, undef, or poison operands: <id>"));
 }
 
 TEST_F(ValidateConstant, ConstantCompositeSpecOperand) {
@@ -697,9 +697,44 @@ TEST_F(ValidateConstant, ConstantCompositeNotConstant) {
 )";
   CompileSuccessfully(spirv);
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("OpConstantComposite must only have constant or undef "
-                        "operands: <id>"));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("OpConstantComposite must only have constant, undef, or "
+                "poison operands: <id>"));
+}
+
+TEST_F(ValidateConstant, ConstantCompositePoisonConstituentGood) {
+  std::string spirv =
+      std::string(
+          "OpCapability Shader\nOpCapability Linkage\nOpCapability "
+          "PoisonFreezeKHR\nOpExtension \"SPV_KHR_poison_freeze\"\n"
+          "OpMemoryModel Logical Simple\n") +
+      R"(
+%int = OpTypeInt 32 1
+%int_4 = OpConstant %int 4
+%arr = OpTypeArray %int %int_4
+%poison = OpPoisonKHR %int
+%const_arr = OpConstantComposite %arr %poison %poison %poison %poison
+)";
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+TEST_F(ValidateConstant, SpecConstantCompositePoisonConstituentGood) {
+  std::string spirv =
+      std::string(
+          "OpCapability Shader\nOpCapability Linkage\nOpCapability "
+          "PoisonFreezeKHR\nOpExtension \"SPV_KHR_poison_freeze\"\n"
+          "OpMemoryModel Logical Simple\n") +
+      R"(
+%int = OpTypeInt 32 1
+%int_4 = OpConstant %int 4
+%arr = OpTypeArray %int %int_4
+%poison = OpPoisonKHR %int
+%const_arr = OpSpecConstantComposite %arr %poison %poison %poison %poison
+)";
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
 TEST_F(ValidateConstant, ConstantCompositeReplicateNotComposite) {
@@ -770,6 +805,55 @@ OpMemoryModel Logical VulkanKHR
   ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_UNIVERSAL_1_4));
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("must be OpTypeCooperativeMatrixKHR"));
+}
+
+TEST_F(ValidateConstant, UntypedAccessChainSpecConstantOpGood) {
+  std::string spirv = R"(
+OpCapability Addresses
+OpCapability Kernel
+OpCapability Linkage
+OpCapability UntypedPointersKHR
+OpExtension "SPV_KHR_untyped_pointers"
+OpMemoryModel Physical32 OpenCL
+%uint = OpTypeInt 32 0
+%uint_0 = OpConstant %uint 0
+%uint_4 = OpConstant %uint 4
+%arr = OpTypeArray %uint %uint_4
+%ptr = OpTypeUntypedPointerKHR CrossWorkgroup
+%var = OpUntypedVariableKHR %ptr CrossWorkgroup %arr
+%ac = OpSpecConstantOp %ptr UntypedAccessChainKHR %arr %var %uint_0
+%iac = OpSpecConstantOp %ptr UntypedInBoundsAccessChainKHR %arr %var %uint_0
+%pac = OpSpecConstantOp %ptr UntypedPtrAccessChainKHR %arr %var %uint_0
+%ipac = OpSpecConstantOp %ptr UntypedInBoundsPtrAccessChainKHR %arr %var %uint_0
+)";
+
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(), Eq(""));
+}
+
+TEST_F(ValidateConstant, UntypedAccessChainSpecConstantOpRequiresKernel) {
+  std::string spirv = R"(
+OpCapability Shader
+OpCapability Linkage
+OpCapability UntypedPointersKHR
+OpExtension "SPV_KHR_untyped_pointers"
+OpMemoryModel Logical GLSL450
+%uint = OpTypeInt 32 0
+%uint_0 = OpConstant %uint 0
+%uint_4 = OpConstant %uint 4
+%arr = OpTypeArray %uint %uint_4
+%ptr = OpTypeUntypedPointerKHR Workgroup
+%var = OpUntypedVariableKHR %ptr Workgroup %arr
+%ac = OpSpecConstantOp %ptr UntypedInBoundsPtrAccessChainKHR %arr %var %uint_0
+)";
+
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Specialization constant operation "
+                        "UntypedInBoundsPtrAccessChainKHR requires Kernel "
+                        "capability"));
 }
 
 // Some check use SPV_ERROR_INVALID_DATA vs SPV_ERROR_INVALID_ID

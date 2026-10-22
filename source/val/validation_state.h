@@ -713,6 +713,11 @@ class ValidationState_t {
   bool IsFP8VectorType(uint32_t id) const;
   bool IsFP8CoopMatType(uint32_t id) const;
   bool IsFP8Type(uint32_t id) const;
+  bool IsOCPMicroscalingScalarType(uint32_t id) const;
+  bool IsOCPMicroscalingNonByteScalarType(uint32_t id) const;
+  bool IsOCPMicroscalingType(uint32_t id) const;
+  bool ContainsOCPMicroscalingType(uint32_t id) const;
+  bool ContainsOCPMicroscalingNonByteType(uint32_t id) const;
   bool IsFloatScalarType(uint32_t id, uint32_t width = 0) const;
   bool IsFloatArrayType(uint32_t id) const;
   bool IsFloatVectorType(uint32_t id) const;
@@ -722,6 +727,7 @@ class ValidationState_t {
   bool IsIntScalarType(uint32_t id, uint32_t width = 0) const;
   bool IsIntScalarTypeWithSignedness(uint32_t id, uint32_t signedness) const;
   bool IsIntVectorType(uint32_t id) const;
+  bool IsIntVectorType(uint32_t id, uint32_t width, uint32_t components) const;
   bool IsIntScalarOrVectorType(uint32_t id) const;
   bool IsUnsignedIntScalarType(uint32_t id) const;
   bool IsUnsignedIntVectorType(uint32_t id) const;
@@ -932,6 +938,23 @@ class ValidationState_t {
     return SpvDecorationString(uint32_t(decoration));
   }
 
+  bool CheckForceOpacityMicromap2StateKHRCapabilityRequirement(
+      const Instruction* inst, uint32_t flag_operand) {
+    bool retval = true;
+    uint64_t flag_val = 0;
+    if (EvalConstantValUint64(inst->GetOperandAs<uint32_t>(flag_operand),
+                              &flag_val)) {
+      if ((flag_val & static_cast<uint64_t>(
+                          spv::RayFlagsMask::ForceOpacityMicromap2StateKHR)) !=
+          0) {
+        assert(HasCapability(spv::Capability::RayQueryKHR) ||
+               HasCapability(spv::Capability::RayTracingKHR));
+        retval = HasCapability(spv::Capability::RayTracingOpacityMicromapKHR);
+      }
+    }
+    return retval;
+  }
+
   // Returns whether type result_type_id and type m2 are cooperative matrices
   // with the same "shape" (matching scope, rows, cols). If any are
   // specialization constants, we assume they can match because we can't prove
@@ -939,7 +962,7 @@ class ValidationState_t {
   spv_result_t CooperativeMatrixShapesMatch(const Instruction* inst,
                                             uint32_t result_type_id,
                                             uint32_t m2, bool is_conversion,
-                                            bool swap_row_col = false);
+                                            bool swap_row_col);
 
   spv_result_t CooperativeVectorDimensionsMatch(const Instruction* inst,
                                                 uint32_t v1, uint32_t v2);
@@ -1214,8 +1237,14 @@ class ValidationState_t {
                                   const Instruction& inst);
   void InspectDebugLocalVariable(std::ostringstream& ss, const Function& func,
                                  const Instruction& inst);
+  void InspectFunctionCall(std::ostringstream& ss,
+                           const Instruction& function_call_inst);
+  void InspectLineAndFunctionDefinition(std::ostringstream& ss,
+                                        const Function& func,
+                                        const Instruction& inst);
+  void InspectEntryPoint(std::ostringstream& ss, const Instruction& inst);
   void InspectDebugFunctionDefinition(std::ostringstream& ss,
-                                      const Instruction& function_call_inst);
+                                      const Instruction& function_inst);
   void PrintShaderDebugInfoSource(std::ostringstream& ss,
                                   const Instruction& debug_source,
                                   const DebugSourceInfo& source_info);
