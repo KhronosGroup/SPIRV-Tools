@@ -2520,13 +2520,16 @@ void ConstantFoldingRules::AddFoldingRules() {
           if (value == 0) return 0;
           return static_cast<uint64_t>(value < 0 ? int64_t(-1) : int64_t(1));
         })));
-    constexpr double kPI = 3.141592653589793;
     ext_rules_[{ext_inst_glslstd450_id, GLSLstd450Radians}].push_back(
-        FoldFPUnaryOp(FoldUnaryFloatingPointOperation(
-            [](double v) -> double { return v * kPI / 180.0; })));
+        FoldFPUnaryOp(FoldUnaryFloatingPointOperation([](double v) -> double {
+          constexpr double kPI = 3.141592653589793;
+          return v * kPI / 180.0;
+        })));
     ext_rules_[{ext_inst_glslstd450_id, GLSLstd450Degrees}].push_back(
-        FoldFPUnaryOp(FoldUnaryFloatingPointOperation(
-            [](double v) -> double { return v * 180.0 / kPI; })));
+        FoldFPUnaryOp(FoldUnaryFloatingPointOperation([](double v) -> double {
+          constexpr double kPI = 3.141592653589793;
+          return v * 180.0 / kPI;
+        })));
     ext_rules_[{ext_inst_glslstd450_id, GLSLstd450Step}].push_back(
         FoldFPBinaryOp(FoldBinaryFloatingPointOperation(
             [](double edge, double x) -> double {
