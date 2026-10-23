@@ -1935,7 +1935,7 @@ spv_result_t ValidateCopyMemory(ValidationState_t& _, const Instruction* inst) {
                    << _.VkErrorID(11165)
                    << "Size must be a multiple of 4. This is valid if Source ("
                    << spv::StorageClassToString(source_sc) << ") and Target ("
-                   << spv::StorageClassToString(source_sc)
+                   << spv::StorageClassToString(target_sc)
                    << ") storage classes both support either 8-bit or 16-bit";
           }
           if (value % 2 != 0) {
@@ -1945,7 +1945,7 @@ spv_result_t ValidateCopyMemory(ValidationState_t& _, const Instruction* inst) {
                      << "Size must be a multiple of 2. This is valid if Source "
                         "("
                      << spv::StorageClassToString(source_sc) << ") and Target ("
-                     << spv::StorageClassToString(source_sc)
+                     << spv::StorageClassToString(target_sc)
                      << ") storage classes both support 8-bit";
             }
           }
