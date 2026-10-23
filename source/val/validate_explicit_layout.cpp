@@ -1142,6 +1142,20 @@ struct Impl {
       }
 
       if (reference.requirement == LayoutRequirement::kRequired) {
+        // OpTypeBool has no physical size or bit pattern, so it cannot be
+        // used with memory that is required to be explicitly laid out.
+        if (vstate.ContainsType(
+                reference.type_id,
+                [](const Instruction* type_inst) {
+                  return type_inst->opcode() == spv::Op::OpTypeBool;
+                },
+                /* traverse_all_types = */ false)) {
+          return vstate.diag(SPV_ERROR_INVALID_ID, &inst)
+                 << "Type " << vstate.getIdName(reference.type_id)
+                 << " contains an OpTypeBool, which must not be used in the "
+                 << spvtools::StorageClassToString(reference.storage_class)
+                 << " storage class because it requires an explicit layout";
+        }
         if (auto error =
                 CheckLayout(&inst, reference.type_id, reference.storage_class,
                             reference.layout, 0, {})) {
