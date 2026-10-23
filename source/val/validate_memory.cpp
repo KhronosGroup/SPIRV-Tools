@@ -904,7 +904,7 @@ spv_result_t ValidateVariableVulkanLongVector(ValidationState_t& _,
              << _.VkErrorID(12297)
              << "Long vector types with more than 4 components (or types "
                 "containing them) not supported in storage class "
-             << StorageClassToString(storage_class);
+             << spv::StorageClassToString(storage_class);
     }
 
     if ((storage_class == spv::StorageClass::StorageBuffer ||
@@ -927,7 +927,7 @@ spv_result_t ValidateVariableVulkanLongVector(ValidationState_t& _,
              << _.VkErrorID(12294)
              << "Long vector types with spec constant component count "
                 "not supported in storage class with explicit layout "
-             << StorageClassToString(storage_class);
+             << spv::StorageClassToString(storage_class);
     }
   } else {
     if ((storage_class != spv::StorageClass::Function &&
@@ -1264,7 +1264,7 @@ spv_result_t ValidateVariable(ValidationState_t& _, const Instruction* inst) {
         if (storage_class != spv::StorageClass::UniformConstant) {
           return _.diag(SPV_ERROR_INVALID_ID, inst)
                  << _.VkErrorID(11167) << "Storage class is "
-                 << StorageClassToString(storage_class)
+                 << spv::StorageClassToString(storage_class)
                  << ", but Vulkan requires that Data Type be specified when "
                     "not using UniformConstant storage class";
         } else if (!(_.IsDescriptorHeapBaseVariable(inst))) {
@@ -1934,8 +1934,8 @@ spv_result_t ValidateCopyMemory(ValidationState_t& _, const Instruction* inst) {
             return _.diag(SPV_ERROR_INVALID_ID, inst)
                    << _.VkErrorID(11165)
                    << "Size must be a multiple of 4. This is valid if Source ("
-                   << StorageClassToString(source_sc) << ") and Target ("
-                   << StorageClassToString(source_sc)
+                   << spv::StorageClassToString(source_sc) << ") and Target ("
+                   << spv::StorageClassToString(source_sc)
                    << ") storage classes both support either 8-bit or 16-bit";
           }
           if (value % 2 != 0) {
@@ -1944,8 +1944,8 @@ spv_result_t ValidateCopyMemory(ValidationState_t& _, const Instruction* inst) {
                      << _.VkErrorID(11165)
                      << "Size must be a multiple of 2. This is valid if Source "
                         "("
-                     << StorageClassToString(source_sc) << ") and Target ("
-                     << StorageClassToString(source_sc)
+                     << spv::StorageClassToString(source_sc) << ") and Target ("
+                     << spv::StorageClassToString(source_sc)
                      << ") storage classes both support 8-bit";
             }
           }

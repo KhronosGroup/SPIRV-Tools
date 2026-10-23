@@ -28,48 +28,6 @@ namespace spvtools {
 namespace val {
 namespace {
 
-// TODO - Make a common util if someone else needs it too outside this file
-const char* ExecutionModelToString(spv::ExecutionModel value) {
-  switch (value) {
-    case spv::ExecutionModel::Vertex:
-      return "Vertex";
-    case spv::ExecutionModel::TessellationControl:
-      return "TessellationControl";
-    case spv::ExecutionModel::TessellationEvaluation:
-      return "TessellationEvaluation";
-    case spv::ExecutionModel::Geometry:
-      return "Geometry";
-    case spv::ExecutionModel::Fragment:
-      return "Fragment";
-    case spv::ExecutionModel::GLCompute:
-      return "GLCompute";
-    case spv::ExecutionModel::Kernel:
-      return "Kernel";
-    case spv::ExecutionModel::TaskNV:
-      return "TaskNV";
-    case spv::ExecutionModel::MeshNV:
-      return "MeshNV";
-    case spv::ExecutionModel::RayGenerationKHR:
-      return "RayGenerationKHR";
-    case spv::ExecutionModel::IntersectionKHR:
-      return "IntersectionKHR";
-    case spv::ExecutionModel::AnyHitKHR:
-      return "AnyHitKHR";
-    case spv::ExecutionModel::ClosestHitKHR:
-      return "ClosestHitKHR";
-    case spv::ExecutionModel::MissKHR:
-      return "MissKHR";
-    case spv::ExecutionModel::CallableKHR:
-      return "CallableKHR";
-    case spv::ExecutionModel::TaskEXT:
-      return "TaskEXT";
-    case spv::ExecutionModel::MeshEXT:
-      return "MeshEXT";
-    default:
-      return "Unknown";
-  }
-}
-
 spv_result_t ValidateEntryPoint(ValidationState_t& _, const Instruction* inst) {
   const auto entry_point_id = inst->GetOperandAs<uint32_t>(1);
   auto entry_point = _.FindDef(entry_point_id);
@@ -418,7 +376,7 @@ spv_result_t ValidateEntryPoint(ValidationState_t& _, const Instruction* inst) {
             !has_mode(spv::ExecutionMode::TileShadingRateQCOM)) {
           return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << _.VkErrorID(10685) << "In the Vulkan environment, "
-                 << ExecutionModelToString(execution_model)
+                 << spv::ExecutionModelToString(execution_model)
                  << " execution model "
                     "entry points require either the "
                  << (_.HasCapability(spv::Capability::TileShadingQCOM)
@@ -1118,16 +1076,6 @@ spv_result_t ValidateDuplicateExecutionModes(ValidationState_t& _) {
   std::set<PerEntryKey> seen_per_entry;
   std::set<PerOperandKey> seen_per_operand;
 
-  const auto lookupMode = [](spv::ExecutionMode mode) -> std::string {
-    const spvtools::OperandDesc* desc = nullptr;
-    if (spvtools::LookupOperand(SPV_OPERAND_TYPE_EXECUTION_MODE,
-                                static_cast<uint32_t>(mode),
-                                &desc) == SPV_SUCCESS) {
-      return std::string(desc->name().data());
-    }
-    return "Unknown";
-  };
-
   for (const auto& inst : _.ordered_instructions()) {
     if (inst.opcode() != spv::Op::OpExecutionMode &&
         inst.opcode() != spv::Op::OpExecutionModeId) {
@@ -1139,7 +1087,7 @@ spv_result_t ValidateDuplicateExecutionModes(ValidationState_t& _) {
     if (PerEntryExecutionMode(mode)) {
       if (!seen_per_entry.insert(std::make_tuple(mode, entry)).second) {
         return _.diag(SPV_ERROR_INVALID_ID, &inst)
-               << lookupMode(mode)
+               << spv::ExecutionModeToString(mode)
                << " execution mode must not be specified multiple times per "
                   "entry point";
       }
@@ -1149,7 +1097,7 @@ spv_result_t ValidateDuplicateExecutionModes(ValidationState_t& _) {
       if (!seen_per_operand.insert(std::make_tuple(mode, entry, operand))
                .second) {
         return _.diag(SPV_ERROR_INVALID_ID, &inst)
-               << lookupMode(mode)
+               << spv::ExecutionModeToString(mode)
                << " execution mode must not be specified multiple times for "
                   "the same entry point and operands";
       }
