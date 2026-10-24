@@ -118,6 +118,11 @@ class InstructionFolder {
   //    up.
   bool FoldInstruction(Instruction* inst) const;
 
+  // Returns true if the module can declare a constant of type |type_id|. With
+  // only the 8- or 16-bit storage capabilities, constants of those types are
+  // not allowed.
+  bool CanDeclareConstantOfType(uint32_t type_id) const;
+
   // Return true if this opcode has a const folding rule associtated with it.
   bool HasConstFoldingRule(const Instruction* inst) const {
     return GetConstantFoldingRules().HasFoldingRule(inst);

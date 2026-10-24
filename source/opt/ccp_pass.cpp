@@ -153,6 +153,13 @@ SSAPropagator::PropStatus CCPPass::VisitAssignment(Instruction* instr) {
     return MarkInstructionVarying(instr);
   }
 
+  // A constant of the result type may not be allowed in this module, e.g. an
+  // 8-bit integer with only StorageBuffer8BitAccess.
+  if (!context()->get_instruction_folder().CanDeclareConstantOfType(
+          instr->type_id())) {
+    return MarkInstructionVarying(instr);
+  }
+
   // See if the RHS of the assignment folds into a constant value.
   auto map_func = [this](uint32_t id) {
     auto it = values_.find(id);
