@@ -398,7 +398,7 @@ struct Impl {
                  << vstate.VkErrorID(10684)
                  << "Invalid explicit layout decorations on type "
                  << vstate.getIdName(type_id) << ", the "
-                 << spvtools::StorageClassToString(sc)
+                 << spv::StorageClassToString(sc)
                  << " storage class has an explicit layout from the "
                  << vstate.SpvDecorationString(dec) << " decoration";
         }
@@ -790,7 +790,7 @@ struct Impl {
     str << " Instantiated via " << vstate.getIdName(inst->id());
     // OpAbortKHR is an example where there is not storage class
     if (storage_class != spv::StorageClass::Max) {
-      str << " in the " << spvtools::StorageClassToString(storage_class)
+      str << " in the " << spv::StorageClassToString(storage_class)
           << " storage class";
     }
     str << " using " << mode << " layout rules.";
@@ -1119,7 +1119,7 @@ struct Impl {
                  << vstate.VkErrorID(10684)
                  << "Invalid explicit layout decorations on type "
                  << vstate.getIdName(reference.descriptor_array_id) << ", the "
-                 << spvtools::StorageClassToString(reference.storage_class)
+                 << spv::StorageClassToString(reference.storage_class)
                  << " storage class has an explicit layout from the "
                  << vstate.SpvDecorationString(
                         array_stride ? spv::Decoration::ArrayStride

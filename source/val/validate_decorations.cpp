@@ -577,8 +577,8 @@ spv_result_t CheckDecorationsOfBuffers(ValidationState_t& vstate) {
           if (!entry_points.empty() &&
               !hasDecoration(var_id, spv::Decoration::Binding, vstate)) {
             return vstate.diag(SPV_ERROR_INVALID_ID, vstate.FindDef(var_id))
-                   << StorageClassToString(storageClass) << " id '" << var_id
-                   << "' is missing Binding decoration.\n"
+                   << spv::StorageClassToString(storageClass) << " id '"
+                   << var_id << "' is missing Binding decoration.\n"
                    << "From ARB_gl_spirv extension:\n"
                    << "Uniform and shader storage block variables must "
                    << "also be decorated with a *Binding*.";
