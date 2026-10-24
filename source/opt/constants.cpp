@@ -362,6 +362,11 @@ const Constant* ConstantManager::GetConstantFromInst(const Instruction* inst) {
         }
         component_count = outer_dim_cst->GetZeroExtendedValue();
       }
+      // Cooperative matrix types have no component count and no constant
+      // class. Do not turn an empty component list into a null constant.
+      if (component_count == 0) {
+        return nullptr;
+      }
       literal_words_or_ids.assign(static_cast<size_t>(component_count), value);
       break;
     }

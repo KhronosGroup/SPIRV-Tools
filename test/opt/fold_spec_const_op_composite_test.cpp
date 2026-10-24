@@ -700,6 +700,42 @@ TEST_F(FoldSpecConstantOpAndCompositePassBasicTest, UnfoldableOp) {
   SinglePassRunAndMatch<FoldSpecConstantOpAndCompositePass>(test, false);
 }
 
+TEST_F(FoldSpecConstantOpAndCompositePassBasicTest,
+       CooperativeMatrixReplicateOfUnfoldedSpecConstantOp) {
+  const std::string test = R"(
+               OpCapability Shader
+               OpCapability Float16
+               OpCapability VulkanMemoryModel
+               OpCapability CooperativeMatrixKHR
+               OpCapability ReplicatedCompositesEXT
+               OpExtension "SPV_KHR_cooperative_matrix"
+               OpExtension "SPV_KHR_vulkan_memory_model"
+               OpExtension "SPV_EXT_replicated_composites"
+               OpMemoryModel Logical Vulkan
+               OpEntryPoint GLCompute %main "main"
+               OpExecutionMode %main LocalSize 64 1 1
+       %void = OpTypeVoid
+       %func = OpTypeFunction %void
+       %uint = OpTypeInt 32 0
+      %float = OpTypeFloat 32
+       %half = OpTypeFloat 16
+     %uint_0 = OpConstant %uint 0
+     %uint_3 = OpConstant %uint 3
+    %uint_16 = OpConstant %uint 16
+    %coopmat = OpTypeCooperativeMatrixKHR %half %uint_3 %uint_16 %uint_16 %uint_0
+    %float_1 = OpConstant %float 1
+   %one_half = OpSpecConstantOp %half FConvert %float_1
+; CHECK: OpSpecConstantCompositeReplicateEXT
+        %mat = OpSpecConstantCompositeReplicateEXT %coopmat %one_half
+       %main = OpFunction %void None %func
+      %entry = OpLabel
+               OpReturn
+               OpFunctionEnd
+)";
+
+  SinglePassRunAndMatch<FoldSpecConstantOpAndCompositePass>(test, false);
+}
+
 // All types and some common constants that are potentially required in
 // FoldSpecConstantOpAndCompositeTest.
 std::vector<std::string> CommonTypesAndConstants() {
