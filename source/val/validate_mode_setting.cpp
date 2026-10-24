@@ -16,6 +16,7 @@
 // limitations under the License.
 //
 #include <algorithm>
+#include <string>
 
 #include "source/opcode.h"
 #include "source/spirv_target_env.h"
@@ -68,6 +69,16 @@ const char* ExecutionModelToString(spv::ExecutionModel value) {
     default:
       return "Unknown";
   }
+}
+
+std::string ExecutionModeToString(spv::ExecutionMode mode) {
+  const spvtools::OperandDesc* desc = nullptr;
+  if (spvtools::LookupOperand(SPV_OPERAND_TYPE_EXECUTION_MODE,
+                              static_cast<uint32_t>(mode),
+                              &desc) == SPV_SUCCESS) {
+    return std::string(desc->name().data());
+  }
+  return "Unknown";
 }
 
 spv_result_t ValidateEntryPoint(ValidationState_t& _, const Instruction* inst) {
@@ -1118,16 +1129,6 @@ spv_result_t ValidateDuplicateExecutionModes(ValidationState_t& _) {
   std::set<PerEntryKey> seen_per_entry;
   std::set<PerOperandKey> seen_per_operand;
 
-  const auto lookupMode = [](spv::ExecutionMode mode) -> std::string {
-    const spvtools::OperandDesc* desc = nullptr;
-    if (spvtools::LookupOperand(SPV_OPERAND_TYPE_EXECUTION_MODE,
-                                static_cast<uint32_t>(mode),
-                                &desc) == SPV_SUCCESS) {
-      return std::string(desc->name().data());
-    }
-    return "Unknown";
-  };
-
   for (const auto& inst : _.ordered_instructions()) {
     if (inst.opcode() != spv::Op::OpExecutionMode &&
         inst.opcode() != spv::Op::OpExecutionModeId) {
@@ -1139,7 +1140,7 @@ spv_result_t ValidateDuplicateExecutionModes(ValidationState_t& _) {
     if (PerEntryExecutionMode(mode)) {
       if (!seen_per_entry.insert(std::make_tuple(mode, entry)).second) {
         return _.diag(SPV_ERROR_INVALID_ID, &inst)
-               << lookupMode(mode)
+               << ExecutionModeToString(mode)
                << " execution mode must not be specified multiple times per "
                   "entry point";
       }
@@ -1149,7 +1150,7 @@ spv_result_t ValidateDuplicateExecutionModes(ValidationState_t& _) {
       if (!seen_per_operand.insert(std::make_tuple(mode, entry, operand))
                .second) {
         return _.diag(SPV_ERROR_INVALID_ID, &inst)
-               << lookupMode(mode)
+               << ExecutionModeToString(mode)
                << " execution mode must not be specified multiple times for "
                   "the same entry point and operands";
       }
