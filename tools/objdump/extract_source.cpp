@@ -21,6 +21,7 @@
 
 #include "source/latest_version_spirv_header.h"
 #include "source/opt/log.h"
+#include "source/util/string_utils.h"
 #include "spirv-tools/libspirv.hpp"
 #include "tools/util/cli_consumer.h"
 
@@ -28,38 +29,18 @@ namespace {
 
 constexpr auto kDefaultEnvironment = SPV_ENV_UNIVERSAL_1_6;
 
-// Extract a string literal from a given range.
-// Copies all the characters from `begin` to the first '\0' it encounters, while
+// Extract a string literal from a given range of SPIR-V words.
+// Copies all the characters up to the first '\0' it encounters, while
 // removing escape patterns.
-// Not finding a '\0' before reaching `end` fails the extraction.
-//
-// Returns `true` if the extraction succeeded.
-// `output` value is undefined if false is returned.
-spv_result_t ExtractStringLiteral(const spv_position_t& loc, const char* begin,
-                                  const char* end, std::string* output) {
-  size_t sourceLength = std::distance(begin, end);
-  std::string escapedString;
-  escapedString.resize(sourceLength);
-
-  size_t writeIndex = 0;
-  size_t readIndex = 0;
-  for (; readIndex < sourceLength; writeIndex++, readIndex++) {
-    const char read = begin[readIndex];
-    if (read == '\0') {
-      escapedString.resize(writeIndex);
-      output->append(escapedString);
-      return SPV_SUCCESS;
-    }
-
-    if (read == '\\') {
-      ++readIndex;
-    }
-    escapedString[writeIndex] = begin[readIndex];
+std::string ExtractAndUnescape(const uint32_t* words, size_t num_words) {
+  std::string raw = spvtools::utils::MakeString(words, num_words, false);
+  std::string result;
+  result.reserve(raw.size());
+  for (size_t i = 0; i < raw.size(); i++) {
+    if (raw[i] == '\\' && i + 1 < raw.size()) i++;
+    result += raw[i];
   }
-
-  spvtools::Error(spvtools::utils::CLIMessageConsumer, "", loc,
-                  "Missing NULL terminator for literal string.");
-  return SPV_ERROR_INVALID_BINARY;
+  return result;
 }
 
 spv_result_t extractOpString(const spv_position_t& loc,
@@ -74,11 +55,9 @@ spv_result_t extractOpString(const spv_position_t& loc,
   }
 
   const auto& operand = instruction.operands[1];
-  const char* stringBegin =
-      reinterpret_cast<const char*>(instruction.words + operand.offset);
-  const char* stringEnd = reinterpret_cast<const char*>(
-      instruction.words + operand.offset + operand.num_words);
-  return ExtractStringLiteral(loc, stringBegin, stringEnd, output);
+  *output =
+      ExtractAndUnescape(instruction.words + operand.offset, operand.num_words);
+  return SPV_SUCCESS;
 }
 
 spv_result_t extractOpSourceContinued(
@@ -94,11 +73,9 @@ spv_result_t extractOpSourceContinued(
   }
 
   const auto& operand = instruction.operands[0];
-  const char* stringBegin =
-      reinterpret_cast<const char*>(instruction.words + operand.offset);
-  const char* stringEnd = reinterpret_cast<const char*>(
-      instruction.words + operand.offset + operand.num_words);
-  return ExtractStringLiteral(loc, stringBegin, stringEnd, output);
+  output->append(ExtractAndUnescape(instruction.words + operand.offset,
+                                    operand.num_words));
+  return SPV_SUCCESS;
 }
 
 spv_result_t extractOpSource(const spv_position_t& loc,
@@ -124,11 +101,8 @@ spv_result_t extractOpSource(const spv_position_t& loc,
     return SPV_SUCCESS;
   }
 
-  const char* stringBegin =
-      reinterpret_cast<const char*>(instruction.words + 4);
-  const char* stringEnd =
-      reinterpret_cast<const char*>(instruction.words + instruction.num_words);
-  return ExtractStringLiteral(loc, stringBegin, stringEnd, code);
+  *code = ExtractAndUnescape(instruction.words + 4, instruction.num_words - 4);
+  return SPV_SUCCESS;
 }
 
 }  // namespace
