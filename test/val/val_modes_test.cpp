@@ -1467,6 +1467,66 @@ OpExecutionModeId %main SubgroupsPerWorkgroupId %int_1
                         "constant instructions."));
 }
 
+TEST_F(ValidateModeExecution, ExecModeIdSubgroupsPerWorkgroupIdBool) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpCapability SubgroupDispatch
+OpMemoryModel Logical GLSL450
+OpEntryPoint Vertex %main "main"
+OpExecutionModeId %main SubgroupsPerWorkgroupId %true
+%bool = OpTypeBool
+%true = OpConstantTrue %bool
+)" + kVoidFunction;
+
+  spv_target_env env = SPV_ENV_UNIVERSAL_1_3;
+  CompileSuccessfully(spirv, env);
+  EXPECT_THAT(SPV_ERROR_INVALID_DATA, ValidateInstructions(env));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("SubgroupsPerWorkgroupId's Extra Operands must be "
+                        "integer type scalars."));
+}
+
+TEST_F(ValidateModeExecution, ExecModeIdLocalSizeHintIdFloat) {
+  const std::string spirv = R"(
+OpCapability Kernel
+OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint Kernel %main "main"
+OpExecutionModeId %main LocalSizeHintId %int_1 %float_1 %int_1
+%int = OpTypeInt 32 0
+%int_1 = OpConstant %int 1
+%float = OpTypeFloat 32
+%float_1 = OpConstant %float 1
+)" + kVoidFunction;
+
+  spv_target_env env = SPV_ENV_UNIVERSAL_1_3;
+  CompileSuccessfully(spirv, env);
+  EXPECT_THAT(SPV_ERROR_INVALID_DATA, ValidateInstructions(env));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("LocalSizeHintId's Extra Operands must be integer "
+                        "type scalars."));
+}
+
+TEST_F(ValidateModeExecution, ExecModeIdLocalSizeIdVector) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %main "main"
+OpExecutionModeId %main LocalSizeId %int_1 %int_1 %v2int_1
+%int = OpTypeInt 32 0
+%int_1 = OpConstant %int 1
+%v2int = OpTypeVector %int 2
+%v2int_1 = OpConstantComposite %v2int %int_1 %int_1
+)" + kVoidFunction;
+
+  spv_target_env env = SPV_ENV_UNIVERSAL_1_3;
+  CompileSuccessfully(spirv, env);
+  EXPECT_THAT(SPV_ERROR_INVALID_DATA, ValidateInstructions(env));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("LocalSizeId's Extra Operands must be integer type "
+                        "scalars."));
+}
+
 TEST_F(ValidateModeExecution, ExecModeLocalSizeHintIdBad) {
   const std::string spirv = R"(
 OpCapability Kernel
@@ -1575,6 +1635,29 @@ OpExecutionModeId %main LocalSizeId %int_1 %int_1 %int_1
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("For OpExecutionModeId all Extra Operand ids must be "
                         "constant instructions."));
+}
+
+TEST_F(ValidateModeExecution, ExecModeOpacityMicromapIdBad) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpCapability RayQueryKHR
+OpCapability RayTracingOpacityMicromapExecutionModeKHR
+OpExtension "SPV_KHR_ray_query"
+OpExtension "SPV_KHR_opacity_micromap"
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %main "main"
+OpExecutionMode %main LocalSize 1 1 1
+OpExecutionMode %main OpacityMicromapIdKHR %true
+%bool = OpTypeBool
+%true = OpConstantTrue %bool
+)" + kVoidFunction;
+
+  spv_target_env env = SPV_ENV_UNIVERSAL_1_4;
+  CompileSuccessfully(spirv, env);
+  EXPECT_THAT(SPV_ERROR_INVALID_DATA, ValidateInstructions(env));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("OpExecutionMode is only valid when the Mode operand "
+                        "is an execution mode that takes no Extra Operands"));
 }
 
 using AllowMultipleExecutionModes = spvtest::ValidateBase<std::string>;
