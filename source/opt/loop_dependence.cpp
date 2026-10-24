@@ -1190,6 +1190,13 @@ Constraint* LoopDependenceAnalysis::IntersectConstraints(
     return constraint_0;
   }
 
+  // An empty constraint means independence, so the intersection stays empty.
+  if (constraint_0->AsDependenceEmpty()) {
+    return constraint_0;
+  } else if (constraint_1->AsDependenceEmpty()) {
+    return constraint_1;
+  }
+
   // Both constraints are distances. Either the same distance or independent.
   if (constraint_0->AsDependenceDistance() &&
       constraint_1->AsDependenceDistance()) {
