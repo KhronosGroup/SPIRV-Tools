@@ -571,6 +571,31 @@ bool Optimizer::RegisterPassFromFlag(const std::string& flag,
              pass_args.c_str());
       return false;
     }
+  } else if (pass_name == "convert-ubo-to-push-constant") {
+    if (pass_args.empty()) {
+      Error(
+          consumer(), nullptr, {},
+          "--convert-ubo-to-push-constant requires a variable or block name.");
+      return false;
+    }
+    RegisterPass(CreateConvertUBOToPushConstantPass(pass_args));
+  } else if (pass_name == "convert-ubo-to-push-constant-by-binding") {
+    uint32_t descriptor_set = 0, binding = 0;
+    const char* start = pass_args.data();
+    const char* end = start + pass_args.size();
+    auto result = std::from_chars(start, end, descriptor_set);
+    if (result.ec != std::errc() || result.ptr == end || *result.ptr != ':') {
+      Error(consumer(), nullptr, {},
+            "--convert-ubo-to-push-constant-by-binding requires set:binding.");
+      return false;
+    }
+    result = std::from_chars(result.ptr + 1, end, binding);
+    if (result.ec != std::errc() || result.ptr != end) {
+      Error(consumer(), nullptr, {},
+            "--convert-ubo-to-push-constant-by-binding requires set:binding.");
+      return false;
+    }
+    RegisterPass(CreateConvertUBOToPushConstantPass(descriptor_set, binding));
   } else if (pass_name == "struct-packing") {
     if (pass_args.size() == 0) {
       Error(consumer(), nullptr, {},
@@ -1183,6 +1208,18 @@ Optimizer::PassToken CreateFixFuncCallArgumentsPass() {
 Optimizer::PassToken CreateTrimCapabilitiesPass() {
   return MakeUnique<Optimizer::PassToken::Impl>(
       MakeUnique<opt::TrimCapabilitiesPass>());
+}
+
+Optimizer::PassToken CreateConvertUBOToPushConstantPass(
+    const std::string& name) {
+  return MakeUnique<Optimizer::PassToken::Impl>(
+      MakeUnique<opt::ConvertUBOToPushConstantPass>(name));
+}
+
+Optimizer::PassToken CreateConvertUBOToPushConstantPass(uint32_t descriptor_set,
+                                                        uint32_t binding) {
+  return MakeUnique<Optimizer::PassToken::Impl>(
+      MakeUnique<opt::ConvertUBOToPushConstantPass>(descriptor_set, binding));
 }
 
 Optimizer::PassToken CreateStructPackingPass(const char* structToPack,
