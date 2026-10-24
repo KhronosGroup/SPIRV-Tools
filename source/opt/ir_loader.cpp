@@ -14,6 +14,7 @@
 
 #include "source/opt/ir_loader.h"
 
+#include <algorithm>
 #include <utility>
 
 #include "DebugInfo.h"
@@ -22,6 +23,7 @@
 #include "source/opt/ir_context.h"
 #include "source/opt/log.h"
 #include "source/opt/reflect.h"
+#include "source/table2.h"
 #include "source/util/make_unique.h"
 
 namespace spvtools {
@@ -30,6 +32,21 @@ namespace {
 constexpr uint32_t kExtInstSetIndex = 4;
 constexpr uint32_t kLexicalScopeIndex = 5;
 constexpr uint32_t kInlinedAtIndex = 6;
+
+// Returns the NonSemantic.Shader.DebugInfo version of the import in |module|
+// with result id |set_id|, or 0 if there is no such import.
+uint32_t GetShaderDebugInfoVersion(const Module& module, uint32_t set_id) {
+  const auto imports = module.ext_inst_imports();
+  const auto it = std::find_if(imports.begin(), imports.end(),
+                               [set_id](const Instruction& import) {
+                                 return import.result_id() == set_id;
+                               });
+  if (it == imports.end()) {
+    return 0;
+  }
+  return spvExtInstShaderDebugInfoVersion(
+      it->GetInOperand(0).AsString().c_str());
+}
 }  // namespace
 
 IrLoader::IrLoader(const MessageConsumer& consumer, Module* m)
@@ -268,6 +285,17 @@ bool IrLoader::AddInstruction(const spv_parsed_instruction_t* inst) {
             break;
           }
           default: {
+            // Allow unknown opcodes for unknown versions of the debug info
+            // extension.
+            const ExtInstDesc* desc = nullptr;
+            if (block_ != nullptr &&
+                GetShaderDebugInfoVersion(*module_, inst->words[3]) >
+                    NonSemanticShaderDebugInfoVersion &&
+                LookupExtInst(inst->ext_inst_type, ext_inst_index, &desc) !=
+                    SPV_SUCCESS) {
+              block_->AddInstruction(std::move(spv_inst));
+              break;
+            }
             Errorf(consumer_, src, loc,
                    "Debug info extension instruction other than DebugScope, "
                    "DebugNoScope, DebugDeclare, and DebugValue found inside "

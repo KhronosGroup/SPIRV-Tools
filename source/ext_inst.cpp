@@ -14,6 +14,7 @@
 
 #include "source/ext_inst.h"
 
+#include <cstdlib>
 #include <cstring>
 
 // DebugInfo extended instruction set.
@@ -99,4 +100,13 @@ bool spvExtInstIsDebugInfo(const spv_ext_inst_type_t type) {
     return true;
   }
   return false;
+}
+
+uint32_t spvExtInstShaderDebugInfoVersion(const char* name) {
+  const char kPrefix[] = "NonSemantic.Shader.DebugInfo.";
+  if (strncmp(name, kPrefix, sizeof(kPrefix) - 1) != 0) {
+    return 0;
+  }
+  return static_cast<uint32_t>(
+      strtoul(name + sizeof(kPrefix) - 1, nullptr, 10));
 }
