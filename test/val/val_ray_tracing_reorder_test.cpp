@@ -62,7 +62,7 @@ std::string GenerateReorderThreadCode(const std::string& body = "",
 
   ss << R"(
    %main  = OpFunction %void None %3
-     %5   = OpLabel 
+     %5   = OpLabel
     )";
 
   ss << body;
@@ -182,7 +182,7 @@ std::string GenerateReorderShaderCode(
 
   ss << R"(
         %main = OpFunction %void None %3
-          %5 = OpLabel 
+          %5 = OpLabel
          )";
 
   ss << body;
@@ -828,7 +828,7 @@ std::string GenerateReorderThreadCodeEXT(const std::string& body = "",
 
   ss << R"(
    %main  = OpFunction %void None %3
-     %5   = OpLabel 
+     %5   = OpLabel
     )";
 
   ss << body;
@@ -920,7 +920,7 @@ std::string GenerateReorderShaderCodeEXT(const std::string& body = "",
 
   ss << R"(
         %main = OpFunction %void None %3
-          %5 = OpLabel 
+          %5 = OpLabel
          )";
 
   ss << body;
@@ -978,6 +978,27 @@ TEST_F(ValidateRayTracingReorderEXT, HitObjectTraceRayEXT) {
   OpStore %attr %11
   %26 = OpLoad %23 %as
   OpHitObjectTraceRayEXT %hObj %26 %uint_1 %uint_1 %uint_1 %uint_1 %uint_1 %31 %float_0_5 %32 %float_1 %payload
+  )";
+
+  CompileSuccessfully(GenerateReorderShaderCodeEXT(body, declarations).c_str(),
+                      SPV_ENV_VULKAN_1_2);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_2));
+}
+
+TEST_F(ValidateRayTracingReorderEXT, HitObjectTraceRayEXTSignedOperands) {
+  const std::string declarations = R"(
+    %v3float = OpTypeVector %float 3
+  %float_0_5 = OpConstant %float 0.5
+         %31 = OpConstantComposite %v3float %float_0_5 %float_0_5 %float_0_5
+         %32 = OpConstantComposite %v3float %float_1 %float_1 %float_1
+      %int_1 = OpConstant %int 1
+  )";
+
+  const std::string body = R"(
+  OpStore %attr %11
+  %26 = OpLoad %23 %as
+  OpHitObjectTraceRayEXT %hObj %26 %int_1 %int_1 %int_1 %int_1 %int_1 %31 %float_0_5 %32 %float_1 %payload
+  OpHitObjectTraceReorderExecuteEXT %hObj %26 %int_1 %int_1 %int_1 %int_1 %int_1 %31 %float_0_5 %32 %float_1 %payload
   )";
 
   CompileSuccessfully(GenerateReorderShaderCodeEXT(body, declarations).c_str(),
