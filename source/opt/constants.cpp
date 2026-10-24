@@ -472,13 +472,21 @@ const Constant* ConstantManager::GetNullCompositeConstant(const Type* type) {
     // TODO (sfricke-lunarg) add proper struct support
     return nullptr;
   } else if (type->AsArray()) {
+    // An OpConstantComposite has three words before its constituents, and an
+    // instruction is at most 0xFFFF words long.
+    constexpr uint64_t kMaxConstituents = 0xFFFF - 3;
+    // UINT64_MAX means the length is not a known constant. A zero length is
+    // invalid, and would make GetConstant return a null constant.
+    const uint64_t element_count = type->NumberOfComponents();
+    if (element_count == 0 || element_count > kMaxConstituents) {
+      return nullptr;
+    }
     const Type* element_type = type->AsArray()->element_type();
     const uint32_t null_id = GetNullConstId(element_type);
-    assert(type->AsArray()->length_info().words[0] ==
-               analysis::Array::LengthInfo::kConstant &&
-           "unexpected array length");
-    const uint32_t element_count = type->AsArray()->length_info().words[0];
-    for (uint32_t i = 0; i < element_count; i++) {
+    if (null_id == 0) {
+      return nullptr;
+    }
+    for (uint64_t i = 0; i < element_count; i++) {
       literal_words_or_id.push_back(null_id);
     }
   } else if (type->AsTensorARM()) {
