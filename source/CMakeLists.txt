@@ -61,6 +61,11 @@ add_custom_command(OUTPUT ${CORE_TABLES_BODY_INC_FILE} ${CORE_TABLES_HEADER_INC_
       --extinst=,${EI_arm_experimental_ml_operations}
       --extinst=,${EI_ns_debugprintf}
     DEPENDS ${GGT_SCRIPT}
+            ${spirv-tools_SOURCE_DIR}/utils/Table/__init__.py
+            ${spirv-tools_SOURCE_DIR}/utils/Table/Context.py
+            ${spirv-tools_SOURCE_DIR}/utils/Table/IndexRange.py
+            ${spirv-tools_SOURCE_DIR}/utils/Table/Operand.py
+            ${spirv-tools_SOURCE_DIR}/utils/Table/StringList.py
             ${SPIRV_CORE_GRAMMAR_JSON_FILE}
 	    ${EI_glsl}
 	    ${EI_opencl}
