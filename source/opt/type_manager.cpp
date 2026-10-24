@@ -1205,6 +1205,9 @@ void TypeManager::AttachDecoration(const Instruction& inst, Type* type) {
         st->AddMemberDecoration(index, std::move(data));
       }
     } break;
+    case spv::Op::OpMemberDecorateIdEXT:
+      // Not tracked on the type.
+      break;
     default:
       assert(false && "Unexpected opcode for a decoration instruction.");
       break;
