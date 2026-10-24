@@ -700,6 +700,73 @@ TEST_F(FoldSpecConstantOpAndCompositePassBasicTest, UnfoldableOp) {
   SinglePassRunAndMatch<FoldSpecConstantOpAndCompositePass>(test, false);
 }
 
+// The folded constant must not refer to a constant declared after the
+// spec constant it replaces.
+TEST_F(FoldSpecConstantOpAndCompositePassBasicTest,
+       FoldedIAddDoesNotUseLaterConstant) {
+  const std::string test = R"(
+               OpCapability Shader
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %main "main"
+               OpExecutionMode %main LocalSize 1 1 1
+       %void = OpTypeVoid
+         %fn = OpTypeFunction %void
+       %uint = OpTypeInt 32 0
+     %v2uint = OpTypeVector %uint 2
+     %uint_1 = OpConstant %uint 1
+     %uint_2 = OpConstant %uint 2
+          %a = OpConstantComposite %v2uint %uint_1 %uint_2
+; CHECK: [[uint_2:%\w+]] = OpConstant %uint 2
+; CHECK: [[uint_4:%\w+]] = OpConstant %uint 4
+; CHECK-NEXT: [[sum:%\w+]] = OpConstantComposite %v2uint [[uint_2]] [[uint_4]]
+; CHECK: OpStore {{%\w+}} [[sum]]
+        %sum = OpSpecConstantOp %v2uint IAdd %a %a
+     %uint_4 = OpConstant %uint 4
+        %ptr = OpTypePointer Function %v2uint
+       %main = OpFunction %void None %fn
+          %l = OpLabel
+          %v = OpVariable %ptr Function
+               OpStore %v %sum
+               OpReturn
+               OpFunctionEnd
+)";
+
+  SinglePassRunAndMatch<FoldSpecConstantOpAndCompositePass>(test, true);
+}
+
+TEST_F(FoldSpecConstantOpAndCompositePassBasicTest,
+       FoldedBitwiseNotDoesNotUseLaterConstant) {
+  const std::string test = R"(
+               OpCapability Shader
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %main "main"
+               OpExecutionMode %main LocalSize 1 1 1
+       %void = OpTypeVoid
+         %fn = OpTypeFunction %void
+       %uint = OpTypeInt 32 0
+     %v2uint = OpTypeVector %uint 2
+     %uint_1 = OpConstant %uint 1
+     %uint_2 = OpConstant %uint 2
+          %a = OpConstantComposite %v2uint %uint_1 %uint_2
+; CHECK: [[not_1:%\w+]] = OpConstant %uint 4294967294
+; CHECK: [[not_2:%\w+]] = OpConstant %uint 4294967293
+; CHECK-NEXT: [[not:%\w+]] = OpConstantComposite %v2uint [[not_1]] [[not_2]]
+; CHECK: OpStore {{%\w+}} [[not]]
+        %not = OpSpecConstantOp %v2uint Not %a
+      %not_1 = OpConstant %uint 4294967294
+      %not_2 = OpConstant %uint 4294967293
+        %ptr = OpTypePointer Function %v2uint
+       %main = OpFunction %void None %fn
+          %l = OpLabel
+          %v = OpVariable %ptr Function
+               OpStore %v %not
+               OpReturn
+               OpFunctionEnd
+)";
+
+  SinglePassRunAndMatch<FoldSpecConstantOpAndCompositePass>(test, true);
+}
+
 // All types and some common constants that are potentially required in
 // FoldSpecConstantOpAndCompositeTest.
 std::vector<std::string> CommonTypesAndConstants() {
