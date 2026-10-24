@@ -29,12 +29,6 @@ BUILD_TYPE=$1
 # Marking the root of the repo as safe for ownership changes.
 git config --global --add safe.directory $SRC
 
-# Get NINJA.
-wget -q https://github.com/ninja-build/ninja/releases/download/v1.8.2/ninja-mac.zip
-unzip -q ninja-mac.zip
-chmod +x ninja
-export PATH="$PWD:$PATH"
-
 cd $SRC
 python3 utils/git-sync-deps --prefix=external --treeless
 
