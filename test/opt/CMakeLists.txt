@@ -79,6 +79,7 @@ add_spvtools_unittest(TARGET opt
        mali_optimization_barrier_test.cpp
        mali_bitwise_scalar_test.cpp
        mali_clamp_zero_test.cpp
+       mali_lockstep_test.cpp
        mali_pervertex_block_test.cpp
        modify_maximal_reconvergence_test.cpp
        module_test.cpp

@@ -93,6 +93,7 @@ set(SPIRV_TOOLS_OPT_SOURCES
   mali_optimization_barrier_pass.h
   mali_bitwise_scalar_pass.h
   mali_clamp_zero_pass.h
+  mali_lockstep_pass.h
   mali_pervertex_block_pass.h
   mem_pass.h
   merge_return_pass.h
@@ -220,6 +221,7 @@ set(SPIRV_TOOLS_OPT_SOURCES
   mali_optimization_barrier_pass.cpp
   mali_bitwise_scalar_pass.cpp
   mali_clamp_zero_pass.cpp
+  mali_lockstep_pass.cpp
   mali_pervertex_block_pass.cpp
   mem_pass.cpp
   merge_return_pass.cpp

@@ -65,6 +65,7 @@
 #include "source/opt/mali_optimization_barrier_pass.h"
 #include "source/opt/mali_bitwise_scalar_pass.h"
 #include "source/opt/mali_clamp_zero_pass.h"
+#include "source/opt/mali_lockstep_pass.h"
 #include "source/opt/mali_pervertex_block_pass.h"
 #include "source/opt/merge_return_pass.h"
 #include "source/opt/modify_maximal_reconvergence.h"

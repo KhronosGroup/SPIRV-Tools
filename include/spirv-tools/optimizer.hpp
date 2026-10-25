@@ -1056,6 +1056,10 @@ Optimizer::PassToken CreateMaliClampZeroPass(bool rewrite_all = false,
 // CullDistance) of geometry and tessellation stages into a gl_PerVertex-style
 // Block.
 Optimizer::PassToken CreateMaliPerVertexBlockPass();
+
+// MaliBridge: Give the strided loops of a 32-thread compute shader a workgroup-uniform trip
+// count.
+Optimizer::PassToken CreateMaliLockstepPass();
 }  // namespace spvtools
 
 #endif  // INCLUDE_SPIRV_TOOLS_OPTIMIZER_HPP_

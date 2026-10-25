@@ -655,6 +655,8 @@ bool Optimizer::RegisterPassFromFlag(const std::string& flag,
     RegisterPass(CreateMaliClampZeroPass());
   } else if (pass_name == "mali-pervertex-block") {
     RegisterPass(CreateMaliPerVertexBlockPass());
+  } else if (pass_name == "mali-lockstep") {
+    RegisterPass(CreateMaliLockstepPass());
   } else {
     Errorf(consumer(), nullptr, {},
            "Unknown flag '--%s'. Use --help for a list of valid flags",
@@ -1250,6 +1252,11 @@ Optimizer::PassToken CreateMaliClampZeroPass(bool rewrite_all,
 Optimizer::PassToken CreateMaliPerVertexBlockPass() {
   return MakeUnique<Optimizer::PassToken::Impl>(
       MakeUnique<opt::MaliPerVertexBlockPass>());
+}
+
+Optimizer::PassToken CreateMaliLockstepPass() {
+  return MakeUnique<Optimizer::PassToken::Impl>(
+      MakeUnique<opt::MaliLockstepPass>());
 }
 
 }  // namespace spvtools
