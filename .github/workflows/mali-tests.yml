@@ -1,0 +1,68 @@
+name: Mali SPIR-V Pass Tests
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  test:
+    name: Mali tests (${{ matrix.compiler }})
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - compiler: gcc
+            cc: gcc
+            cxx: g++
+
+          - compiler: clang
+            cc: clang
+            cxx: clang++
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Sync dependencies
+        run: python3 utils/git-sync-deps
+
+      - name: Install Build Tools (Ninja)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ninja-build
+
+      - name: Configure CMake
+        run: |
+          cmake -B build -G Ninja \
+            -DCMAKE_BUILD_TYPE=Debug \
+            -DCMAKE_C_COMPILER=${{ matrix.cc }} \
+            -DCMAKE_CXX_COMPILER=${{ matrix.cxx }} \
+            -DSPIRV_SKIP_TESTS=OFF \
+            -DSPIRV_WERROR=OFF
+
+      - name: Build test_opt
+        run: |
+          cmake --build build --target test_opt -j "$(nproc)"
+
+      - name: Run Mali pass tests
+        run: |
+          ./build/test/opt/test_opt \
+            --gtest_filter='MaliPassTest.*' \
+            --gtest_color=no | tee mali-tests.log
+
+      - name: Upload test log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mali-tests-${{ matrix.compiler }}
+          path: mali-tests.log
