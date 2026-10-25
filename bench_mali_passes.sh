@@ -54,8 +54,9 @@ PASS_ORDER=(
   "--mali-optimization-barrier"
   "--mali-bitwise-scalar"
   "--mali-clamp-zero"
+  "--mali-pervertex-block"
 )
-CONFIG_LABELS=("None" "+FixSpec" "+OptBarrier" "+BitwiseScalar" "+ClampZero")
+CONFIG_LABELS=("None" "+FixSpec" "+OptBarrier" "+BitwiseScalar" "+ClampZero" "+PerVertexBlock")
 
 usage() {
   sed -n '23,37p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'
@@ -132,6 +133,7 @@ emit_section2() {
   printf '%s\n' '- `OptBarrier` = `--mali-optimization-barrier`'
   printf '%s\n' '- `BitwiseScalar` = `--mali-bitwise-scalar`'
   printf '%s\n' '- `ClampZero` = `--mali-clamp-zero`'
+  printf '%s\n' '- `PerVertexBlock` = `--mali-pervertex-block`'
   printf '\n'
 
   printf '| Corpus Shader |'

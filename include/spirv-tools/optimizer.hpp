@@ -1051,6 +1051,11 @@ Optimizer::PassToken CreateMaliBitwiseScalarPass(bool rewrite_all = false);
 // variable.
 Optimizer::PassToken CreateMaliClampZeroPass(bool rewrite_all = false,
                                              bool bitfield_insert = false);
+
+// MaliBridge: Fold loose per-vertex built-ins (Position, PointSize, ClipDistance,
+// CullDistance) of geometry and tessellation stages into a gl_PerVertex-style
+// Block.
+Optimizer::PassToken CreateMaliPerVertexBlockPass();
 }  // namespace spvtools
 
 #endif  // INCLUDE_SPIRV_TOOLS_OPTIMIZER_HPP_
