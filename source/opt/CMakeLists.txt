@@ -91,6 +91,8 @@ set(SPIRV_TOOLS_OPT_SOURCES
   loop_utils.h
   loop_unswitch_pass.h
   mali_optimization_barrier_pass.h
+  mali_bitwise_scalar_pass.h
+  mali_clamp_zero_pass.h
   mem_pass.h
   merge_return_pass.h
   modify_maximal_reconvergence.h
@@ -215,6 +217,8 @@ set(SPIRV_TOOLS_OPT_SOURCES
   loop_unroller.cpp
   loop_unswitch_pass.cpp
   mali_optimization_barrier_pass.cpp
+  mali_bitwise_scalar_pass.cpp
+  mali_clamp_zero_pass.cpp
   mem_pass.cpp
   merge_return_pass.cpp
   modify_maximal_reconvergence.cpp

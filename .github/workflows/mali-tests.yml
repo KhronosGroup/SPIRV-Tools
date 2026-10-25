@@ -60,6 +60,14 @@ jobs:
             --gtest_filter='*Mali*' \
             --gtest_color=no | tee mali-tests.log
 
+      - name: Build test_opt
+        run: |
+          cmake --build build -j "$(nproc)"
+
+      - name: Build test_opt
+        run: |
+          bash bench_mali_passes.sh
+
       - name: Upload test log
         if: always()
         uses: actions/upload-artifact@v4

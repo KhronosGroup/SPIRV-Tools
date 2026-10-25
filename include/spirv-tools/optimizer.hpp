@@ -1039,6 +1039,18 @@ Optimizer::PassToken CreateRemoveClipCullDistPass();
 Optimizer::PassToken CreateFixMaliSpecConstantCompositePass();
 
 Optimizer::PassToken CreateMaliOptimizationBarrierPass();
+
+// MaliBridge (Arm erratum 3843237): scalarise integer vector bitwise ops whose
+// operand is a lane swizzle or a vector built lane by lane. With |rewrite_all|
+// every integer vector bitwise op is rewritten.
+Optimizer::PassToken CreateMaliBitwiseScalarPass(bool rewrite_all = false);
+
+// MaliBridge (Arm erratum 3779215): give min/max/clamp ops with a constant zero
+// limit an opaque zero. With |rewrite_all| every zero limit is rewritten;
+// |bitfield_insert| takes the zero from OpBitFieldInsert instead of a Private
+// variable.
+Optimizer::PassToken CreateMaliClampZeroPass(bool rewrite_all = false,
+                                             bool bitfield_insert = false);
 }  // namespace spvtools
 
 #endif  // INCLUDE_SPIRV_TOOLS_OPTIMIZER_HPP_

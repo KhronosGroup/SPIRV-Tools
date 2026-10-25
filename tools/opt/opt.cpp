@@ -599,6 +599,14 @@ Options (in lexicographical order):)",
                MALI-only.
                )");
   printf(R"(
+  --mali-bitwise-scalar
+               MALI-only.
+               )");
+  printf(R"(
+  --mali-clamp-zero
+               MALI-only.
+               )");
+  printf(R"(
   --unify-const
                Remove the duplicated constants.)");
   printf(R"(

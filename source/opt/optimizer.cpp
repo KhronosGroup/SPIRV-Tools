@@ -649,6 +649,10 @@ bool Optimizer::RegisterPassFromFlag(const std::string& flag,
     RegisterPass(CreateFixMaliSpecConstantCompositePass());
   } else if (pass_name == "mali-optimization-barrier") {
     RegisterPass(CreateMaliOptimizationBarrierPass());
+  } else if (pass_name == "mali-bitwise-scalar") {
+    RegisterPass(CreateMaliBitwiseScalarPass());
+  } else if (pass_name == "mali-clamp-zero") {
+    RegisterPass(CreateMaliClampZeroPass());
   } else {
     Errorf(consumer(), nullptr, {},
            "Unknown flag '--%s'. Use --help for a list of valid flags",
@@ -1228,6 +1232,17 @@ Optimizer::PassToken CreateFixMaliSpecConstantCompositePass() {
 Optimizer::PassToken CreateMaliOptimizationBarrierPass() {
   return MakeUnique<Optimizer::PassToken::Impl>(
       MakeUnique<opt::MaliOptimizationBarrierPass>());
+}
+
+Optimizer::PassToken CreateMaliBitwiseScalarPass(bool rewrite_all) {
+  return MakeUnique<Optimizer::PassToken::Impl>(
+      MakeUnique<opt::MaliBitwiseScalarPass>(rewrite_all));
+}
+
+Optimizer::PassToken CreateMaliClampZeroPass(bool rewrite_all,
+                                             bool bitfield_insert) {
+  return MakeUnique<Optimizer::PassToken::Impl>(
+      MakeUnique<opt::MaliClampZeroPass>(rewrite_all, bitfield_insert));
 }
 
 }  // namespace spvtools

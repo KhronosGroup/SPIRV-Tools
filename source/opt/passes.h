@@ -63,6 +63,8 @@
 #include "source/opt/loop_unroller.h"
 #include "source/opt/loop_unswitch_pass.h"
 #include "source/opt/mali_optimization_barrier_pass.h"
+#include "source/opt/mali_bitwise_scalar_pass.h"
+#include "source/opt/mali_clamp_zero_pass.h"
 #include "source/opt/merge_return_pass.h"
 #include "source/opt/modify_maximal_reconvergence.h"
 #include "source/opt/null_pass.h"
