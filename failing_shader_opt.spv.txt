@@ -1,7 +1,7 @@
 ; SPIR-V
 ; Version: 1.0
 ; Generator: Khronos SPIR-V Tools Assembler; 0
-; Bound: 2539
+; Bound: 2541
 ; Schema: 0
                OpCapability Shader
                OpCapability Sampled1D
@@ -781,6 +781,7 @@
  %dst_chroma = OpVariable %_ptr_UniformConstant_633 UniformConstant
 %gl_WorkGroupSize = OpConstantComposite %v3uint %uint_8 %uint_8 %uint_1
 %float_3_14159274 = OpConstant %float 3.14159274
+       %2537 = OpConstantNull %uint
        %main = OpFunction %void None %443
         %680 = OpLabel
       %param = OpVariable %_ptr_Function_PrimaryInfo Function
@@ -3011,19 +3012,20 @@
        %seed = OpFunctionParameter %_ptr_Function_uint
        %2062 = OpLabel
        %2063 = OpLoad %uint %seed
-       %2537 = OpShiftLeftLogical %uint %2063 %int_13
-       %2064 = OpBitFieldInsert %uint %2537 %uint_0 %uint_0 %uint_0
+       %2538 = OpShiftLeftLogical %uint %2063 %int_13
+       %2064 = OpBitFieldInsert %uint %2538 %2537 %uint_0 %uint_0
        %2065 = OpLoad %uint %seed
        %2066 = OpBitwiseXor %uint %2065 %2064
                OpStore %seed %2066
        %2067 = OpLoad %uint %seed
-       %2068 = OpShiftRightLogical %uint %2067 %int_17
+       %2539 = OpShiftRightLogical %uint %2067 %int_17
+       %2068 = OpBitFieldInsert %uint %2539 %2537 %uint_0 %uint_0
        %2069 = OpLoad %uint %seed
        %2070 = OpBitwiseXor %uint %2069 %2068
                OpStore %seed %2070
        %2071 = OpLoad %uint %seed
-       %2538 = OpShiftLeftLogical %uint %2071 %int_5
-       %2072 = OpBitFieldInsert %uint %2538 %uint_0 %uint_0 %uint_0
+       %2540 = OpShiftLeftLogical %uint %2071 %int_5
+       %2072 = OpBitFieldInsert %uint %2540 %2537 %uint_0 %uint_0
        %2073 = OpLoad %uint %seed
        %2074 = OpBitwiseXor %uint %2073 %2072
                OpStore %seed %2074
