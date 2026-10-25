@@ -14,6 +14,8 @@
 
 #include "source/opt/fix_mali_spec_constant_composite_pass.h"
 
+#include <cstdio>
+
 #include "source/opt/ir_builder.h"
 #include "source/util/hex_float.h"
 
@@ -39,36 +41,32 @@ Pass::Status FixMaliSpecConstantCompositePass::Process() {
 
   bool changed = false;
   for (Instruction* var : context()->GetConstants()) {
-    // Look for the following pattern
-    //     %bool = OpTypeBool
-    // %t0_bound = OpSpecConstantTrue %bool | OpSpecConstantFalse %bool | OpSpecConstant %_
-    //   %v4bool = OpTypeVector %bool 4
-    //       %55 = OpConstantComposite %v4bool %t0_bound %t0_bound %t0_bound
-    //     %t0_bound
     if (var->opcode() == spv::Op::OpConstantComposite) {
-      // Get the type operand, looking for `%v4bool = OpTypeVector %bool 4`
       const auto type_id = var->type_id();
       const Instruction* type_inst = get_def_use_mgr()->GetDef(type_id);
-      if (type_inst->opcode() != spv::Op::OpTypeVector) {
+      if (type_inst == nullptr ||
+          type_inst->opcode() != spv::Op::OpTypeVector) {
         continue;
       }
       const auto component_type_id = type_inst->GetSingleWordInOperand(0);
-      const Instruction* component_type_inst = get_def_use_mgr()->GetDef(component_type_id);
-      if (component_type_inst->opcode() != spv::Op::OpTypeBool) {
+      const Instruction* component_type_inst =
+          get_def_use_mgr()->GetDef(component_type_id);
+      if (component_type_inst == nullptr ||
+          component_type_inst->opcode() != spv::Op::OpTypeBool) {
         continue;
       }
-      // Check to see if _any_ of the operands are OpSpecConstantTrue | OpSpecConstantFalse | OpSpecConstant
       bool op_spec_constant = false;
       for (auto i = 0u; i < var->NumInOperands(); i++) {
         const auto operand_id = var->GetSingleWordInOperand(i);
         const Instruction* operand_inst = get_def_use_mgr()->GetDef(operand_id);
-        if (IsSpecConstantInst(operand_inst->opcode())) {
+        if (operand_inst != nullptr &&
+            IsSpecConstantInst(operand_inst->opcode())) {
           op_spec_constant = true;
           break;
         }
       }
       if (op_spec_constant) {
-        LOG("Found OpConstantComposite %%v4bool with all specialized-const operands. "
+        LOG("Found OpConstantComposite %%v4bool with specialized-const operands. "
             "Converting to OpSpecConstantComposite to avoid Mali shader compiler bug");
         LOGD("%s", var->PrettyPrint().c_str());
         LOGD("    .type: %s", component_type_inst->PrettyPrint().c_str());
@@ -76,10 +74,12 @@ Pass::Status FixMaliSpecConstantCompositePass::Process() {
         for (auto i = 0u; i < var->NumInOperands(); i++) {
           const auto operand_id = var->GetSingleWordInOperand(i);
           const Instruction* operand_inst = get_def_use_mgr()->GetDef(operand_id);
-          LOGD("    .arg%d: %s", i, operand_inst->PrettyPrint().c_str());
+          if (operand_inst != nullptr) {
+            LOGD("    .arg%d: %s", i, operand_inst->PrettyPrint().c_str());
+          }
         }
-        // Change the op-type of var from OpConstantComposite to OpSpecConstantComposite
         var->SetOpcode(spv::Op::OpSpecConstantComposite);
+        get_def_use_mgr()->UpdateDefUse(var);
         changed = true;
       }
     }

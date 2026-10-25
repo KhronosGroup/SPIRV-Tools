@@ -49,6 +49,7 @@ add_spvtools_unittest(TARGET opt
        eliminate_dead_output_stores_test.cpp
        feature_manager_test.cpp
        fix_func_call_arguments_test.cpp
+       fix_mali_spec_constant_composite_test.cpp
        fix_storage_class_test.cpp
        flatten_decoration_test.cpp
        fold_spec_const_op_composite_test.cpp
@@ -75,6 +76,7 @@ add_spvtools_unittest(TARGET opt
        local_single_block_elim.cpp
        local_single_store_elim_test.cpp
        local_ssa_elim_test.cpp
+       mali_optimization_barrier_test.cpp
        modify_maximal_reconvergence_test.cpp
        module_test.cpp
        module_utils.h

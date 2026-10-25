@@ -57,7 +57,7 @@ jobs:
       - name: Run Mali pass tests
         run: |
           ./build/test/opt/test_opt \
-            --gtest_filter='MaliPassTest.*' \
+            --gtest_filter='*Mali*' \
             --gtest_color=no | tee mali-tests.log
 
       - name: Upload test log

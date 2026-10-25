@@ -2,7 +2,7 @@
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
-// You may may obtain a copy of the License at
+// You may obtain a copy of the License at
 //
 //     http://www.apache.org/licenses/LICENSE-2.0
 //
@@ -12,11 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "mali_optimization_barrier_pass.h"
+#include "source/opt/mali_optimization_barrier_pass.h"
 
-#include <algorithm>
+#include <cstdio>
 #include <memory>
-#include <string>
 #include <vector>
 
 #include "source/opt/ir_builder.h"
@@ -36,57 +35,78 @@
 namespace spvtools {
 namespace opt {
 
+namespace {
+
+bool IsShiftOp(spv::Op opcode) {
+  return opcode == spv::Op::OpShiftLeftLogical ||
+         opcode == spv::Op::OpShiftRightLogical ||
+         opcode == spv::Op::OpShiftRightArithmetic;
+}
+
+}  // namespace
+
 Pass::Status MaliOptimizationBarrierPass::Process() {
+  if (!context()->get_feature_mgr()->HasCapability(spv::Capability::Shader)) {
+    return Status::SuccessWithoutChange;
+  }
+
   bool modified = false;
-  auto scalar_modifications = 0u;
-  auto vector_modifications = 0u;
+  uint32_t scalar_modifications = 0;
+  uint32_t vector_modifications = 0;
 
   // Iterate over all functions in the module.
-  for (auto& func : *context()->module()) {
+  for (auto& func : *get_module()) {
     if (func.IsDeclaration()) {
       continue;
     }
 
-    for (auto block_itr = func.begin(); block_itr != func.end(); ++block_itr) {
-      for (auto inst_itr = block_itr->begin(); inst_itr != block_itr->end();
-           ++inst_itr) {
+    for (auto& bb : func) {
+      for (auto inst_itr = bb.begin(); inst_itr != bb.end(); ++inst_itr) {
         Instruction* inst = &*inst_itr;
-        // Look for OpShiftLeftLogical <Value> <Shift>
-        if (inst->opcode() != spv::Op::OpShiftLeftLogical) continue;
-        const auto shift_amount_id = inst->GetSingleWordInOperand(1);
+        // Look for a shift by a constant amount, which may trigger the Mali
+        // constant-folding bug.
+        if (!IsShiftOp(inst->opcode())) continue;
+        if (inst->NumInOperands() < 2) continue;
+
+        const uint32_t shift_amount_id = inst->GetSingleWordInOperand(1);
         const analysis::Constant* shift_constant =
-            context()->get_constant_mgr()->FindDeclaredConstant(
-                shift_amount_id);
+            context()->get_constant_mgr()->FindDeclaredConstant(shift_amount_id);
+        if (shift_constant == nullptr) continue;
 
-        // If the shift is a constant (may trigger constant folding bug)
-        if (!shift_constant) continue;
-        const bool is_scalar = shift_constant->type()->AsInteger();
+        const analysis::Type* shift_type = shift_constant->type();
+        if (shift_type == nullptr) continue;
+        const bool is_scalar = shift_type->AsInteger() != nullptr;
         const bool is_vector =
-            shift_constant->type()->AsVector() &&
-            shift_constant->type()->AsVector()->element_type()->AsInteger();
-
-        // LOG("%s, shift_constant=%s, scalar=%d, vector=%d",
-        //   inst->PrettyPrint().c_str(),
-        //   shift_constant->type()->str().c_str(), is_scalar, is_vector);
-
+            shift_type->AsVector() != nullptr &&
+            shift_type->AsVector()->element_type()->AsInteger() != nullptr;
         if (!is_scalar && !is_vector) continue;
 
-        uint32_t original_result_type_id = inst->type_id();
-        uint32_t original_result_id = inst->result_id();
-        uint32_t const_0_id =
+        const uint32_t original_result_type_id = inst->type_id();
+        const uint32_t original_result_id = inst->result_id();
+
+        // The zero must have the same type (and therefore the same integer
+        // width and signedness) as the shift result, otherwise the
+        // OpBitFieldInsert barrier is invalid for 64-bit and vector shifts.
+        const uint32_t const_0_id =
             is_scalar ? GetOrCreateConstantZero(original_result_type_id)
                       : GetOrCreateConstantZeroVector(original_result_type_id);
         if (const_0_id == 0) {
-          LOGE("Failed to get or create %%int_0 or %%uint_9");
+          LOGE("Failed to get or create a zero constant for %s",
+               inst->PrettyPrint().c_str());
           return Status::Failure;
         }
 
-        // uint 0's for the OpBitFieldInsert operands
-        uint32_t const_0_uint_id =
+        // uint 0's for the OpBitFieldInsert offset and count operands.
+        const uint32_t const_0_uint_id =
             context()->get_constant_mgr()->GetUIntConstId(0);
+        if (const_0_uint_id == 0) {
+          LOGE("Failed to get or create %%uint_0");
+          return Status::Failure;
+        }
 
-        // Allocate a temp result id for the shift
-        uint32_t temp_result_id = context()->TakeNextId();
+        // Allocate a temp result id for the shift so that the barrier can
+        // reuse the original result id without creating a self-reference.
+        const uint32_t temp_result_id = context()->TakeNextId();
         if (temp_result_id == 0) {
           LOGE("Failed to allocate new temp result_id for %s",
                inst->PrettyPrint().c_str());
@@ -95,7 +115,7 @@ Pass::Status MaliOptimizationBarrierPass::Process() {
         inst->SetResultId(temp_result_id);
 
         // Create an OpBitFieldInsert no-op instruction to block constant
-        // folding optimizations that may be broken on some drivers
+        // folding optimizations that may be broken on some drivers:
         // %original_result_id = OpBitFieldInsert %type %temp_result_id 0 0 0
         InstructionBuilder builder(context(), inst->NextNode());
         auto noop_barrier_inst = std::make_unique<Instruction>(
@@ -106,7 +126,18 @@ Pass::Status MaliOptimizationBarrierPass::Process() {
                 {SPV_OPERAND_TYPE_ID, {const_0_id}},         // insert
                 {SPV_OPERAND_TYPE_ID, {const_0_uint_id}},    // offset
                 {SPV_OPERAND_TYPE_ID, {const_0_uint_id}}});  // count
-        builder.AddInstruction(std::move(noop_barrier_inst));
+        Instruction* barrier =
+            builder.AddInstruction(std::move(noop_barrier_inst));
+        if (barrier == nullptr) {
+          LOGE("Failed to insert OpBitFieldInsert barrier for %s",
+               inst->PrettyPrint().c_str());
+          return Status::Failure;
+        }
+
+        // Keep the def-use chains consistent after renaming the shift result.
+        get_def_use_mgr()->UpdateDefUse(inst);
+        get_def_use_mgr()->UpdateDefUse(barrier);
+
         modified = true;
         if (is_scalar) {
           scalar_modifications += 1;
@@ -128,54 +159,26 @@ Pass::Status MaliOptimizationBarrierPass::Process() {
 uint32_t MaliOptimizationBarrierPass::GetOrCreateConstantZero(
     const uint32_t type_id) const {
   analysis::Type* type = context()->get_type_mgr()->GetType(type_id);
-  if (!type) return 0;
-  const auto* int_type = type->AsInteger();
-  if (!int_type) {
+  if (type == nullptr || type->AsInteger() == nullptr) {
     return 0;
   }
-  if (int_type->IsSigned()) {
-    return context()->get_constant_mgr()->GetSIntConstId(0);
-  }
-  return context()->get_constant_mgr()->GetUIntConstId(0);
+  return context()->get_constant_mgr()->GetNullConstId(type);
 }
 
 uint32_t MaliOptimizationBarrierPass::GetOrCreateConstantZeroVector(
     const uint32_t type_id) const {
-  analysis::TypeManager* type_mgr = context()->get_type_mgr();
-  analysis::ConstantManager* const_mgr = context()->get_constant_mgr();
-
-  analysis::Type* type = type_mgr->GetType(type_id);
-  if (!type) {
+  analysis::Type* type = context()->get_type_mgr()->GetType(type_id);
+  if (type == nullptr) {
     return 0;
   }
 
   const auto* vec_type = type->AsVector();
-  if (!vec_type) {
+  if (vec_type == nullptr ||
+      vec_type->element_type()->AsInteger() == nullptr) {
     return 0;
   }
 
-  const auto* int_type = vec_type->element_type()->AsInteger();
-  if (!int_type) {
-    return 0;
-  }
-
-  std::vector<uint32_t> component_ids;
-  for (auto i = 0u; i < vec_type->element_count(); i++) {
-    if (int_type->IsSigned()) {
-      component_ids.push_back(const_mgr->GetSIntConstId(0));
-    } else {
-      component_ids.push_back(const_mgr->GetUIntConstId(0));
-    }
-  }
-
-  const uint32_t vec_type_id = type_mgr->GetTypeInstruction(vec_type);
-  if (!vec_type_id) {
-    return 0;
-  }
-  const analysis::Constant* uvec_const =
-      const_mgr->GetConstant(type_mgr->GetType(vec_type_id), component_ids);
-  return uvec_const ? const_mgr->GetDefiningInstruction(uvec_const)->result_id()
-                    : 0;
+  return context()->get_constant_mgr()->GetNullConstId(type);
 }
 
 }  // namespace opt
