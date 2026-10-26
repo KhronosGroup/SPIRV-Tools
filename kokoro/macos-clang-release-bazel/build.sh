@@ -34,14 +34,15 @@ cd $SRC
 
 # Get bazel 8.7.0
 BAZEL_VER=8.7.0
+BAZEL_PROG=bazel-$BAZEL_VER-darwin-$(uname -m)
 gcloud config set auth/disable_credentials True
-gcloud storage cp gs://bazel/$BAZEL_VER/release/bazel-$BAZEL_VER-darwin-x86_64 .
-chmod +x bazel-$BAZEL_VER-darwin-x86_64
+gcloud storage cp gs://bazel/$BAZEL_VER/release/$BAZEL_PROG .
+chmod +x $BAZEL_PROG
 
 echo $(date): Build everything...
-./bazel-$BAZEL_VER-darwin-x86_64 build --cxxopt=-std=c++17 :all
+./$BAZEL_PROG build --cxxopt=-std=c++17 :all
 echo $(date): Build completed.
 
 echo $(date): Starting bazel test...
-./bazel-$BAZEL_VER-darwin-x86_64 test --cxxopt=-std=c++17 :all
+./$BAZEL_PROG test --cxxopt=-std=c++17 :all
 echo $(date): Bazel test completed.
