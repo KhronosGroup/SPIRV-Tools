@@ -488,6 +488,20 @@ spv_result_t ValidateEntryPoint(ValidationState_t& _, const Instruction* inst) {
   return SPV_SUCCESS;
 }
 
+// Execution modes with <id> Extra Operands must be declared with
+// OpExecutionModeId, all others with OpExecutionMode
+bool ExecutionModeTakesIdOperands(spv::ExecutionMode mode) {
+  const spvtools::OperandDesc* desc = nullptr;
+  if (spvtools::LookupOperand(SPV_OPERAND_TYPE_EXECUTION_MODE,
+                              static_cast<uint32_t>(mode),
+                              &desc) != SPV_SUCCESS) {
+    return false;
+  }
+  const auto operands = desc->operands();
+  return std::find(operands.begin(), operands.end(), SPV_OPERAND_TYPE_ID) !=
+         operands.end();
+}
+
 spv_result_t ValidateExecutionMode(ValidationState_t& _,
                                    const Instruction* inst) {
   const auto entry_point_id = inst->GetOperandAs<uint32_t>(0);
@@ -501,28 +515,9 @@ spv_result_t ValidateExecutionMode(ValidationState_t& _,
   }
 
   const auto mode = inst->GetOperandAs<spv::ExecutionMode>(1);
+  const bool takes_id_operands = ExecutionModeTakesIdOperands(mode);
   if (inst->opcode() == spv::Op::OpExecutionModeId) {
-    bool valid_mode = false;
-    switch (mode) {
-      case spv::ExecutionMode::SubgroupsPerWorkgroupId:
-      case spv::ExecutionMode::LocalSizeHintId:
-      case spv::ExecutionMode::LocalSizeId:
-      case spv::ExecutionMode::OpacityMicromapIdKHR:
-      case spv::ExecutionMode::FPFastMathDefault:
-      case spv::ExecutionMode::MaximumRegistersIdINTEL:
-      case spv::ExecutionMode::IsApiEntryAMDX:
-      case spv::ExecutionMode::MaxNodeRecursionAMDX:
-      case spv::ExecutionMode::MaxNumWorkgroupsAMDX:
-      case spv::ExecutionMode::ShaderIndexAMDX:
-      case spv::ExecutionMode::SharesInputWithAMDX:
-      case spv::ExecutionMode::StaticNumWorkgroupsAMDX:
-        valid_mode = true;
-        break;
-      default:
-        valid_mode = false;
-        break;
-    }
-    if (!valid_mode) {
+    if (!takes_id_operands) {
       return _.diag(SPV_ERROR_INVALID_ID, inst)
              << "OpExecutionModeId is only valid when the Mode operand is an "
                 "execution mode that takes Extra Operands that are id "
@@ -537,6 +532,14 @@ spv_result_t ValidateExecutionMode(ValidationState_t& _,
         case spv::ExecutionMode::SubgroupsPerWorkgroupId:
         case spv::ExecutionMode::LocalSizeHintId:
         case spv::ExecutionMode::LocalSizeId:
+        case spv::ExecutionMode::MaximumRegistersIdINTEL:
+          if (spvOpcodeIsConstant(operand_inst->opcode()) &&
+              !_.IsIntScalarType(operand_inst->type_id())) {
+            return _.diag(SPV_ERROR_INVALID_DATA, inst)
+                   << spv::ExecutionModeToString(mode)
+                   << "'s Extra Operands must be integer type scalars.";
+          }
+          [[fallthrough]];
         case spv::ExecutionMode::IsApiEntryAMDX:
         case spv::ExecutionMode::MaxNodeRecursionAMDX:
         case spv::ExecutionMode::MaxNumWorkgroupsAMDX:
@@ -608,16 +611,7 @@ spv_result_t ValidateExecutionMode(ValidationState_t& _,
           break;
       }
     }
-  } else if (mode == spv::ExecutionMode::SubgroupsPerWorkgroupId ||
-             mode == spv::ExecutionMode::LocalSizeHintId ||
-             mode == spv::ExecutionMode::LocalSizeId ||
-             mode == spv::ExecutionMode::FPFastMathDefault ||
-             mode == spv::ExecutionMode::IsApiEntryAMDX ||
-             mode == spv::ExecutionMode::MaxNodeRecursionAMDX ||
-             mode == spv::ExecutionMode::MaxNumWorkgroupsAMDX ||
-             mode == spv::ExecutionMode::ShaderIndexAMDX ||
-             mode == spv::ExecutionMode::SharesInputWithAMDX ||
-             mode == spv::ExecutionMode::StaticNumWorkgroupsAMDX) {
+  } else if (takes_id_operands) {
     return _.diag(SPV_ERROR_INVALID_DATA, inst)
            << "OpExecutionMode is only valid when the Mode operand is an "
               "execution mode that takes no Extra Operands, or takes Extra "
