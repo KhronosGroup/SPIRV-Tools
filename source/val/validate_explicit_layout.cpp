@@ -1153,7 +1153,7 @@ struct Impl {
           return vstate.diag(SPV_ERROR_INVALID_ID, &inst)
                  << "Type " << vstate.getIdName(reference.type_id)
                  << " contains an OpTypeBool, which must not be used in the "
-                 << spvtools::StorageClassToString(reference.storage_class)
+                 << StorageClassToString(reference.storage_class)
                  << " storage class because it requires an explicit layout";
         }
         if (auto error =
