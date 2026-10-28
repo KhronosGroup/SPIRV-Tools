@@ -510,8 +510,10 @@ OpFunctionEnd
 TEST_F(ValidateMemory, VulkanSpecConstantSizedArrayInBlockWorkgroupBad) {
   std::string spirv = R"(
 OpCapability Shader
+OpCapability WorkgroupMemoryExplicitLayoutKHR
+OpExtension "SPV_KHR_workgroup_memory_explicit_layout"
 OpMemoryModel Logical GLSL450
-OpEntryPoint GLCompute %main "main"
+OpEntryPoint GLCompute %main "main" %var
 OpExecutionMode %main LocalSize 1 1 1
 OpDecorate %struct Block
 OpMemberDecorate %struct 0 Offset 0
@@ -530,8 +532,8 @@ OpDecorate %array_type ArrayStride 4
 OpReturn
 OpFunctionEnd
 )";
-  CompileSuccessfully(spirv.c_str(), SPV_ENV_VULKAN_1_1);
-  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_VULKAN_1_1));
+  CompileSuccessfully(spirv.c_str(), SPV_ENV_VULKAN_1_1_SPIRV_1_4);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_VULKAN_1_1_SPIRV_1_4));
   EXPECT_THAT(getDiagnosticString(),
               AnyVUID("VUID-StandaloneSpirv-Function-04681"));
 }
