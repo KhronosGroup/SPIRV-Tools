@@ -466,12 +466,12 @@ spv_result_t ValidateVariableInitializer(ValidationState_t& _,
     }
   }
 
-  // Vulkan Appendix A: Check that if contains initializer, then
-  // storage class is Output, Private, or Function.
   if (inst->operands().size() > initializer_index &&
       storage_class != spv::StorageClass::Output &&
       storage_class != spv::StorageClass::Private &&
       storage_class != spv::StorageClass::Function) {
+    // Vulkan Appendix A: Check that if contains initializer, then
+    // storage class is Output, Private, or Function.
     if (spvIsVulkanEnv(_.context()->target_env)) {
       if (storage_class == spv::StorageClass::Workgroup) {
         auto init_id = inst->GetOperandAs<uint32_t>(initializer_index);
@@ -498,6 +498,15 @@ spv_result_t ValidateVariableInitializer(ValidationState_t& _,
                << "one of the following storage classes: Output, Private, "
                << "Function or Workgroup";
       }
+    }
+    // OpenCL SPIR-V Environment: An Initializer must not be present if Storage
+    // Class is Workgroup.
+    if (!untyped_pointer && storage_class == spv::StorageClass::Workgroup &&
+        spvIsOpenCLEnv(_.context()->target_env)) {
+      return _.diag(SPV_ERROR_INVALID_ID, inst)
+             << "OpVariable, <id> " << _.getIdName(inst->id())
+             << ", initializers are not allowed in Workgroup storage class "
+                "in the OpenCL environment";
     }
   }
 
