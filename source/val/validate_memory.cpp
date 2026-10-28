@@ -56,6 +56,59 @@ bool IsAllowedTypeOrArrayOfSame(ValidationState_t& _, const Instruction& type,
   return false;
 }
 
+// SPV_EXT_descriptor_heap can only read the heap as a descriptor.
+// It does not support reading it as a POD (int, struct, etc) directly
+// details: https://gitlab.khronos.org/vulkan/vulkan/-/merge_requests/8631
+spv_result_t ValidateDescriptorHeapReadType(ValidationState_t& _,
+                                            const Instruction* inst,
+                                            const Instruction* pointer,
+                                            const Instruction* type) {
+  if (!pointer || !spvIsVulkanEnv(_.context()->target_env) ||
+      !_.HasCapability(spv::Capability::DescriptorHeapEXT)) {
+    return SPV_SUCCESS;
+  }
+  const Instruction* heap_variable = _.FindUntypedBaseVariable(pointer);
+  if (!heap_variable ||
+      heap_variable->opcode() != spv::Op::OpUntypedVariableKHR) {
+    return SPV_SUCCESS;
+  }
+  const bool sampler_heap =
+      _.IsBuiltin(heap_variable->id(), spv::BuiltIn::SamplerHeapEXT);
+  if (!sampler_heap &&
+      !_.IsBuiltin(heap_variable->id(), spv::BuiltIn::ResourceHeapEXT)) {
+    return SPV_SUCCESS;
+  }
+
+  // Look through a single level of array, the same as the declaration rules
+  const Instruction* element_type = type;
+  if (type && (type->opcode() == spv::Op::OpTypeArray ||
+               type->opcode() == spv::Op::OpTypeRuntimeArray)) {
+    element_type = _.FindDef(type->GetOperandAs<uint32_t>(1));
+  }
+
+  // If using OpCopyMemorySized there is no type,
+  // so we can't prove it is reading a descriptor
+  if (element_type && _.IsDescriptorType(element_type->opcode())) {
+    return SPV_SUCCESS;
+  }
+
+  auto diag = _.diag(SPV_ERROR_INVALID_ID, inst);
+  diag << _.VkErrorID(13744) << "Op" << spvOpcodeString(inst->opcode())
+       << " reads the variable <id> " << _.getIdName(heap_variable->id())
+       << " decorated with "
+       << (sampler_heap ? "SamplerHeapEXT" : "ResourceHeapEXT");
+  if (type) {
+    diag << " as type <id> " << _.getIdName(type->id());
+  } else {
+    diag << " without a type";
+  }
+  diag << ". A descriptor heap only holds descriptors, so values accessed "
+          "through it must be descriptor types (OpTypeImage, OpTypeSampler, "
+          "OpTypeAccelerationStructureKHR, OpTypeTensorARM, OpTypeBufferEXT, "
+          "or an array of one of these types)";
+  return diag;
+}
+
 // Returns true if the two instructions represent structs that, as far as the
 // validator can tell, have the exact same data layout.
 bool AreLayoutCompatibleStructs(ValidationState_t& _, const Instruction* type1,
@@ -709,11 +762,49 @@ spv_result_t ValidateVariableVulkanDescriptor(ValidationState_t& _,
   // Vulkan Descriptor Set Interface: Check type of UniformConstant and
   // Uniform variables.
   if (storage_class == spv::StorageClass::UniformConstant) {
-    if (!IsAllowedTypeOrArrayOfSame(
-            _, pointee,
-            {spv::Op::OpTypeImage, spv::Op::OpTypeSampler,
-             spv::Op::OpTypeSampledImage, spv::Op::OpTypeTensorARM,
-             spv::Op::OpTypeAccelerationStructureKHR})) {
+    const bool sampler_heap =
+        _.IsBuiltin(inst->id(), spv::BuiltIn::SamplerHeapEXT);
+    const bool resource_heap =
+        _.IsBuiltin(inst->id(), spv::BuiltIn::ResourceHeapEXT);
+    if (sampler_heap || resource_heap) {
+      // No type is both concrete (13706) and a descriptor type (13745/13746),
+      // so together these only allow a heap variable with no Data Type.
+      if (!_.IsConcreteType(pointee.id())) {
+        return _.diag(SPV_ERROR_INVALID_ID, inst)
+               << _.VkErrorID(13706) << "UniformConstant OpVariable <id> "
+               << _.getIdName(inst->id())
+               << " is decorated with SamplerHeapEXT or ResourceHeapEXT, so "
+                  "it must either have a concrete type (a numerical scalar, "
+                  "vector, or matrix, a physical pointer, or an aggregate of "
+                  "only these) or have no Data Type";
+      }
+      const bool allowed =
+          sampler_heap
+              ? IsAllowedTypeOrArrayOfSame(_, pointee, {spv::Op::OpTypeSampler})
+              : IsAllowedTypeOrArrayOfSame(
+                    _, pointee,
+                    {spv::Op::OpTypeImage, spv::Op::OpTypeTensorARM,
+                     spv::Op::OpTypeAccelerationStructureKHR,
+                     spv::Op::OpTypeBufferEXT});
+      if (!allowed) {
+        return _.diag(SPV_ERROR_INVALID_ID, inst)
+               << _.VkErrorID(sampler_heap ? 13746 : 13745)
+               << "UniformConstant OpVariable <id> " << _.getIdName(inst->id())
+               << " is decorated with "
+               << (sampler_heap ? "SamplerHeapEXT" : "ResourceHeapEXT")
+               << ", so it must either be an OpUntypedVariableKHR with no "
+                  "Data Type, or be typed as "
+               << (sampler_heap
+                       ? "OpTypeSampler or an array of OpTypeSampler"
+                       : "OpTypeImage, OpTypeAccelerationStructureKHR, "
+                         "OpTypeTensorARM, OpTypeBufferEXT, or an array of one "
+                         "of these types");
+      }
+    } else if (!IsAllowedTypeOrArrayOfSame(
+                   _, pointee,
+                   {spv::Op::OpTypeImage, spv::Op::OpTypeSampler,
+                    spv::Op::OpTypeSampledImage, spv::Op::OpTypeTensorARM,
+                    spv::Op::OpTypeAccelerationStructureKHR})) {
       return _.diag(SPV_ERROR_INVALID_ID, inst)
              << _.VkErrorID(4655) << "UniformConstant OpVariable <id> "
              << _.getIdName(inst->id()) << " has illegal type.\n"
@@ -1497,6 +1588,10 @@ spv_result_t ValidateLoad(ValidationState_t& _, const Instruction* inst) {
     }
   }
 
+  if (auto error =
+          ValidateDescriptorHeapReadType(_, inst, pointer, result_type))
+    return error;
+
   return SPV_SUCCESS;
 }
 
@@ -1798,8 +1893,15 @@ spv_result_t ValidateCopyMemory(ValidationState_t& _, const Instruction* inst) {
       return error;
     }
 
+    if (auto error = ValidateDescriptorHeapReadType(
+            _, inst, source, target_type ? target_type : source_type))
+      return error;
+
     if (auto error = CheckMemoryAccess(_, inst, 2)) return error;
   } else {
+    if (auto error = ValidateDescriptorHeapReadType(_, inst, source, nullptr))
+      return error;
+
     const auto size_id = inst->GetOperandAs<uint32_t>(2);
     const auto size = _.FindDef(size_id);
     if (!size) {
