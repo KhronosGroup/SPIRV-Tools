@@ -109,6 +109,7 @@ SPVTOOLS_OPT_SRC_FILES := \
 		source/opt/convert_to_sampled_image_pass.cpp \
 		source/opt/convert_to_half_pass.cpp \
 		source/opt/convert_to_untyped.cpp \
+		source/opt/convert_ubo_to_push_constant_pass.cpp \
 		source/opt/copy_prop_arrays.cpp \
 		source/opt/dataflow.cpp \
 		source/opt/dead_branch_elim_pass.cpp \
