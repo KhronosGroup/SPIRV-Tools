@@ -82,6 +82,14 @@ spv_result_t ValidateAdjacency(ValidationState_t& _);
 /// @return SPV_SUCCESS if no errors are found.
 spv_result_t ValidateInterfaces(ValidationState_t& _);
 
+// Vulkan interface matching ignores one array level for some execution
+// models (per-vertex inputs and outputs). See the Vulkan spec section on
+// interface matching.
+bool ExecutionModelStripsInterfaceArray(spv::ExecutionModel model,
+                                        bool is_output, bool has_patch,
+                                        bool has_per_task_nv,
+                                        bool has_per_vertex_khr);
+
 /// @brief Validates entry point call tree requirements of
 /// SPV_KHR_float_controls2
 ///

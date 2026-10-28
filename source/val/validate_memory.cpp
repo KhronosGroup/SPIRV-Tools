@@ -806,6 +806,103 @@ spv_result_t ValidateVariableCoopMat(ValidationState_t& _,
   return SPV_SUCCESS;
 }
 
+bool IsSpecConstantSizedArray(ValidationState_t& _,
+                              const Instruction* type_inst) {
+  if (!type_inst || type_inst->opcode() != spv::Op::OpTypeArray) return false;
+  const Instruction* length = _.FindDef(type_inst->GetOperandAs<uint32_t>(2u));
+  return length && spvOpcodeIsSpecConstant(length->opcode());
+}
+
+// True when |type_id| is the extra array level Vulkan interface matching
+// strips for |inst|. The variable must be listed on an OpEntryPoint whose
+// execution model strips that array.
+bool IsStrippableInterfaceArray(ValidationState_t& _, const Instruction* inst,
+                                spv::StorageClass storage_class,
+                                uint32_t type_id) {
+  if (storage_class != spv::StorageClass::Input &&
+      storage_class != spv::StorageClass::Output) {
+    return false;
+  }
+  const Instruction* type = _.FindDef(type_id);
+  if (!type || (type->opcode() != spv::Op::OpTypeArray &&
+                type->opcode() != spv::Op::OpTypeRuntimeArray)) {
+    return false;
+  }
+
+  const bool is_output = storage_class == spv::StorageClass::Output;
+  const bool has_patch = _.HasDecoration(inst->id(), spv::Decoration::Patch);
+  const bool has_per_task_nv =
+      _.HasDecoration(inst->id(), spv::Decoration::PerTaskNV);
+  const bool has_per_vertex_khr =
+      _.HasDecoration(inst->id(), spv::Decoration::PerVertexKHR);
+
+  for (const auto ep_func_id : _.entry_points()) {
+    bool listed = false;
+    for (const auto& desc : _.entry_point_descriptions(ep_func_id)) {
+      for (const auto iface_id : desc.interfaces) {
+        if (iface_id == inst->id()) {
+          listed = true;
+          break;
+        }
+      }
+      if (listed) break;
+    }
+    if (!listed) continue;
+
+    const auto* models = _.GetExecutionModels(ep_func_id);
+    if (!models) continue;
+    for (const auto model : *models) {
+      if (ExecutionModelStripsInterfaceArray(model, is_output, has_patch,
+                                             has_per_task_nv,
+                                             has_per_vertex_khr)) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
+// VUID-StandaloneSpirv-Function-04681
+spv_result_t ValidateVulkanSpecConstantSizedArray(
+    ValidationState_t& _, const Instruction* inst,
+    spv::StorageClass storage_class, uint32_t value_id) {
+  if (storage_class == spv::StorageClass::Function ||
+      storage_class == spv::StorageClass::Private) {
+    return SPV_SUCCESS;
+  }
+  if (storage_class == spv::StorageClass::Workgroup &&
+      !_.HasDecoration(value_id, spv::Decoration::Block)) {
+    return SPV_SUCCESS;
+  }
+
+  uint32_t check_id = value_id;
+  if (IsStrippableInterfaceArray(_, inst, storage_class, check_id)) {
+    const Instruction* type = _.FindDef(check_id);
+    if (type) check_id = type->GetOperandAs<uint32_t>(1u);
+  }
+
+  const Instruction* check_type = _.FindDef(check_id);
+  if (check_type && check_type->opcode() == spv::Op::OpTypeArray) {
+    check_id = check_type->GetOperandAs<uint32_t>(1u);
+  }
+
+  if (_.ContainsType(check_id, [&_](const Instruction* type_inst) {
+        return IsSpecConstantSizedArray(_, type_inst);
+      })) {
+    return _.diag(SPV_ERROR_INVALID_ID, inst)
+           << _.VkErrorID(4681)
+           << "A type that is an array sized with a specialization constant "
+              "must neither be, nor be contained in, the type of variable "
+              "<id> "
+           << _.getIdName(inst->id())
+           << ", unless it is equal to the variable type, declared in the "
+              "Function or Private Storage Class, a non-Block variable in "
+              "the Workgroup Storage Class, or an interface variable with an "
+              "additional level of arrayness.";
+  }
+  return SPV_SUCCESS;
+}
+
 // Vulkan specific validation rules for OpTypeRuntimeArray
 spv_result_t ValidateVariableVulkanArray(ValidationState_t& _,
                                          const Instruction* inst,
@@ -874,7 +971,7 @@ spv_result_t ValidateVariableVulkanArray(ValidationState_t& _,
     }
   }
 
-  return SPV_SUCCESS;
+  return ValidateVulkanSpecConstantSizedArray(_, inst, storage_class, value_id);
 }
 
 // Vulkan-specific validation for long vectors
