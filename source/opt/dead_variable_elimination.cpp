@@ -14,6 +14,7 @@
 
 #include "source/opt/dead_variable_elimination.h"
 
+#include <unordered_set>
 #include <vector>
 
 #include "source/opt/ir_context.h"
@@ -77,7 +78,41 @@ Pass::Status DeadVariableElimination::Process() {
       DeleteVariable(result_id);
     }
   }
+
+  ids_to_remove.clear();
+  for (auto& function : *get_module()) {
+    if (function.IsDeclaration()) continue;
+
+    auto& entry = *function.begin();
+    for (auto inst = entry.begin(); inst != entry.end(); ++inst) {
+      if (inst->opcode() != spv::Op::OpVariable) break;
+      if (!IsFunctionLocalVariable(&*inst)) continue;
+      if (IsLiveVar(inst->result_id())) continue;
+      ids_to_remove.push_back(inst->result_id());
+    }
+  }
+
+  if (!ids_to_remove.empty()) {
+    modified = true;
+    for (auto result_id : ids_to_remove) {
+      DeleteLocalVariable(result_id);
+    }
+  }
+
   return (modified ? Status::SuccessWithChange : Status::SuccessWithoutChange);
+}
+
+bool DeadVariableElimination::IsFunctionLocalVariable(
+    const Instruction* inst) const {
+  if (inst->opcode() != spv::Op::OpVariable) return false;
+
+  const Instruction* type_inst = get_def_use_mgr()->GetDef(inst->type_id());
+  if (type_inst == nullptr || type_inst->opcode() != spv::Op::OpTypePointer) {
+    return false;
+  }
+
+  return spv::StorageClass(type_inst->GetSingleWordInOperand(0)) ==
+         spv::StorageClass::Function;
 }
 
 void DeadVariableElimination::DeleteVariable(uint32_t result_id) {
@@ -106,6 +141,20 @@ void DeadVariableElimination::DeleteVariable(uint32_t result_id) {
       }
     }
   }
+  context()->KillDef(result_id);
+}
+
+void DeadVariableElimination::DeleteLocalVariable(uint32_t result_id) {
+  std::queue<Instruction*> dead_stores;
+  std::unordered_set<Instruction*> processed;
+  AddStores(result_id, &dead_stores);
+  while (!dead_stores.empty()) {
+    Instruction* inst = dead_stores.front();
+    dead_stores.pop();
+    if (!processed.insert(inst).second) continue;
+    DCEInst(inst, nullptr);
+  }
+
   context()->KillDef(result_id);
 }
 }  // namespace opt

@@ -37,6 +37,8 @@ class DeadVariableElimination : public MemPass {
  private:
   // Deletes the OpVariable instruction who result id is |result_id|.
   void DeleteVariable(uint32_t result_id);
+  void DeleteLocalVariable(uint32_t result_id);
+  bool IsFunctionLocalVariable(const Instruction* inst) const;
 
   // Keeps track of the number of references of an id.  Once that value is 0, it
   // is safe to remove the corresponding instruction.
