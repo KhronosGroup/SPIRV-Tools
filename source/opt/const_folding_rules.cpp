@@ -720,6 +720,14 @@ using BinaryScalarFoldingRule = std::function<const analysis::Constant*(
     const analysis::Type* result_type, const analysis::Constant* a,
     const analysis::Constant* b, analysis::ConstantManager*)>;
 
+// The interface for a function that returns the result of applying a scalar
+// floating-point ternary operation on |a|, |b| and |c|.  The type of the return
+// value will be |type|.  The input constants must also be of type |type|.
+using TernaryScalarFoldingRule = std::function<const analysis::Constant*(
+    const analysis::Type* result_type, const analysis::Constant* a,
+    const analysis::Constant* b, const analysis::Constant* c,
+    analysis::ConstantManager*)>;
+
 // Returns a |ConstantFoldingRule| that folds unary scalar ops
 // using |scalar_rule| and unary vectors ops by applying
 // |scalar_rule| to the elements of the vector.  The |ConstantFoldingRule|
@@ -835,6 +843,71 @@ ConstantFoldingRule FoldBinaryOp(BinaryScalarFoldingRule scalar_rule) {
   };
 }
 
+// Returns a |ConstantFoldingRule| that folds ternary scalar ops
+// using |scalar_rule| and ternary vectors ops by applying
+// |scalar_rule| to the elements of the vector. The folding rule assumes that op
+// has three inputs. For regular instruction, those are in operands 0, 1 and 2.
+// For extended instruction, they are in operands 1, 2 and 3. If an element in
+// |constants| is not nullprt, then the constant's type is |Float|, |Integer|,
+// or |Vector| whose element type is |Float| or |Integer|.
+ConstantFoldingRule FoldTernaryOp(TernaryScalarFoldingRule scalar_rule) {
+  return [scalar_rule](IRContext* context, Instruction* inst,
+                       const std::vector<const analysis::Constant*>& constants)
+             -> const analysis::Constant* {
+    assert(constants.size() == (inst->opcode() == spv::Op::OpExtInst ? 4 : 3));
+    analysis::ConstantManager* const_mgr = context->get_constant_mgr();
+    analysis::TypeManager* type_mgr = context->get_type_mgr();
+    const analysis::Type* result_type = type_mgr->GetType(inst->type_id());
+    const analysis::Vector* vector_type = result_type->AsVector();
+
+    const analysis::Constant* arg1 =
+        (inst->opcode() == spv::Op::OpExtInst) ? constants[1] : constants[0];
+    const analysis::Constant* arg2 =
+        (inst->opcode() == spv::Op::OpExtInst) ? constants[2] : constants[1];
+    const analysis::Constant* arg3 =
+        (inst->opcode() == spv::Op::OpExtInst) ? constants[3] : constants[2];
+
+    if (arg1 == nullptr || arg2 == nullptr || arg3 == nullptr) {
+      return nullptr;
+    }
+
+    if (vector_type == nullptr) {
+      return scalar_rule(result_type, arg1, arg2, arg3, const_mgr);
+    }
+
+    std::vector<const analysis::Constant*> a_components;
+    std::vector<const analysis::Constant*> b_components;
+    std::vector<const analysis::Constant*> c_components;
+    std::vector<const analysis::Constant*> results_components;
+
+    a_components = arg1->GetVectorComponents(const_mgr);
+    b_components = arg2->GetVectorComponents(const_mgr);
+    c_components = arg3->GetVectorComponents(const_mgr);
+    assert(a_components.size() == b_components.size());
+
+    // Fold each component of the vector.
+    for (uint32_t i = 0; i < a_components.size(); ++i) {
+      results_components.push_back(scalar_rule(vector_type->element_type(),
+                                               a_components[i], b_components[i],
+                                               c_components[i], const_mgr));
+      if (results_components[i] == nullptr) {
+        return nullptr;
+      }
+    }
+
+    // Build the constant object and return it.
+    std::vector<uint32_t> ids;
+    for (const analysis::Constant* member : results_components) {
+      Instruction* def = const_mgr->GetDefiningInstruction(member);
+      if (!def) {
+        return nullptr;
+      }
+      ids.push_back(def->result_id());
+    }
+    return const_mgr->GetConstant(vector_type, ids);
+  };
+}
+
 // Returns a |ConstantFoldingRule| that folds unary floating point scalar ops
 // using |scalar_rule| and unary float point vectors ops by applying
 // |scalar_rule| to the elements of the vector.  The |ConstantFoldingRule|
@@ -918,6 +991,19 @@ ConstantFoldingRule FoldFPBinaryOp(BinaryScalarFoldingRule scalar_rule) {
                             {constants[1], constants[2]}, context);
     }
     return FoldFPBinaryOp(scalar_rule, inst->type_id(), constants, context);
+  };
+}
+
+ConstantFoldingRule FoldFPTernaryOp(TernaryScalarFoldingRule scalar_rule) {
+  auto folding_rule = FoldTernaryOp(scalar_rule);
+  return [folding_rule](IRContext* context, Instruction* inst,
+                        const std::vector<const analysis::Constant*>& constants)
+             -> const analysis::Constant* {
+    if (!inst->IsFloatingPointFoldingAllowed()) {
+      return nullptr;
+    }
+
+    return folding_rule(context, inst, constants);
   };
 }
 
@@ -2053,7 +2139,7 @@ const analysis::Constant* FoldNClamp3(
   return nullptr;
 }
 
-UnaryScalarFoldingRule FoldFTranscendentalUnary(double (*fp)(double)) {
+UnaryScalarFoldingRule FoldUnaryFloatingPointOperation(double (*fp)(double)) {
   return
       [fp](const analysis::Type* result_type, const analysis::Constant* a,
            analysis::ConstantManager* const_mgr) -> const analysis::Constant* {
@@ -2078,8 +2164,8 @@ UnaryScalarFoldingRule FoldFTranscendentalUnary(double (*fp)(double)) {
       };
 }
 
-BinaryScalarFoldingRule FoldFTranscendentalBinary(double (*fp)(double,
-                                                               double)) {
+BinaryScalarFoldingRule FoldBinaryFloatingPointOperation(double (*fp)(double,
+                                                                      double)) {
   return
       [fp](const analysis::Type* result_type, const analysis::Constant* a,
            const analysis::Constant* b,
@@ -2100,6 +2186,39 @@ BinaryScalarFoldingRule FoldFTranscendentalBinary(double (*fp)(double,
           double fa = a->GetDouble();
           double fb = b->GetDouble();
           double res = fp(fa, fb);
+          utils::FloatProxy<double> result(res);
+          std::vector<uint32_t> words = result.GetWords();
+          return const_mgr->GetConstant(result_type, words);
+        }
+        return nullptr;
+      };
+}
+
+TernaryScalarFoldingRule FoldTernaryFloatingPointOperation(
+    double (*fp)(double, double, double)) {
+  return
+      [fp](const analysis::Type* result_type, const analysis::Constant* a,
+           const analysis::Constant* b, const analysis::Constant* c,
+           analysis::ConstantManager* const_mgr) -> const analysis::Constant* {
+        assert(result_type != nullptr && a != nullptr);
+        const analysis::Float* float_type = a->type()->AsFloat();
+        assert(float_type != nullptr);
+        assert(float_type == result_type->AsFloat());
+        assert(float_type == b->type()->AsFloat());
+        assert(float_type == c->type()->AsFloat());
+        if (float_type->width() == 32) {
+          float fa = a->GetFloat();
+          float fb = b->GetFloat();
+          float fc = c->GetFloat();
+          float res = static_cast<float>(fp(fa, fb, fc));
+          utils::FloatProxy<float> result(res);
+          std::vector<uint32_t> words = result.GetWords();
+          return const_mgr->GetConstant(result_type, words);
+        } else if (float_type->width() == 64) {
+          double fa = a->GetDouble();
+          double fb = b->GetDouble();
+          double fc = c->GetDouble();
+          double res = fp(fa, fb, fc);
           utils::FloatProxy<double> result(res);
           std::vector<uint32_t> words = result.GetWords();
           return const_mgr->GetConstant(result_type, words);
@@ -2376,21 +2495,40 @@ void ConstantFoldingRules::AddFoldingRules() {
     ext_rules_[{ext_inst_glslstd450_id, GLSLstd450NClamp}].push_back(
         FoldNClamp3);
     ext_rules_[{ext_inst_glslstd450_id, GLSLstd450Sin}].push_back(
-        FoldFPUnaryOp(FoldFTranscendentalUnary(std::sin)));
+        FoldFPUnaryOp(FoldUnaryFloatingPointOperation(std::sin)));
     ext_rules_[{ext_inst_glslstd450_id, GLSLstd450Cos}].push_back(
-        FoldFPUnaryOp(FoldFTranscendentalUnary(std::cos)));
+        FoldFPUnaryOp(FoldUnaryFloatingPointOperation(std::cos)));
     ext_rules_[{ext_inst_glslstd450_id, GLSLstd450Tan}].push_back(
-        FoldFPUnaryOp(FoldFTranscendentalUnary(std::tan)));
+        FoldFPUnaryOp(FoldUnaryFloatingPointOperation(std::tan)));
     ext_rules_[{ext_inst_glslstd450_id, GLSLstd450Asin}].push_back(
-        FoldFPUnaryOp(FoldFTranscendentalUnary(std::asin)));
+        FoldFPUnaryOp(FoldUnaryFloatingPointOperation(std::asin)));
     ext_rules_[{ext_inst_glslstd450_id, GLSLstd450Acos}].push_back(
-        FoldFPUnaryOp(FoldFTranscendentalUnary(std::acos)));
+        FoldFPUnaryOp(FoldUnaryFloatingPointOperation(std::acos)));
     ext_rules_[{ext_inst_glslstd450_id, GLSLstd450Atan}].push_back(
-        FoldFPUnaryOp(FoldFTranscendentalUnary(std::atan)));
+        FoldFPUnaryOp(FoldUnaryFloatingPointOperation(std::atan)));
+    ext_rules_[{ext_inst_glslstd450_id, GLSLstd450Sinh}].push_back(
+        FoldFPUnaryOp(FoldUnaryFloatingPointOperation(std::sinh)));
+    ext_rules_[{ext_inst_glslstd450_id, GLSLstd450Cosh}].push_back(
+        FoldFPUnaryOp(FoldUnaryFloatingPointOperation(std::cosh)));
+    ext_rules_[{ext_inst_glslstd450_id, GLSLstd450Tanh}].push_back(
+        FoldFPUnaryOp(FoldUnaryFloatingPointOperation(std::tanh)));
+    ext_rules_[{ext_inst_glslstd450_id, GLSLstd450Asinh}].push_back(
+        FoldFPUnaryOp(FoldUnaryFloatingPointOperation(std::asinh)));
+    ext_rules_[{ext_inst_glslstd450_id, GLSLstd450Acosh}].push_back(
+        FoldFPUnaryOp(FoldUnaryFloatingPointOperation(std::acosh)));
+    ext_rules_[{ext_inst_glslstd450_id, GLSLstd450Atanh}].push_back(
+        FoldFPUnaryOp(FoldUnaryFloatingPointOperation([](double v) -> double {
+          // std::atanh semantics differ from GLSL.std.450 semantics at |v| = 1.
+          // C++ defines those as +-INF, while GLSL.std.450 defines NaN.
+          return v == 1.0 || v == -1.0 ? NAN : std::atanh(v);
+        })));
+    ext_rules_[{ext_inst_glslstd450_id, GLSLstd450InverseSqrt}].push_back(
+        FoldFPUnaryOp(FoldUnaryFloatingPointOperation(
+            [](double v) -> double { return 1.0 / sqrt(v); })));
     ext_rules_[{ext_inst_glslstd450_id, GLSLstd450Exp}].push_back(
-        FoldFPUnaryOp(FoldFTranscendentalUnary(std::exp)));
+        FoldFPUnaryOp(FoldUnaryFloatingPointOperation(std::exp)));
     ext_rules_[{ext_inst_glslstd450_id, GLSLstd450Log}].push_back(
-        FoldFPUnaryOp(FoldFTranscendentalUnary(std::log)));
+        FoldFPUnaryOp(FoldUnaryFloatingPointOperation(std::log)));
 
 #ifdef __ANDROID__
     // Android NDK r15c targeting ABI 15 doesn't have full support for C++11
@@ -2398,30 +2536,78 @@ void ConstantFoldingRules::AddFoldingRules() {
     // available up until ABI 18 so we use a shim
     auto log2_shim = [](double v) -> double { return log(v) / log(2.0); };
     ext_rules_[{ext_inst_glslstd450_id, GLSLstd450Exp2}].push_back(
-        FoldFPUnaryOp(FoldFTranscendentalUnary(::exp2)));
+        FoldFPUnaryOp(FoldUnaryFloatingPointOperation(::exp2)));
     ext_rules_[{ext_inst_glslstd450_id, GLSLstd450Log2}].push_back(
-        FoldFPUnaryOp(FoldFTranscendentalUnary(log2_shim)));
+        FoldFPUnaryOp(FoldUnaryFloatingPointOperation(log2_shim)));
 #else
     ext_rules_[{ext_inst_glslstd450_id, GLSLstd450Exp2}].push_back(
-        FoldFPUnaryOp(FoldFTranscendentalUnary(std::exp2)));
+        FoldFPUnaryOp(FoldUnaryFloatingPointOperation(std::exp2)));
     ext_rules_[{ext_inst_glslstd450_id, GLSLstd450Log2}].push_back(
-        FoldFPUnaryOp(FoldFTranscendentalUnary(std::log2)));
+        FoldFPUnaryOp(FoldUnaryFloatingPointOperation(std::log2)));
 #endif
 
     ext_rules_[{ext_inst_glslstd450_id, GLSLstd450Sqrt}].push_back(
-        FoldFPUnaryOp(FoldFTranscendentalUnary(std::sqrt)));
+        FoldFPUnaryOp(FoldUnaryFloatingPointOperation(std::sqrt)));
     ext_rules_[{ext_inst_glslstd450_id, GLSLstd450Atan2}].push_back(
-        FoldFPBinaryOp(FoldFTranscendentalBinary(std::atan2)));
+        FoldFPBinaryOp(FoldBinaryFloatingPointOperation(std::atan2)));
     ext_rules_[{ext_inst_glslstd450_id, GLSLstd450Pow}].push_back(
-        FoldFPBinaryOp(FoldFTranscendentalBinary(std::pow)));
+        FoldFPBinaryOp(FoldBinaryFloatingPointOperation(std::pow)));
     ext_rules_[{ext_inst_glslstd450_id, GLSLstd450FAbs}].push_back(
-        FoldFPUnaryOp(FoldFTranscendentalUnary(std::fabs)));
+        FoldFPUnaryOp(FoldUnaryFloatingPointOperation(std::fabs)));
 
     ext_rules_[{ext_inst_glslstd450_id, GLSLstd450SAbs}].push_back(
         FoldUnaryOp(FoldUnaryIntegerOperation<Signed>([](uint64_t a) {
           int64_t value = static_cast<int64_t>(a);
           return static_cast<uint64_t>(value >= 0 ? value : -value);
         })));
+    ext_rules_[{ext_inst_glslstd450_id, GLSLstd450Round}].push_back(
+        FoldFPUnaryOp(FoldUnaryFloatingPointOperation(std::round)));
+    ext_rules_[{ext_inst_glslstd450_id, GLSLstd450Trunc}].push_back(
+        FoldFPUnaryOp(FoldUnaryFloatingPointOperation(std::trunc)));
+    ext_rules_[{ext_inst_glslstd450_id, GLSLstd450Floor}].push_back(
+        FoldFPUnaryOp(FoldUnaryFloatingPointOperation(std::floor)));
+    ext_rules_[{ext_inst_glslstd450_id, GLSLstd450Ceil}].push_back(
+        FoldFPUnaryOp(FoldUnaryFloatingPointOperation(std::ceil)));
+    ext_rules_[{ext_inst_glslstd450_id, GLSLstd450Fract}].push_back(
+        FoldFPUnaryOp(FoldUnaryFloatingPointOperation(
+            [](double v) -> double { return v - std::floor(v); })));
+    ext_rules_[{ext_inst_glslstd450_id, GLSLstd450FSign}].push_back(
+        FoldFPUnaryOp(FoldUnaryFloatingPointOperation([](double v) -> double {
+          if (v == 0.0) return v;  // retain sign of zero
+          return v < 0 ? -1.0 : 1.0;
+        })));
+    ext_rules_[{ext_inst_glslstd450_id, GLSLstd450SSign}].push_back(FoldUnaryOp(
+        FoldUnaryIntegerOperation<Signed>([](uint64_t a) -> uint64_t {
+          int64_t value = static_cast<int64_t>(a);
+          if (value == 0) return 0;
+          return static_cast<uint64_t>(value < 0 ? int64_t(-1) : int64_t(1));
+        })));
+    ext_rules_[{ext_inst_glslstd450_id, GLSLstd450Radians}].push_back(
+        FoldFPUnaryOp(FoldUnaryFloatingPointOperation([](double v) -> double {
+          constexpr double kPI = 3.141592653589793;
+          return v * kPI / 180.0;
+        })));
+    ext_rules_[{ext_inst_glslstd450_id, GLSLstd450Degrees}].push_back(
+        FoldFPUnaryOp(FoldUnaryFloatingPointOperation([](double v) -> double {
+          constexpr double kPI = 3.141592653589793;
+          return v * 180.0 / kPI;
+        })));
+    ext_rules_[{ext_inst_glslstd450_id, GLSLstd450Step}].push_back(
+        FoldFPBinaryOp(FoldBinaryFloatingPointOperation(
+            [](double edge, double x) -> double {
+              return x < edge ? 0.0 : 1.0;
+            })));
+    ext_rules_[{ext_inst_glslstd450_id, GLSLstd450SmoothStep}].push_back(
+        FoldFPTernaryOp(FoldTernaryFloatingPointOperation(
+            [](double edge0, double edge1, double x) -> double {
+              double t = std::clamp((x - edge0) / (edge1 - edge0), 0.0, 1.0);
+              return t * t * (3.0 - 2.0 * t);
+            })));
+    ext_rules_[{ext_inst_glslstd450_id, GLSLstd450Fma}].push_back(
+        FoldFPTernaryOp(FoldTernaryFloatingPointOperation(
+            [](double a, double b, double c) -> double {
+              return std::fma(a, b, c);
+            })));
   }
 }
 }  // namespace opt
