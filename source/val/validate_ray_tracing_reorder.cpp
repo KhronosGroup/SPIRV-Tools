@@ -317,6 +317,23 @@ spv_result_t RayReorderNVPass(ValidationState_t& _, const Instruction* inst) {
     return;
   };
 
+  // Instructions that also require a capability other than the one that
+  // enables them.
+  switch (opcode) {
+    case spv::Op::OpHitObjectTraceRayMotionNV:
+    case spv::Op::OpHitObjectRecordHitMotionNV:
+    case spv::Op::OpHitObjectRecordHitWithIndexMotionNV:
+    case spv::Op::OpHitObjectRecordMissMotionNV:
+    case spv::Op::OpHitObjectGetCurrentTimeNV:
+      if (!_.HasCapability(spv::Capability::RayTracingMotionBlurNV))
+        return _.diag(SPV_ERROR_INVALID_CAPABILITY, inst)
+               << spvOpcodeString(opcode)
+               << ": requires RayTracingMotionBlurNV capability";
+      break;
+    default:
+      break;
+  }
+
   switch (opcode) {
     case spv::Op::OpHitObjectIsMissNV:
     case spv::Op::OpHitObjectIsHitNV:
@@ -791,6 +808,28 @@ spv_result_t RayReorderEXTPass(ValidationState_t& _, const Instruction* inst) {
             });
     return;
   };
+
+  // Instructions that also require a capability other than the one that
+  // enables them.
+  switch (opcode) {
+    case spv::Op::OpHitObjectTraceRayMotionEXT:
+    case spv::Op::OpHitObjectRecordMissMotionEXT:
+    case spv::Op::OpHitObjectTraceMotionReorderExecuteEXT:
+    case spv::Op::OpHitObjectGetCurrentTimeEXT:
+      if (!_.HasCapability(spv::Capability::RayTracingMotionBlurNV))
+        return _.diag(SPV_ERROR_INVALID_CAPABILITY, inst)
+               << spvOpcodeString(opcode)
+               << ": requires RayTracingMotionBlurNV capability";
+      break;
+    case spv::Op::OpHitObjectGetIntersectionTriangleVertexPositionsEXT:
+      if (!_.HasCapability(spv::Capability::RayTracingPositionFetchKHR))
+        return _.diag(SPV_ERROR_INVALID_CAPABILITY, inst)
+               << spvOpcodeString(opcode)
+               << ": requires RayTracingPositionFetchKHR capability";
+      break;
+    default:
+      break;
+  }
 
   switch (opcode) {
     case spv::Op::OpHitObjectIsMissEXT:
