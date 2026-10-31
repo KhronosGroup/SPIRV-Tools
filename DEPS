@@ -78,7 +78,7 @@ vars = {
   'protobuf_revision': '35cd01f9fe9afbeea38cc7b979a3b6bfcde82c03',
   're2_revision': '2da0056814cf180480a19f5cf811e7e1c054bf6d',
   'spirv_headers_revision': 'fef168c54ed2e37c314eb251806aaf9877f38465',
-  'mimalloc_revision': '31d034d94cdb8e22f7d7ed55967f581a2d6e831d',
+  'mimalloc_revision': 'dcd6f09b1d878e06d62949dabea3417eec98c89a',
 
   # SPIRV-Tools standalone GN-only dependencies
   'chromium_testing_version': '555e7546214837372345fef14e25eed42ff2ea07',
