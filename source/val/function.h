@@ -213,16 +213,12 @@ class Function {
 
   /// Registers execution model limitation with an |is_compatible| functor.
   void RegisterExecutionModelLimitation(
-      std::function<bool(spv::ExecutionModel, std::string*)> is_compatible) {
-    execution_model_limitations_.push_back(is_compatible);
-  }
+      std::function<bool(spv::ExecutionModel, std::string*)> is_compatible);
 
   /// Registers limitation with an |is_compatible| functor.
   void RegisterLimitation(std::function<bool(const ValidationState_t& _,
                                              const Function*, std::string*)>
-                              is_compatible) {
-    limitations_.push_back(is_compatible);
-  }
+                              is_compatible);
 
   bool CheckLimitations(const ValidationState_t& _, const Function* entry_point,
                         std::string* reason) const;
@@ -234,36 +230,24 @@ class Function {
                                       std::string* reason = nullptr) const;
 
   // Inserts id to the set of functions called from this function.
-  void AddFunctionCallTarget(uint32_t call_target_id) {
-    function_call_targets_.insert(call_target_id);
-  }
+  void AddFunctionCallTarget(uint32_t call_target_id);
 
   // Returns a set with ids of all functions called from this function.
-  const std::set<uint32_t> function_call_targets() const {
-    return function_call_targets_;
-  }
+  const std::set<uint32_t> function_call_targets() const;
 
   // Returns the block containing the OpSelectionMerge or OpLoopMerge that
   // references |merge_block|.
   // Values of |merge_block_header_| inserted by CFGPass, so do not call before
   // the first iteration of ordered instructions in
   // ValidateBinaryUsingContextAndValidationState has completed.
-  BasicBlock* GetMergeHeader(BasicBlock* merge_block) {
-    return merge_block_header_[merge_block];
-  }
+  BasicBlock* GetMergeHeader(BasicBlock* merge_block);
 
   // Returns vector of the blocks containing a OpLoopMerge that references
   // |continue_target|.
   // Values of |continue_target_headers_| inserted by CFGPass, so do not call
   // before the first iteration of ordered instructions in
   // ValidateBinaryUsingContextAndValidationState has completed.
-  std::vector<BasicBlock*> GetContinueHeaders(BasicBlock* continue_target) {
-    if (continue_target_headers_.find(continue_target) ==
-        continue_target_headers_.end()) {
-      return {};
-    }
-    return continue_target_headers_[continue_target];
-  }
+  std::vector<BasicBlock*> GetContinueHeaders(BasicBlock* continue_target);
 
  private:
   // Computes the representation of the augmented CFG.
