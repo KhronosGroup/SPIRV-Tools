@@ -18,6 +18,7 @@
 #include <utility>
 #include <vector>
 
+#include "source/opt/debug_info_manager.h"
 #include "source/opt/ir_context.h"
 #include "source/spirv_constant.h"
 

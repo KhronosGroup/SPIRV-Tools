@@ -15,6 +15,7 @@
 #include <vector>
 
 #include "gmock/gmock.h"
+#include "source/util/hex_float.h"
 #include "test/opt/pass_fixture.h"
 
 namespace spvtools {

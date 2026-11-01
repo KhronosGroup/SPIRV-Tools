@@ -20,6 +20,7 @@
 #include <utility>
 
 #include "source/cfa.h"
+#include "source/opt/debug_info_manager.h"
 #include "source/opt/reflect.h"
 #include "source/util/make_unique.h"
 

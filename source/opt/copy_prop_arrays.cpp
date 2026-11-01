@@ -16,6 +16,7 @@
 
 #include <utility>
 
+#include "source/opt/debug_info_manager.h"
 #include "source/opt/ir_builder.h"
 
 namespace spvtools {

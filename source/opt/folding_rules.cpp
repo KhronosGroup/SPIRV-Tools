@@ -19,9 +19,11 @@
 
 #include "ir_builder.h"
 #include "source/latest_version_glsl_std_450_header.h"
+#include "source/opt/fold.h"
 #include "source/opt/ir_context.h"
 #include "source/spirv_constant.h"
 #include "source/spirv_target_env.h"
+#include "source/util/hex_float.h"
 
 namespace spvtools {
 namespace opt {

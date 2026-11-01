@@ -26,6 +26,7 @@
 #include "source/opt/loop_utils.h"
 #include "source/opt/module.h"
 #include "source/opt/pass.h"
+#include "source/opt/register_pressure.h"
 #include "source/opt/tree_iterator.h"
 
 namespace spvtools {

@@ -20,6 +20,7 @@
 #include <utility>
 #include <vector>
 
+#include "source/opt/debug_info_manager.h"
 #include "source/opt/ir_builder.h"
 #include "source/opt/loop_utils.h"
 

@@ -17,10 +17,28 @@
 #include <vector>
 
 #include "source/opt/ir_context.h"
+#include "source/util/hex_float.h"
 
 namespace spvtools {
 namespace opt {
 namespace analysis {
+
+float FloatConstant::GetFloatValue() const {
+  assert(type()->AsFloat()->width() == 32 &&
+         "Not a 32-bit floating point value.");
+  utils::FloatProxy<float> a(words()[0]);
+  return a.getAsFloat();
+}
+
+double FloatConstant::GetDoubleValue() const {
+  assert(type()->AsFloat()->width() == 64 &&
+         "Not a 32-bit floating point value.");
+  uint64_t combined_words = words()[1];
+  combined_words = combined_words << 32;
+  combined_words |= words()[0];
+  utils::FloatProxy<double> a(combined_words);
+  return a.getAsFloat();
+}
 
 float Constant::GetFloat() const {
   assert(type()->AsFloat() != nullptr && type()->AsFloat()->width() == 32);
