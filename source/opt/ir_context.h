@@ -96,47 +96,11 @@ class IRContext {
   friend inline Analysis& operator<<=(Analysis& a, int shift);
 
   // Creates an |IRContext| that contains an owned |Module|
-  IRContext(spv_target_env env, MessageConsumer c)
-      : syntax_context_(spvContextCreate(env)),
-        grammar_(syntax_context_),
-        unique_id_(0),
-        module_(new Module()),
-        consumer_(std::move(c)),
-        def_use_mgr_(nullptr),
-        feature_mgr_(nullptr),
-        valid_analyses_(kAnalysisNone),
-        constant_mgr_(nullptr),
-        type_mgr_(nullptr),
-        id_to_name_(nullptr),
-        max_id_bound_(kDefaultMaxIdBound),
-        preserve_bindings_(false),
-        preserve_spec_constants_(false),
-        id_overflow_(false) {
-    SetContextMessageConsumer(syntax_context_, consumer_);
-    module_->SetContext(this);
-  }
+  IRContext(spv_target_env env, MessageConsumer c);
 
-  IRContext(spv_target_env env, std::unique_ptr<Module>&& m, MessageConsumer c)
-      : syntax_context_(spvContextCreate(env)),
-        grammar_(syntax_context_),
-        unique_id_(0),
-        module_(std::move(m)),
-        consumer_(std::move(c)),
-        def_use_mgr_(nullptr),
-        feature_mgr_(nullptr),
-        valid_analyses_(kAnalysisNone),
-        type_mgr_(nullptr),
-        id_to_name_(nullptr),
-        max_id_bound_(kDefaultMaxIdBound),
-        preserve_bindings_(false),
-        preserve_spec_constants_(false),
-        id_overflow_(false) {
-    SetContextMessageConsumer(syntax_context_, consumer_);
-    module_->SetContext(this);
-    InitializeCombinators();
-  }
+  IRContext(spv_target_env env, std::unique_ptr<Module>&& m, MessageConsumer c);
 
-  ~IRContext() { spvContextDestroy(syntax_context_); }
+  ~IRContext();
 
   Module* module() const { return module_.get(); }
 
@@ -717,133 +681,61 @@ class IRContext {
 
  private:
   // Builds the def-use manager from scratch, even if it was already valid.
-  void BuildDefUseManager() {
-    def_use_mgr_ = MakeUnique<analysis::DefUseManager>(module());
-    valid_analyses_ = valid_analyses_ | kAnalysisDefUse;
-  }
+  void BuildDefUseManager();
 
   // Builds the liveness manager from scratch, even if it was already valid.
-  void BuildLivenessManager() {
-    liveness_mgr_ = MakeUnique<analysis::LivenessManager>(this);
-    valid_analyses_ = valid_analyses_ | kAnalysisLiveness;
-  }
+  void BuildLivenessManager();
 
   // Builds the instruction-block map for the whole module.
-  void BuildInstrToBlockMapping() {
-    instr_to_block_.clear();
-    for (auto& fn : *module_) {
-      for (auto& block : fn) {
-        block.ForEachInst([this, &block](Instruction* inst) {
-          instr_to_block_[inst] = &block;
-        });
-      }
-    }
-    valid_analyses_ = valid_analyses_ | kAnalysisInstrToBlockMapping;
-  }
+  void BuildInstrToBlockMapping();
 
   // Builds the instruction-function map for the whole module.
-  void BuildIdToFuncMapping() {
-    id_to_func_.clear();
-    for (auto& fn : *module_) {
-      id_to_func_[fn.result_id()] = &fn;
-    }
-    valid_analyses_ = valid_analyses_ | kAnalysisIdToFuncMapping;
-  }
+  void BuildIdToFuncMapping();
 
   // Builds the instruction-graph map for the whole module.
-  void BuildIdToGraphMapping() {
-    id_to_graph_.clear();
-    for (auto& g : module_->graphs()) {
-      id_to_graph_[g->DefInst().result_id()] = g.get();
-    }
-    valid_analyses_ = valid_analyses_ | kAnalysisIdToGraphMapping;
-  }
+  void BuildIdToGraphMapping();
 
-  void BuildDecorationManager() {
-    decoration_mgr_ = MakeUnique<analysis::DecorationManager>(module());
-    valid_analyses_ = valid_analyses_ | kAnalysisDecorations;
-  }
+  void BuildDecorationManager();
 
-  void BuildCFG() {
-    cfg_ = MakeUnique<CFG>(module());
-    valid_analyses_ = valid_analyses_ | kAnalysisCFG;
-  }
+  void BuildCFG();
 
-  void BuildScalarEvolutionAnalysis() {
-    scalar_evolution_analysis_ = MakeUnique<ScalarEvolutionAnalysis>(this);
-    valid_analyses_ = valid_analyses_ | kAnalysisScalarEvolution;
-  }
+  void BuildScalarEvolutionAnalysis();
 
   // Builds the liveness analysis from scratch, even if it was already valid.
-  void BuildRegPressureAnalysis() {
-    reg_pressure_ = MakeUnique<LivenessAnalysis>(this);
-    valid_analyses_ = valid_analyses_ | kAnalysisRegisterPressure;
-  }
+  void BuildRegPressureAnalysis();
 
   // Builds the value number table analysis from scratch, even if it was already
   // valid.
-  void BuildValueNumberTable() {
-    vn_table_ = MakeUnique<ValueNumberTable>(this);
-    valid_analyses_ = valid_analyses_ | kAnalysisValueNumberTable;
-  }
+  void BuildValueNumberTable();
 
   // Builds the structured CFG analysis from scratch, even if it was already
   // valid.
-  void BuildStructuredCFGAnalysis() {
-    struct_cfg_analysis_ = MakeUnique<StructuredCFGAnalysis>(this);
-    valid_analyses_ = valid_analyses_ | kAnalysisStructuredCFG;
-  }
+  void BuildStructuredCFGAnalysis();
 
   // Builds the constant manager from scratch, even if it was already
   // valid.
-  void BuildConstantManager() {
-    constant_mgr_ = MakeUnique<analysis::ConstantManager>(this);
-    valid_analyses_ = valid_analyses_ | kAnalysisConstants;
-  }
+  void BuildConstantManager();
 
   // Builds the type manager from scratch, even if it was already
   // valid.
-  void BuildTypeManager() {
-    type_mgr_ = MakeUnique<analysis::TypeManager>(consumer(), this);
-    valid_analyses_ = valid_analyses_ | kAnalysisTypes;
-  }
+  void BuildTypeManager();
 
   // Builds the debug information manager from scratch, even if it was
   // already valid.
-  void BuildDebugInfoManager() {
-    debug_info_mgr_ = MakeUnique<analysis::DebugInfoManager>(this);
-    valid_analyses_ = valid_analyses_ | kAnalysisDebugInfo;
-  }
+  void BuildDebugInfoManager();
 
   // Removes all computed dominator and post-dominator trees. This will force
   // the context to rebuild the trees on demand.
-  void ResetDominatorAnalysis() {
-    // Clear the cache.
-    dominator_trees_.clear();
-    post_dominator_trees_.clear();
-    valid_analyses_ = valid_analyses_ | kAnalysisDominatorAnalysis;
-  }
+  void ResetDominatorAnalysis();
 
   // Removes all computed loop descriptors.
-  void ResetLoopAnalysis() {
-    // Clear the cache.
-    loop_descriptors_.clear();
-    valid_analyses_ = valid_analyses_ | kAnalysisLoopAnalysis;
-  }
+  void ResetLoopAnalysis();
 
   // Removes all computed loop descriptors.
-  void ResetBuiltinAnalysis() {
-    // Clear the cache.
-    builtin_var_id_map_.clear();
-    valid_analyses_ = valid_analyses_ | kAnalysisBuiltinVarId;
-  }
+  void ResetBuiltinAnalysis();
 
   // Analyzes the features in the owned module. Builds the manager if required.
-  void AnalyzeFeatures() {
-    feature_mgr_ =
-        std::unique_ptr<FeatureManager>(new FeatureManager(grammar_));
-    feature_mgr_->Analyze(module());
-  }
+  void AnalyzeFeatures();
 
   // Scans a module looking for it capabilities, and initializes combinator_ops_
   // accordingly.
