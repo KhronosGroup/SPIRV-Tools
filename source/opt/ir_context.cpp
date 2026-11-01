@@ -1418,5 +1418,184 @@ spv::ExecutionModel IRContext::GetStage() {
   return static_cast<spv::ExecutionModel>(stage);
 }
 
+void IRContext::AddCapability(spv::Capability capability) {
+  if (!get_feature_mgr()->HasCapability(capability)) {
+    std::unique_ptr<Instruction> capability_inst(new Instruction(
+        this, spv::Op::OpCapability, 0, 0,
+        {{SPV_OPERAND_TYPE_CAPABILITY, {static_cast<uint32_t>(capability)}}}));
+    AddCapability(std::move(capability_inst));
+  }
+}
+
+void IRContext::AddCapability(std::unique_ptr<Instruction>&& c) {
+  AddCombinatorsForCapability(c->GetSingleWordInOperand(0));
+  if (feature_mgr_ != nullptr) {
+    feature_mgr_->AddCapability(
+        static_cast<spv::Capability>(c->GetSingleWordInOperand(0)));
+  }
+  if (AreAnalysesValid(kAnalysisDefUse)) {
+    get_def_use_mgr()->AnalyzeInstDefUse(c.get());
+  }
+  module()->AddCapability(std::move(c));
+}
+
+void IRContext::AddExtension(const std::string& ext_name) {
+  std::vector<uint32_t> ext_words = spvtools::utils::MakeVector(ext_name);
+  AddExtension(std::unique_ptr<Instruction>(
+      new Instruction(this, spv::Op::OpExtension, 0u, 0u,
+                      {{SPV_OPERAND_TYPE_LITERAL_STRING, ext_words}})));
+}
+
+void IRContext::AddExtension(std::unique_ptr<Instruction>&& e) {
+  if (AreAnalysesValid(kAnalysisDefUse)) {
+    get_def_use_mgr()->AnalyzeInstDefUse(e.get());
+  }
+  if (feature_mgr_ != nullptr) {
+    feature_mgr_->AddExtension(&*e);
+  }
+  module()->AddExtension(std::move(e));
+}
+
+void IRContext::AddExtInstImport(const std::string& name) {
+  std::vector<uint32_t> ext_words = spvtools::utils::MakeVector(name);
+  AddExtInstImport(std::unique_ptr<Instruction>(
+      new Instruction(this, spv::Op::OpExtInstImport, 0u, TakeNextId(),
+                      {{SPV_OPERAND_TYPE_LITERAL_STRING, ext_words}})));
+}
+
+void IRContext::AddExtInstImport(std::unique_ptr<Instruction>&& e) {
+  AddCombinatorsForExtension(e.get());
+  if (AreAnalysesValid(kAnalysisDefUse)) {
+    get_def_use_mgr()->AnalyzeInstDefUse(e.get());
+  }
+  module()->AddExtInstImport(std::move(e));
+  if (feature_mgr_ != nullptr) {
+    feature_mgr_->AddExtInstImportIds(module());
+  }
+}
+
+void IRContext::AddDebug2Inst(std::unique_ptr<Instruction>&& d) {
+  if (AreAnalysesValid(kAnalysisNameMap)) {
+    if (d->opcode() == spv::Op::OpName ||
+        d->opcode() == spv::Op::OpMemberName) {
+      // OpName and OpMemberName do not have result-ids. The target of the
+      // instruction is at InOperand index 0.
+      id_to_name_->insert({d->GetSingleWordInOperand(0), d.get()});
+    }
+  }
+  if (AreAnalysesValid(kAnalysisDefUse)) {
+    get_def_use_mgr()->AnalyzeInstDefUse(d.get());
+  }
+  module()->AddDebug2Inst(std::move(d));
+}
+
+void IRContext::AddAnnotationInst(std::unique_ptr<Instruction>&& a) {
+  if (AreAnalysesValid(kAnalysisDecorations)) {
+    get_decoration_mgr()->AddDecoration(a.get());
+  }
+  if (AreAnalysesValid(kAnalysisDefUse)) {
+    get_def_use_mgr()->AnalyzeInstDefUse(a.get());
+  }
+  module()->AddAnnotationInst(std::move(a));
+}
+
+void IRContext::AddType(std::unique_ptr<Instruction>&& t) {
+  module()->AddType(std::move(t));
+  if (AreAnalysesValid(kAnalysisDefUse)) {
+    get_def_use_mgr()->AnalyzeInstDefUse(&*(--types_values_end()));
+  }
+}
+
+void IRContext::AddGlobalValue(std::unique_ptr<Instruction>&& v) {
+  if (AreAnalysesValid(kAnalysisDefUse)) {
+    get_def_use_mgr()->AnalyzeInstDefUse(&*v);
+  }
+  module()->AddGlobalValue(std::move(v));
+}
+
+void IRContext::BuildIdToNameMap() {
+  id_to_name_ = MakeUnique<std::multimap<uint32_t, Instruction*>>();
+  for (Instruction& debug_inst : debugs2()) {
+    if (debug_inst.opcode() == spv::Op::OpMemberName ||
+        debug_inst.opcode() == spv::Op::OpName) {
+      id_to_name_->insert({debug_inst.GetSingleWordInOperand(0), &debug_inst});
+    }
+  }
+  valid_analyses_ = valid_analyses_ | kAnalysisNameMap;
+}
+
+IteratorRange<std::multimap<uint32_t, Instruction*>::iterator>
+IRContext::GetNames(uint32_t id) {
+  if (!AreAnalysesValid(kAnalysisNameMap)) {
+    BuildIdToNameMap();
+  }
+  auto result = id_to_name_->equal_range(id);
+  return make_range(std::move(result.first), std::move(result.second));
+}
+
+Instruction* IRContext::GetMemberName(uint32_t struct_type_id, uint32_t index) {
+  if (!AreAnalysesValid(kAnalysisNameMap)) {
+    BuildIdToNameMap();
+  }
+  auto result = id_to_name_->equal_range(struct_type_id);
+  for (auto i = result.first; i != result.second; ++i) {
+    auto* name_instr = i->second;
+    if (name_instr->opcode() == spv::Op::OpMemberName &&
+        name_instr->GetSingleWordInOperand(1) == index) {
+      return name_instr;
+    }
+  }
+  return nullptr;
+}
+
+void IRContext::CloneNames(const uint32_t old_id, const uint32_t new_id,
+                           const uint32_t max_member_index) {
+  std::vector<std::unique_ptr<Instruction>> names_to_add;
+  auto names = GetNames(old_id);
+  for (auto n : names) {
+    Instruction* old_name_inst = n.second;
+    if (old_name_inst->opcode() == spv::Op::OpMemberName) {
+      auto midx = old_name_inst->GetSingleWordInOperand(1);
+      if (midx >= max_member_index) continue;
+    }
+    std::unique_ptr<Instruction> new_name_inst(old_name_inst->Clone(this));
+    new_name_inst->SetInOperand(0, {new_id});
+    names_to_add.push_back(std::move(new_name_inst));
+  }
+  // We can't add the new names when we are iterating over name range above.
+  // We can add all the new names now.
+  for (auto& new_name : names_to_add) AddDebug2Inst(std::move(new_name));
+}
+
+bool IRContext::IsCombinatorInstruction(const Instruction* inst) {
+  if (!AreAnalysesValid(kAnalysisCombinators)) {
+    InitializeCombinators();
+  }
+  constexpr uint32_t kExtInstSetIdInIndx = 0;
+  constexpr uint32_t kExtInstInstructionInIndx = 1;
+
+  if (inst->opcode() != spv::Op::OpExtInst) {
+    return combinator_ops_[0].count(uint32_t(inst->opcode())) != 0;
+  } else {
+    uint32_t set = inst->GetSingleWordInOperand(kExtInstSetIdInIndx);
+    auto op = inst->GetSingleWordInOperand(kExtInstInstructionInIndx);
+    return combinator_ops_[set].count(op) != 0;
+  }
+}
+
+void IRContext::set_instr_block(Instruction* inst, BasicBlock* block) {
+  if (AreAnalysesValid(kAnalysisInstrToBlockMapping)) {
+    instr_to_block_[inst] = block;
+  }
+}
+
+void IRContext::RemoveDominatorAnalysis(const Function* f) {
+  dominator_trees_.erase(f);
+}
+
+void IRContext::RemovePostDominatorAnalysis(const Function* f) {
+  post_dominator_trees_.erase(f);
+}
+
 }  // namespace opt
 }  // namespace spvtools
