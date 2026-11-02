@@ -501,7 +501,7 @@ spv_result_t ValidateVariableInitializer(ValidationState_t& _,
     }
     // OpenCL SPIR-V Environment: An Initializer must not be present if Storage
     // Class is Workgroup.
-    if (!untyped_pointer && storage_class == spv::StorageClass::Workgroup &&
+    if (storage_class == spv::StorageClass::Workgroup &&
         spvIsOpenCLEnv(_.context()->target_env)) {
       return _.diag(SPV_ERROR_INVALID_ID, inst)
              << "OpVariable, <id> " << _.getIdName(inst->id())
