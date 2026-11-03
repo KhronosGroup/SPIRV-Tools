@@ -4035,6 +4035,65 @@ TEST_F(PassClassTest, DoNotDuplicateDecorationsOnLoopCarriedValue) {
   SinglePassRunAndMatch<LoopUnroller>(text, true);
 }
 
+// The continue target is laid out after the merge block, which is valid. The
+// unrolled copies are inserted in front of the merge block, so the continue
+// block has to be moved before them or they use an id that is defined later.
+constexpr char kContinueAfterMergeShader[] = R"(
+               OpCapability Shader
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %main "main"
+               OpExecutionMode %main LocalSize 1 1 1
+       %void = OpTypeVoid
+    %fn_void = OpTypeFunction %void
+        %int = OpTypeInt 32 1
+       %bool = OpTypeBool
+      %int_0 = OpConstant %int 0
+      %int_1 = OpConstant %int 1
+      %int_9 = OpConstant %int 9
+       %main = OpFunction %void None %fn_void
+      %entry = OpLabel
+               OpBranch %header
+     %header = OpLabel
+          %i = OpPhi %int %int_0 %entry %next %continue
+       %cond = OpSLessThan %bool %i %int_9
+               OpLoopMerge %merge %continue Unroll
+               OpBranchConditional %cond %continue %merge
+      %merge = OpLabel
+               OpReturn
+   %continue = OpLabel
+       %next = OpIAdd %int %i %int_1
+               OpBranch %header
+               OpFunctionEnd
+)";
+
+TEST_F(PassClassTest, FullyUnrollLoopWithContinueAfterMerge) {
+  const std::string checks = R"(
+; CHECK: OpFunction
+; CHECK-NOT: OpLoopMerge
+; CHECK: [[next:%\w+]] = OpIAdd %int %int_0 %int_1
+; CHECK: OpSLessThan %bool [[next]] %int_9
+; CHECK: OpReturn
+; CHECK-NEXT: OpFunctionEnd
+)";
+  SetTargetEnv(SPV_ENV_VULKAN_1_2);
+  SinglePassRunAndMatch<LoopUnroller>(checks + kContinueAfterMergeShader, true);
+}
+
+TEST_F(PassClassTest, PartiallyUnrollLoopWithContinueAfterMerge) {
+  const std::string checks = R"(
+; CHECK: OpLoopMerge [[merge:%\w+]] [[continue:%\w+]] DontUnroll
+; CHECK: [[next:%\w+]] = OpIAdd %int {{%\w+}} %int_1
+; CHECK: OpSLessThan %bool [[next]] %int_9
+; CHECK: [[continue]] = OpLabel
+; CHECK: [[merge]] = OpLabel
+; CHECK-NEXT: OpReturn
+; CHECK-NEXT: OpFunctionEnd
+)";
+  SetTargetEnv(SPV_ENV_VULKAN_1_2);
+  SinglePassRunAndMatch<PartialUnrollerTestPass<3>>(
+      checks + kContinueAfterMergeShader, true);
+}
+
 }  // namespace
 }  // namespace opt
 }  // namespace spvtools
