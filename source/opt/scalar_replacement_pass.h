@@ -123,6 +123,10 @@ class ScalarReplacementPass : public MemPass {
   void TransferAnnotations(const Instruction* source,
                            std::vector<Instruction*>* replacements);
 
+  // Returns true if |var_inst| stores a PhysicalStorageBuffer pointer.
+  bool IsPhysicalStorageBufferPointerVariable(
+      const Instruction* var_inst) const;
+
   // Scalarizes |inst| and updates its uses.
   //
   // |inst| must be an OpVariable. It is replaced with an OpVariable for each
