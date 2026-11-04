@@ -76,7 +76,27 @@ spv_result_t ValidateConstantComposite(ValidationState_t& _,
            << _.getIdName(inst->type_id()) << " is not a composite type.";
   }
 
-  const auto constituent_count = inst->operands().size() - 2;
+  std::vector<uint32_t> constituent_ids;
+  for (size_t i = 2; i < inst->operands().size(); ++i) {
+    constituent_ids.push_back(inst->GetOperandAs<uint32_t>(i));
+  }
+
+  const spv::Op continued_opcode =
+      inst->opcode() == spv::Op::OpConstantComposite
+          ? spv::Op::OpConstantCompositeContinuedINTEL
+          : spv::Op::OpSpecConstantCompositeContinuedINTEL;
+
+  size_t inst_idx = inst - &_.ordered_instructions()[0] + 1;
+  while (inst_idx < _.ordered_instructions().size() &&
+         _.ordered_instructions()[inst_idx].opcode() == continued_opcode) {
+    const auto& continued_inst = _.ordered_instructions()[inst_idx];
+    for (size_t i = 0; i < continued_inst.operands().size(); ++i) {
+      constituent_ids.push_back(continued_inst.GetOperandAs<uint32_t>(i));
+    }
+    ++inst_idx;
+  }
+
+  const auto constituent_count = constituent_ids.size();
   switch (result_type->opcode()) {
     case spv::Op::OpTypeVector:
     case spv::Op::OpTypeVectorIdEXT: {
@@ -103,10 +123,9 @@ spv_result_t ValidateConstantComposite(ValidationState_t& _,
         return _.diag(SPV_ERROR_INVALID_ID, result_type)
                << "Component type is not defined.";
       }
-      for (size_t constituent_index = 2;
-           constituent_index < inst->operands().size(); constituent_index++) {
-        const auto constituent_id =
-            inst->GetOperandAs<uint32_t>(constituent_index);
+      for (size_t constituent_index = 0;
+           constituent_index < constituent_ids.size(); constituent_index++) {
+        const auto constituent_id = constituent_ids[constituent_index];
         const auto constituent = _.FindDef(constituent_id);
         const auto constituent_result_type = _.FindDef(constituent->type_id());
         if (!constituent_result_type ||
@@ -144,10 +163,9 @@ spv_result_t ValidateConstantComposite(ValidationState_t& _,
                << "Component type is not defined.";
       }
 
-      for (size_t constituent_index = 2;
-           constituent_index < inst->operands().size(); constituent_index++) {
-        const auto constituent_id =
-            inst->GetOperandAs<uint32_t>(constituent_index);
+      for (size_t constituent_index = 0;
+           constituent_index < constituent_ids.size(); constituent_index++) {
+        const auto constituent_id = constituent_ids[constituent_index];
         const auto constituent = _.FindDef(constituent_id);
         const auto vector = _.FindDef(constituent->type_id());
         if (!vector) {
@@ -203,10 +221,9 @@ spv_result_t ValidateConstantComposite(ValidationState_t& _,
                   "Result Type <id> "
                << _.getIdName(result_type->id()) << "s array length.";
       }
-      for (size_t constituent_index = 2;
-           constituent_index < inst->operands().size(); constituent_index++) {
-        const auto constituent_id =
-            inst->GetOperandAs<uint32_t>(constituent_index);
+      for (size_t constituent_index = 0;
+           constituent_index < constituent_ids.size(); constituent_index++) {
+        const auto constituent_id = constituent_ids[constituent_index];
         const auto constituent = _.FindDef(constituent_id);
         const auto constituent_type = _.FindDef(constituent->type_id());
         if (!constituent_type) {
@@ -231,11 +248,10 @@ spv_result_t ValidateConstantComposite(ValidationState_t& _,
                << " count does not match Result Type <id> "
                << _.getIdName(result_type->id()) << "s struct member count.";
       }
-      for (uint32_t constituent_index = 2, member_index = 1;
-           constituent_index < inst->operands().size();
+      for (uint32_t constituent_index = 0, member_index = 1;
+           constituent_index < constituent_ids.size();
            constituent_index++, member_index++) {
-        const auto constituent_id =
-            inst->GetOperandAs<uint32_t>(constituent_index);
+        const auto constituent_id = constituent_ids[constituent_index];
         const auto constituent = _.FindDef(constituent_id);
         const auto constituent_type = _.FindDef(constituent->type_id());
         if (!constituent_type) {
@@ -314,10 +330,9 @@ spv_result_t ValidateConstantComposite(ValidationState_t& _,
                << outermost_shape << " but got " << constituent_count << ".";
       }
 
-      for (size_t constituent_index = 2;
-           constituent_index < inst->operands().size(); constituent_index++) {
-        const auto constituent_id =
-            inst->GetOperandAs<uint32_t>(constituent_index);
+      for (size_t constituent_index = 0;
+           constituent_index < constituent_ids.size(); constituent_index++) {
+        const auto constituent_id = constituent_ids[constituent_index];
         const auto constituent = _.FindDef(constituent_id);
         const auto constituent_type = _.FindDef(constituent->type_id());
         if (!constituent_type) {
@@ -792,13 +807,21 @@ spv_result_t ConstantPass(ValidationState_t& _, const Instruction* inst) {
     case spv::Op::OpSpecConstantDataKHR:
       if (auto error = ValidateConstantData(_, inst)) return error;
       break;
+    case spv::Op::OpConstantCompositeContinuedINTEL:
+    case spv::Op::OpSpecConstantCompositeContinuedINTEL:
+      for (size_t i = 0; i < inst->operands().size(); ++i) {
+        if (auto error = ValidateConstantOperand(_, inst, i)) {
+          return error;
+        }
+      }
+      break;
     default:
       break;
   }
 
   // Generally disallow creating 8- or 16-bit constants unless the full
   // capabilities are present.
-  if (spvOpcodeIsConstant(inst->opcode()) &&
+  if (spvOpcodeIsConstant(inst->opcode()) && inst->type_id() != 0 &&
       _.HasCapability(spv::Capability::Shader) &&
       !_.IsPointerType(inst->type_id()) &&
       _.ContainsLimitedUseIntOrFloatType(inst->type_id())) {
