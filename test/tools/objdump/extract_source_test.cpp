@@ -16,6 +16,8 @@
 
 #include <gtest/gtest.h>
 
+#include <algorithm>
+#include <cstdint>
 #include <string>
 
 #include "source/opt/build_module.h"
@@ -27,17 +29,39 @@ namespace {
 
 constexpr auto kDefaultEnvironment = SPV_ENV_UNIVERSAL_1_6;
 
-std::pair<bool, std::unordered_map<std::string, std::string>> ExtractSource(
-    const std::string& spv_source) {
+using ExtractedSource =
+    std::pair<bool, std::unordered_map<std::string, std::string>>;
+
+uint32_t SwapBytes(const uint32_t word) {
+  return ((word & uint32_t{0x000000ff}) << 24) |
+         ((word & uint32_t{0x0000ff00}) << 8) |
+         ((word & uint32_t{0x00ff0000}) >> 8) |
+         ((word & uint32_t{0xff000000}) >> 24);
+}
+
+ExtractedSource ExtractSourceFromBinary(const std::vector<uint32_t>& binary) {
+  std::unordered_map<std::string, std::string> output;
+  const bool result = ExtractSourceFromModule(binary, &output);
+  return std::make_pair(result, std::move(output));
+}
+
+ExtractedSource ExtractSource(const std::string& spv_source) {
   std::unique_ptr<spvtools::opt::IRContext> ctx = spvtools::BuildModule(
       kDefaultEnvironment, spvtools::utils::CLIMessageConsumer, spv_source,
       spvtools::SpirvTools::kDefaultAssembleOption |
           SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
+  if (!ctx) {
+    ADD_FAILURE() << "Failed to build module:\n" << spv_source;
+    return {false, {}};
+  }
   std::vector<uint32_t> binary;
   ctx->module()->ToBinary(&binary, /* skip_nop = */ false);
-  std::unordered_map<std::string, std::string> output;
-  bool result = ExtractSourceFromModule(binary, &output);
-  return std::make_pair(result, std::move(output));
+
+  const auto result = ExtractSourceFromBinary(binary);
+  std::transform(binary.begin(), binary.end(), binary.begin(), SwapBytes);
+  const auto swapped_result = ExtractSourceFromBinary(binary);
+  EXPECT_EQ(result, swapped_result);
+  return result;
 }
 
 }  // namespace
@@ -86,6 +110,139 @@ TEST(ExtractSourceTest, SimpleSource) {
   std::string computeHlslResult = result["compute.hlsl"];
   ASSERT_STREQ(computeHlslResult.c_str(),
                "[numthreads(1, 1, 1)] void compute_1(){ }");
+}
+
+TEST(ExtractSourceTest, StringsWithEveryTerminatorByteOffset) {
+  std::string source = R"(
+      OpCapability Shader
+      OpMemoryModel Logical GLSL450
+ %1 = OpString "abcd"
+ %2 = OpString "a"
+ %3 = OpString "ab"
+ %4 = OpString "abc"
+      OpSource HLSL 660 %1 "WXYZ"
+      OpSourceContinued "1234"
+      OpSource HLSL 660 %2 "W"
+      OpSourceContinued "1"
+      OpSource HLSL 660 %3 "WX"
+      OpSourceContinued "12"
+      OpSource HLSL 660 %4 "WXY"
+      OpSourceContinued "123"
+  )";
+
+  auto[success, result] = ExtractSource(source);
+  ASSERT_TRUE(success);
+  ASSERT_EQ(4u, result.size());
+  EXPECT_EQ("WXYZ1234", result.at("abcd"));
+  EXPECT_EQ("W1", result.at("a"));
+  EXPECT_EQ("WX12", result.at("ab"));
+  EXPECT_EQ("WXY123", result.at("abc"));
+}
+
+TEST(ExtractSourceTest, EmptySourceAndContinued) {
+  std::string source = R"(
+      OpCapability Shader
+      OpMemoryModel Logical GLSL450
+ %1 = OpString "empty.hlsl"
+ %2 = OpString "empty-continued.hlsl"
+ %3 = OpString "prefix.hlsl"
+      OpSource HLSL 660 %1 ""
+      OpSource HLSL 660 %2 ""
+      OpSourceContinued ""
+      OpSource HLSL 660 %3 "prefix"
+      OpSourceContinued ""
+  )";
+
+  auto [success, result] = ExtractSource(source);
+  ASSERT_TRUE(success);
+  ASSERT_EQ(3u, result.size());
+  EXPECT_EQ(std::string{}, result.at("empty.hlsl"));
+  EXPECT_EQ(std::string{}, result.at("empty-continued.hlsl"));
+  EXPECT_EQ(std::string("prefix"), result.at("prefix.hlsl"));
+}
+
+TEST(ExtractSourceTest, Utf8AcrossWordBoundaries) {
+  // Each UTF-8 sequence starts at byte 3 and crosses a SPIR-V word boundary.
+  const std::string filename = "abc\xc3\xa9.hlsl";
+  const std::string prefix = "ABC\xe2\x82\xac";
+  const std::string continuation = "123\xf0\x9f\x98\x80";
+  const std::string source =
+      "OpCapability Shader\n"
+      "OpMemoryModel Logical GLSL450\n"
+      "%1 = OpString \"" +
+      filename + "\"\nOpSource HLSL 660 %1 \"" + prefix +
+      "\"\nOpSourceContinued \"" + continuation + "\"\n";
+
+  auto [success, result] = ExtractSource(source);
+  ASSERT_TRUE(success);
+  ASSERT_EQ(1u, result.size());
+  EXPECT_EQ(prefix + continuation, result.at(filename));
+}
+
+TEST(ExtractSourceTest, EscapesAcrossWordBoundaries) {
+  // The assembler consumes one escape layer. Each binary escape pair starts
+  // at byte 3, so its two bytes straddle a word boundary.
+  std::string source = R"(
+      OpCapability Shader
+      OpMemoryModel Logical GLSL450
+ %1 = OpString "abc\\\".hlsl"
+ %2 = OpString "abc\\\\.hlsl"
+      OpSource HLSL 660 %1 "ABC\\\"tail"
+      OpSourceContinued "123\\\"tail"
+      OpSource HLSL 660 %2 "ABC\\\\tail"
+      OpSourceContinued "123\\\\tail"
+  )";
+
+  auto [success, result] = ExtractSource(source);
+  ASSERT_TRUE(success);
+  ASSERT_EQ(2u, result.size());
+  EXPECT_EQ(std::string("ABC\"tail123\"tail"), result.at("abc\".hlsl"));
+  EXPECT_EQ(std::string("ABC\\tail123\\tail"), result.at("abc\\.hlsl"));
+}
+
+TEST(ExtractSourceTest, TrailingBackslashWithEveryTerminatorByteOffset) {
+  // Each assembly backslash pair becomes one trailing binary backslash.
+  // The four strings terminate at byte offsets 0, 1, 2, and 3, respectively.
+  std::string source = R"(
+      OpCapability Shader
+      OpMemoryModel Logical GLSL450
+ %1 = OpString "abc\\"
+ %2 = OpString "\\"
+ %3 = OpString "a\\"
+ %4 = OpString "ab\\"
+      OpSource HLSL 660 %1 "ABC\\"
+      OpSourceContinued "123\\"
+      OpSource HLSL 660 %2 "\\"
+      OpSourceContinued "\\"
+      OpSource HLSL 660 %3 "A\\"
+      OpSourceContinued "1\\"
+      OpSource HLSL 660 %4 "AB\\"
+      OpSourceContinued "12\\"
+  )";
+
+  auto [success, result] = ExtractSource(source);
+  ASSERT_TRUE(success);
+  ASSERT_EQ(4u, result.size());
+  EXPECT_EQ(std::string("ABC\\123\\"), result.at("abc\\"));
+  EXPECT_EQ(std::string("\\\\"), result.at("\\"));
+  EXPECT_EQ(std::string("A\\1\\"), result.at("a\\"));
+  EXPECT_EQ(std::string("AB\\12\\"), result.at("ab\\"));
+}
+
+TEST(ExtractSourceTest, SourceWithOpenCLImport) {
+  std::string source = R"(
+      OpCapability Addresses
+      OpCapability Kernel
+ %1 = OpExtInstImport "OpenCL.std"
+      OpMemoryModel Physical64 OpenCL
+ %2 = OpString "kernel.cl"
+      OpSource OpenCL_C 200000 %2 "kernel void compute() {}"
+  )";
+
+  auto [success, result] = ExtractSource(source);
+  ASSERT_TRUE(success);
+  ASSERT_EQ(1u, result.size());
+  EXPECT_EQ(std::string("kernel void compute() {}"), result.at("kernel.cl"));
 }
 
 TEST(ExtractSourceTest, SourceContinued) {
@@ -230,7 +387,7 @@ TEST(ExtractSourceTest, EscapeEscaped) {
                OpEntryPoint GLCompute %1 "compute"
                OpExecutionMode %1 LocalSize 1 1 1
           %2 = OpString "compute.hlsl"
-               OpSource HLSL 660 %2 "// check \" escape removed"
+               OpSource HLSL 660 %2 "// check \" and \\\\ escapes removed"
                OpName %1 "compute"
           %3 = OpTypeVoid
           %4 = OpTypeFunction %3
@@ -245,7 +402,7 @@ TEST(ExtractSourceTest, EscapeEscaped) {
   ASSERT_TRUE(success);
   ASSERT_TRUE(result.size() == 1);
   std::string computeHlslResult = result["compute.hlsl"];
-  ASSERT_STREQ(computeHlslResult.c_str(), "// check \" escape removed");
+  ASSERT_STREQ(computeHlslResult.c_str(), "// check \" and \\ escapes removed");
 }
 
 TEST(ExtractSourceTest, OpSourceWithNoSource) {

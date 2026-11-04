@@ -801,6 +801,87 @@ TEST_F(CxxBinaryParseTest, InstructionWithStringOperand) {
   }
 }
 
+class BinaryParseStringTest
+    : public BinaryParseTest,
+      public ::testing::WithParamInterface<std::string> {};
+
+TEST_P(BinaryParseStringTest, EntryPointNameFollowedByInterfaceIds) {
+  const auto string_words = MakeVector(GetParam());
+  const auto string_word_count = static_cast<uint16_t>(string_words.size());
+  const auto instruction = MakeInstruction(
+      spv::Op::OpEntryPoint,
+      {static_cast<uint32_t>(spv::ExecutionModel::GLCompute), 1},
+      Concatenate({string_words, {2, 3}}));
+  const auto words = Concatenate({ExpectedHeaderForBound(5), instruction,
+                                  MakeInstruction(spv::Op::OpTypeVoid, {4})});
+  const auto operands = std::vector<spv_parsed_operand_t>{
+      MakeSimpleOperand(1, SPV_OPERAND_TYPE_EXECUTION_MODEL),
+      MakeSimpleOperand(2, SPV_OPERAND_TYPE_ID),
+      MakeLiteralStringOperand(3, string_word_count),
+      MakeSimpleOperand(3 + string_word_count, SPV_OPERAND_TYPE_ID),
+      MakeSimpleOperand(4 + string_word_count, SPV_OPERAND_TYPE_ID)};
+
+  for (bool endian_swap : kSwapEndians) {
+    SCOPED_TRACE(endian_swap ? "Swapped endianness" : "Native endianness");
+    InSequence calls_expected_in_specific_order;
+    EXPECT_HEADER(5).WillOnce(Return(SPV_SUCCESS));
+    EXPECT_CALL(
+        client_,
+        Instruction(ParsedInstruction(spv_parsed_instruction_t{
+            instruction.data(), static_cast<uint16_t>(instruction.size()),
+            uint16_t(spv::Op::OpEntryPoint), SPV_EXT_INST_TYPE_NONE,
+            0 /*type id*/, 0 /*result id*/, operands.data(),
+            static_cast<uint16_t>(operands.size())})))
+        .WillOnce(Return(SPV_SUCCESS));
+    EXPECT_CALL(client_, Instruction(MakeParsedVoidTypeInstruction(4)))
+        .WillOnce(Return(SPV_SUCCESS));
+    Parse(words, SPV_SUCCESS, endian_swap);
+    EXPECT_EQ(nullptr, diagnostic_);
+  }
+}
+
+TEST_P(BinaryParseStringTest, LinkageNameFollowedByLinkageType) {
+  const auto string_words = MakeVector(GetParam());
+  const auto string_word_count = static_cast<uint16_t>(string_words.size());
+  const auto instruction = MakeInstruction(
+      spv::Op::OpDecorate,
+      {1, static_cast<uint32_t>(spv::Decoration::LinkageAttributes)},
+      Concatenate(
+          {string_words, {static_cast<uint32_t>(spv::LinkageType::Import)}}));
+  const auto words = Concatenate({ExpectedHeaderForBound(5), instruction,
+                                  MakeInstruction(spv::Op::OpTypeVoid, {4})});
+  const auto operands = std::vector<spv_parsed_operand_t>{
+      MakeSimpleOperand(1, SPV_OPERAND_TYPE_ID),
+      MakeSimpleOperand(2, SPV_OPERAND_TYPE_DECORATION),
+      MakeLiteralStringOperand(3, string_word_count),
+      MakeSimpleOperand(3 + string_word_count, SPV_OPERAND_TYPE_LINKAGE_TYPE)};
+
+  for (bool endian_swap : kSwapEndians) {
+    SCOPED_TRACE(endian_swap ? "Swapped endianness" : "Native endianness");
+    InSequence calls_expected_in_specific_order;
+    EXPECT_HEADER(5).WillOnce(Return(SPV_SUCCESS));
+    EXPECT_CALL(
+        client_,
+        Instruction(ParsedInstruction(spv_parsed_instruction_t{
+            instruction.data(), static_cast<uint16_t>(instruction.size()),
+            uint16_t(spv::Op::OpDecorate), SPV_EXT_INST_TYPE_NONE,
+            0 /*type id*/, 0 /*result id*/, operands.data(),
+            static_cast<uint16_t>(operands.size())})))
+        .WillOnce(Return(SPV_SUCCESS));
+    EXPECT_CALL(client_, Instruction(MakeParsedVoidTypeInstruction(4)))
+        .WillOnce(Return(SPV_SUCCESS));
+    Parse(words, SPV_SUCCESS, endian_swap);
+    EXPECT_EQ(nullptr, diagnostic_);
+  }
+}
+
+INSTANTIATE_TEST_SUITE_P(
+    LiteralStrings, BinaryParseStringTest,
+    ::testing::Values("", "a", "ab", "abc", "abcd", "abcde", "abcdef",
+                      "abcdefg",
+                      // UTF-8 characters straddle 32-bit word boundaries.
+                      "abc\xc3\xa9\xe2\x82\xac\xf0\x9f\x8c\x8d"));
+
 TEST_F(BinaryParseTest, LiteralFloatOperandHasUnknownEncoding) {
   const auto instruction = MakeInstruction(
       spv::Op::OpDecorate,
@@ -829,9 +910,6 @@ TEST_F(BinaryParseTest, ExtendedInstruction) {
   const auto words = CompileSuccessfully(
       "%extcl = OpExtInstImport \"OpenCL.std\" "
       "%result = OpExtInst %float %extcl sqrt %x");
-  EXPECT_HEADER(5).WillOnce(Return(SPV_SUCCESS));
-  EXPECT_CALL(client_, Instruction(_)).WillOnce(Return(SPV_SUCCESS));
-  // We're only interested in the second call to Instruction():
   const auto operands = std::vector<spv_parsed_operand_t>{
       MakeSimpleOperand(1, SPV_OPERAND_TYPE_TYPE_ID),
       MakeSimpleOperand(2, SPV_OPERAND_TYPE_RESULT_ID),
@@ -843,26 +921,68 @@ TEST_F(BinaryParseTest, ExtendedInstruction) {
   const auto instruction = MakeInstruction(
       spv::Op::OpExtInst,
       {2, 3, 1, static_cast<uint32_t>(OpenCLLIB::Entrypoints::Sqrt), 4});
-  EXPECT_CALL(client_,
-              Instruction(ParsedInstruction(spv_parsed_instruction_t{
-                  instruction.data(), static_cast<uint16_t>(instruction.size()),
-                  uint16_t(spv::Op::OpExtInst), SPV_EXT_INST_TYPE_OPENCL_STD,
-                  2 /*type id*/, 3 /*result id*/, operands.data(),
-                  static_cast<uint16_t>(operands.size())})))
-      .WillOnce(Return(SPV_SUCCESS));
-  // Since we are actually checking the output, don't test the
-  // endian-swapped version.
-  Parse(words, SPV_SUCCESS, false);
-  EXPECT_EQ(nullptr, diagnostic_);
+
+  for (bool endian_swap : kSwapEndians) {
+    SCOPED_TRACE(endian_swap ? "Swapped endianness" : "Native endianness");
+    InSequence calls_expected_in_specific_order;
+    EXPECT_HEADER(5).WillOnce(Return(SPV_SUCCESS));
+    EXPECT_CALL(client_, Instruction(_)).WillOnce(Return(SPV_SUCCESS));
+    // We're only interested in the second call to Instruction().
+    EXPECT_CALL(
+        client_,
+        Instruction(ParsedInstruction(spv_parsed_instruction_t{
+            instruction.data(), static_cast<uint16_t>(instruction.size()),
+            uint16_t(spv::Op::OpExtInst), SPV_EXT_INST_TYPE_OPENCL_STD,
+            2 /*type id*/, 3 /*result id*/, operands.data(),
+            static_cast<uint16_t>(operands.size())})))
+        .WillOnce(Return(SPV_SUCCESS));
+    Parse(words, SPV_SUCCESS, endian_swap);
+    EXPECT_EQ(nullptr, diagnostic_);
+  }
+}
+
+TEST_F(BinaryParseTest, ExtInstImportStringTerminatorAtEveryByteOffset) {
+  const std::vector<std::string> import_names = {
+      "GLSL.std.450", "DebugInfo", "OpenCL.std",
+      "NonSemantic.Graph.DebugInfo.100"};
+
+  for (size_t terminator_offset = 0; terminator_offset < import_names.size();
+       ++terminator_offset) {
+    const auto& import_name = import_names[terminator_offset];
+    ASSERT_EQ(terminator_offset, import_name.size() % sizeof(uint32_t));
+
+    const auto string_words = MakeVector(import_name);
+    const auto instruction =
+        MakeInstruction(spv::Op::OpExtInstImport, {1}, string_words);
+    const auto words = Concatenate({ExpectedHeaderForBound(2), instruction});
+    const auto operands = std::vector<spv_parsed_operand_t>{
+        MakeSimpleOperand(1, SPV_OPERAND_TYPE_RESULT_ID),
+        MakeLiteralStringOperand(2,
+                                 static_cast<uint16_t>(string_words.size()))};
+
+    for (bool endian_swap : kSwapEndians) {
+      SCOPED_TRACE(import_name);
+      SCOPED_TRACE(endian_swap ? "Swapped endianness" : "Native endianness");
+      InSequence calls_expected_in_specific_order;
+      EXPECT_HEADER(2).WillOnce(Return(SPV_SUCCESS));
+      EXPECT_CALL(
+          client_,
+          Instruction(ParsedInstruction(spv_parsed_instruction_t{
+              instruction.data(), static_cast<uint16_t>(instruction.size()),
+              uint16_t(spv::Op::OpExtInstImport), SPV_EXT_INST_TYPE_NONE,
+              0 /*type id*/, 1 /*result id*/, operands.data(),
+              static_cast<uint16_t>(operands.size())})))
+          .WillOnce(Return(SPV_SUCCESS));
+      Parse(words, SPV_SUCCESS, endian_swap);
+      EXPECT_EQ(nullptr, diagnostic_);
+    }
+  }
 }
 
 TEST_F(CxxBinaryParseTest, ExtendedInstruction) {
   const auto words = CompileSuccessfully(
       "%extcl = OpExtInstImport \"OpenCL.std\" "
       "%result = OpExtInst %float %extcl sqrt %x");
-  EXPECT_HEADER(5).WillOnce(Return(SPV_SUCCESS));
-  EXPECT_CALL(client_, Instruction(_)).WillOnce(Return(SPV_SUCCESS));
-  // We're only interested in the second call to Instruction():
   const auto operands = std::vector<spv_parsed_operand_t>{
       MakeSimpleOperand(1, SPV_OPERAND_TYPE_TYPE_ID),
       MakeSimpleOperand(2, SPV_OPERAND_TYPE_RESULT_ID),
@@ -874,17 +994,24 @@ TEST_F(CxxBinaryParseTest, ExtendedInstruction) {
   const auto instruction = MakeInstruction(
       spv::Op::OpExtInst,
       {2, 3, 1, static_cast<uint32_t>(OpenCLLIB::Entrypoints::Sqrt), 4});
-  EXPECT_CALL(client_,
-              Instruction(ParsedInstruction(spv_parsed_instruction_t{
-                  instruction.data(), static_cast<uint16_t>(instruction.size()),
-                  uint16_t(spv::Op::OpExtInst), SPV_EXT_INST_TYPE_OPENCL_STD,
-                  2 /*type id*/, 3 /*result id*/, operands.data(),
-                  static_cast<uint16_t>(operands.size())})))
-      .WillOnce(Return(SPV_SUCCESS));
-  // Since we are actually checking the output, don't test the
-  // endian-swapped version.
-  Parse(words, true, false);
-  EXPECT_EQ(nullptr, diagnostic_);
+
+  for (bool endian_swap : kSwapEndians) {
+    SCOPED_TRACE(endian_swap ? "Swapped endianness" : "Native endianness");
+    InSequence calls_expected_in_specific_order;
+    EXPECT_HEADER(5).WillOnce(Return(SPV_SUCCESS));
+    EXPECT_CALL(client_, Instruction(_)).WillOnce(Return(SPV_SUCCESS));
+    // We're only interested in the second call to Instruction().
+    EXPECT_CALL(
+        client_,
+        Instruction(ParsedInstruction(spv_parsed_instruction_t{
+            instruction.data(), static_cast<uint16_t>(instruction.size()),
+            uint16_t(spv::Op::OpExtInst), SPV_EXT_INST_TYPE_OPENCL_STD,
+            2 /*type id*/, 3 /*result id*/, operands.data(),
+            static_cast<uint16_t>(operands.size())})))
+        .WillOnce(Return(SPV_SUCCESS));
+    Parse(words, true, endian_swap);
+    EXPECT_EQ(nullptr, diagnostic_);
+  }
 }
 
 // A binary parser diagnostic test case where we provide the words array
@@ -932,16 +1059,54 @@ struct WordVectorDiagnosticCase {
   std::string expected_diagnostic;
 };
 
+TEST_F(BinaryParseTest, UnterminatedStringDoesNotUseNextInstruction) {
+  // OpNop contains zero bytes, but they cannot terminate the preceding string.
+  const std::vector<WordVectorDiagnosticCase> cases = {
+      {Concatenate(
+           {ExpectedHeaderForBound(2),
+            MakeInstruction(spv::Op::OpString, {1, 0x64636261, 0x68676665}),
+            MakeInstruction(spv::Op::OpNop, {})}),
+       "Invalid word count: OpString starting at word 5 says it has 4"
+       " words, but found 5 words instead."},
+      {Concatenate({ExpectedHeaderForBound(2),
+                    MakeInstruction(
+                        spv::Op::OpSource,
+                        {static_cast<uint32_t>(spv::SourceLanguage::OpenCL_C),
+                         210, 1, 0x64636261, 0x68676665}),
+                    MakeInstruction(spv::Op::OpNop, {})}),
+       "Invalid word count: OpSource starting at word 5 says it has 6"
+       " words, but found 7 words instead."}};
+
+  EXPECT_CALL(client_, Instruction(_)).Times(0);
+  for (const auto& test_case : cases) {
+    SCOPED_TRACE(test_case.expected_diagnostic);
+    for (bool endian_swap : kSwapEndians) {
+      SCOPED_TRACE(endian_swap ? "Swapped endianness" : "Native endianness");
+      spvDiagnosticDestroy(diagnostic_);
+      diagnostic_ = nullptr;
+      EXPECT_HEADER(2).WillOnce(Return(SPV_SUCCESS));
+      Parse(test_case.words, SPV_ERROR_INVALID_BINARY, endian_swap);
+      ASSERT_NE(nullptr, diagnostic_);
+      EXPECT_THAT(diagnostic_->error, Eq(test_case.expected_diagnostic));
+    }
+  }
+}
+
 using BinaryParseWordVectorDiagnosticTest = spvtest::TextToBinaryTestBase<
     ::testing::TestWithParam<WordVectorDiagnosticCase>>;
 
 TEST_P(BinaryParseWordVectorDiagnosticTest, WordVectorCases) {
-  const auto& words = GetParam().words;
-  EXPECT_THAT(spvBinaryParse(ScopedContext().context, nullptr, words.data(),
-                             words.size(), nullptr, nullptr, &diagnostic),
-              AnyOf(SPV_ERROR_INVALID_BINARY, SPV_ERROR_INVALID_ID));
-  ASSERT_NE(nullptr, diagnostic);
-  EXPECT_THAT(diagnostic->error, Eq(GetParam().expected_diagnostic));
+  for (bool endian_swap : kSwapEndians) {
+    SCOPED_TRACE(endian_swap ? "Swapped endianness" : "Native endianness");
+    auto words = GetParam().words;
+    MaybeFlipWords(endian_swap, words.begin(), words.end());
+    DestroyDiagnostic();
+    EXPECT_THAT(spvBinaryParse(ScopedContext().context, nullptr, words.data(),
+                               words.size(), nullptr, nullptr, &diagnostic),
+                AnyOf(SPV_ERROR_INVALID_BINARY, SPV_ERROR_INVALID_ID));
+    ASSERT_NE(nullptr, diagnostic);
+    EXPECT_THAT(diagnostic->error, Eq(GetParam().expected_diagnostic));
+  }
 }
 
 INSTANTIATE_TEST_SUITE_P(
