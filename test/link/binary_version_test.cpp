@@ -89,5 +89,18 @@ TEST_F(BinaryVersion, UseHighest) {
   EXPECT_EQ(SPV_SPIRV_VERSION_WORD(1, 5), linked_binary[1]);
 }
 
+TEST_F(BinaryVersion, TooShortForHeader) {
+  // A module with fewer than five words cannot hold a SPIR-V header. Reading
+  // the schema word out of it used to read past the end of the buffer.
+  spvtest::Binaries binaries = {
+      {static_cast<uint32_t>(spv::MagicNumber)},
+  };
+  spvtest::Binary linked_binary;
+  ASSERT_EQ(SPV_ERROR_INVALID_BINARY, Link(binaries, &linked_binary))
+      << GetErrorMessage();
+  EXPECT_THAT(GetErrorMessage(),
+              HasSubstr("Module 1 is too small to hold a SPIR-V header."));
+}
+
 }  // namespace
 }  // namespace spvtools
