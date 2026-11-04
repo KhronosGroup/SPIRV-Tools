@@ -1442,13 +1442,6 @@ spv_result_t ValidateLoad(ValidationState_t& _, const Instruction* inst) {
            << " is not defined.";
   }
 
-  if (result_type->opcode() == spv::Op::OpTypeBufferEXT) {
-    return _.diag(SPV_ERROR_INVALID_ID, inst)
-           << "OpLoad Result Type <id> " << _.getIdName(result_type->id())
-           << " must not be OpTypeBufferEXT, the data of a buffer is "
-              "accessed with OpBufferPointerEXT";
-  }
-
   const auto pointer_index = 2;
   const auto pointer_id = inst->GetOperandAs<uint32_t>(pointer_index);
   const auto pointer = _.FindDef(pointer_id);
