@@ -439,6 +439,9 @@ bool ConvertToHalfPass::CloseRelaxInst(Instruction* inst) {
 }
 
 bool ConvertToHalfPass::ProcessFunction(Function* func) {
+  if (func->IsDeclaration()) {
+    return false;
+  }
   // Do a closure of Relaxed on composite and phi instructions
   bool changed = true;
   while (changed) {
