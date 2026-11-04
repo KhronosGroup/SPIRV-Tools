@@ -2670,7 +2670,7 @@ TEST_F(ValidateSpvEXTDescriptorHeap, HeapVariableConcreteDataType) {
                         "be an OpUntypedVariableKHR with no Data Type"));
 }
 
-TEST_F(ValidateSpvEXTDescriptorHeap, HeapVariableOpaqueDataType) {
+TEST_F(ValidateSpvEXTDescriptorHeap, HeapVariableDescriptorDataType) {
   const std::string str = R"(
                OpCapability Shader
                OpCapability UntypedPointersKHR
@@ -2697,12 +2697,7 @@ TEST_F(ValidateSpvEXTDescriptorHeap, HeapVariableOpaqueDataType) {
                OpFunctionEnd
 )";
   CompileSuccessfully(str.c_str(), SPV_ENV_VULKAN_1_3);
-  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_VULKAN_1_3));
-  EXPECT_THAT(getDiagnosticString(),
-              AnyVUID("VUID-StandaloneSpirv-UniformConstant-13706"));
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("is decorated with SamplerHeapEXT or ResourceHeapEXT, "
-                        "so it must either have a concrete type"));
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_3));
 }
 
 TEST_F(ValidateSpvEXTDescriptorHeap, HeapVariableTypedOpVariable) {
@@ -2734,10 +2729,7 @@ TEST_F(ValidateSpvEXTDescriptorHeap, HeapVariableTypedOpVariable) {
   CompileSuccessfully(str.c_str(), SPV_ENV_VULKAN_1_3);
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_VULKAN_1_3));
   EXPECT_THAT(getDiagnosticString(),
-              AnyVUID("VUID-StandaloneSpirv-UniformConstant-13706"));
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("is decorated with SamplerHeapEXT or ResourceHeapEXT, "
-                        "so it must either have a concrete type"));
+              AnyVUID("VUID-StandaloneSpirv-UniformConstant-06677"));
 }
 
 TEST_F(ValidateSpvEXTDescriptorHeap, ResourceHeapLoadImage) {
@@ -2885,13 +2877,13 @@ TEST_F(ValidateSpvEXTDescriptorHeap, ResourceHeapLoadData) {
   CompileSuccessfully(str.c_str(), SPV_ENV_VULKAN_1_3);
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_VULKAN_1_3));
   EXPECT_THAT(getDiagnosticString(),
-              AnyVUID("VUID-StandaloneSpirv-ResourceHeapKHR-13744"));
+              AnyVUID("VUID-StandaloneSpirv-ResourceHeapEXT-13744"));
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("OpLoad reads the variable <id> '2[%2]' decorated with "
                         "ResourceHeapEXT as type <id> '10[%uint]'"));
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("values accessed through it must be descriptor "
-                        "types"));
+              HasSubstr("values accessed through it must be a single "
+                        "descriptor type"));
 }
 
 TEST_F(ValidateSpvEXTDescriptorHeap, ResourceHeapLoadDataNoAccessChain) {
@@ -2940,7 +2932,7 @@ TEST_F(ValidateSpvEXTDescriptorHeap, ResourceHeapLoadDataNoAccessChain) {
   CompileSuccessfully(str.c_str(), SPV_ENV_VULKAN_1_3);
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_VULKAN_1_3));
   EXPECT_THAT(getDiagnosticString(),
-              AnyVUID("VUID-StandaloneSpirv-ResourceHeapKHR-13744"));
+              AnyVUID("VUID-StandaloneSpirv-ResourceHeapEXT-13744"));
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("OpLoad reads the variable <id> '2[%2]' decorated with "
                         "ResourceHeapEXT as type <id> '10[%uint]'"));
@@ -3092,13 +3084,13 @@ TEST_F(ValidateSpvEXTDescriptorHeap, SamplerHeapLoadData) {
   CompileSuccessfully(str.c_str(), SPV_ENV_VULKAN_1_3);
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_VULKAN_1_3));
   EXPECT_THAT(getDiagnosticString(),
-              AnyVUID("VUID-StandaloneSpirv-ResourceHeapKHR-13744"));
+              AnyVUID("VUID-StandaloneSpirv-ResourceHeapEXT-13744"));
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("OpLoad reads the variable <id> '2[%2]' decorated with "
                         "SamplerHeapEXT as type <id> '10[%uint]'"));
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("values accessed through it must be descriptor "
-                        "types"));
+              HasSubstr("values accessed through it must be a single "
+                        "descriptor type"));
 }
 
 TEST_F(ValidateSpvEXTDescriptorHeap, ResourceHeapCopyMemoryData) {
@@ -3148,7 +3140,7 @@ TEST_F(ValidateSpvEXTDescriptorHeap, ResourceHeapCopyMemoryData) {
   CompileSuccessfully(str.c_str(), SPV_ENV_VULKAN_1_3);
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_VULKAN_1_3));
   EXPECT_THAT(getDiagnosticString(),
-              AnyVUID("VUID-StandaloneSpirv-ResourceHeapKHR-13744"));
+              AnyVUID("VUID-StandaloneSpirv-ResourceHeapEXT-13744"));
   EXPECT_THAT(
       getDiagnosticString(),
       HasSubstr("OpCopyMemory reads the variable <id> '2[%2]' decorated "
@@ -3202,7 +3194,7 @@ TEST_F(ValidateSpvEXTDescriptorHeap, ResourceHeapCopyMemorySizedData) {
   CompileSuccessfully(str.c_str(), SPV_ENV_VULKAN_1_3);
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_VULKAN_1_3));
   EXPECT_THAT(getDiagnosticString(),
-              AnyVUID("VUID-StandaloneSpirv-ResourceHeapKHR-13744"));
+              AnyVUID("VUID-StandaloneSpirv-ResourceHeapEXT-13744"));
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("OpCopyMemorySized reads the variable <id> '2[%2]' "
                         "decorated with ResourceHeapEXT without a type"));
@@ -3225,19 +3217,25 @@ std::string GenHeapTypeModule(const std::string& builtin,
                OpMemberDecorate %S 0 Offset 0
                OpDecorateId %image_array ArrayStrideIdEXT %uint_32
                OpDecorateId %sampler_array ArrayStrideIdEXT %uint_32
+               OpDecorateId %image_array4 ArrayStrideIdEXT %uint_32
+               OpDecorateId %sampler_array4 ArrayStrideIdEXT %uint_32
        %void = OpTypeVoid
        %uint = OpTypeInt 32 0
      %uint_0 = OpConstant %uint 0
      %uint_1 = OpConstant %uint 1
+     %uint_4 = OpConstant %uint 4
     %uint_32 = OpConstant %uint 32
       %float = OpTypeFloat 32
           %S = OpTypeStruct %uint
     %S_array = OpTypeRuntimeArray %S
       %image = OpTypeImage %uint 2D 0 0 0 2 R32ui
 %image_array = OpTypeRuntimeArray %image
+%image_array4 = OpTypeArray %image %uint_4
     %sampler = OpTypeSampler
 %sampler_array = OpTypeRuntimeArray %sampler
+%sampler_array4 = OpTypeArray %sampler %uint_4
      %ptr_uc = OpTypeUntypedPointerKHR UniformConstant
+%ptr_fn_uint = OpTypePointer Function %uint
   %ptr_image = OpTypeUntypedPointerKHR Image
      %v2uint = OpTypeVector %uint 2
       %coord = OpConstantComposite %v2uint %uint_0 %uint_0
@@ -3273,22 +3271,34 @@ TEST_F(ValidateSpvEXTDescriptorHeap, ResourceHeapVariableConcreteArrayType) {
               AnyVUID("VUID-StandaloneSpirv-UniformConstant-13745"));
 }
 
-TEST_F(ValidateSpvEXTDescriptorHeap, SamplerHeapVariableSamplerDataType) {
+TEST_F(ValidateSpvEXTDescriptorHeap, SamplerHeapVariableSamplerArrayDataType) {
   const std::string str =
-      GenHeapTypeModule("SamplerHeapEXT", "%sampler_array", "");
+      GenHeapTypeModule("SamplerHeapEXT", "%sampler_array4", "");
+  CompileSuccessfully(str.c_str(), SPV_ENV_VULKAN_1_3);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_3));
+}
+
+TEST_F(ValidateSpvEXTDescriptorHeap, SamplerHeapVariableImageDataType) {
+  const std::string str = GenHeapTypeModule("SamplerHeapEXT", "%image", "");
   CompileSuccessfully(str.c_str(), SPV_ENV_VULKAN_1_3);
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_VULKAN_1_3));
   EXPECT_THAT(getDiagnosticString(),
-              AnyVUID("VUID-StandaloneSpirv-UniformConstant-13706"));
+              AnyVUID("VUID-StandaloneSpirv-UniformConstant-13746"));
+}
+
+TEST_F(ValidateSpvEXTDescriptorHeap, ResourceHeapVariableSamplerDataType) {
+  const std::string str = GenHeapTypeModule("ResourceHeapEXT", "%sampler", "");
+  CompileSuccessfully(str.c_str(), SPV_ENV_VULKAN_1_3);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_VULKAN_1_3));
+  EXPECT_THAT(getDiagnosticString(),
+              AnyVUID("VUID-StandaloneSpirv-UniformConstant-13745"));
 }
 
 TEST_F(ValidateSpvEXTDescriptorHeap, ResourceHeapVariableImageArrayDataType) {
   const std::string str =
-      GenHeapTypeModule("ResourceHeapEXT", "%image_array", "");
+      GenHeapTypeModule("ResourceHeapEXT", "%image_array4", "");
   CompileSuccessfully(str.c_str(), SPV_ENV_VULKAN_1_3);
-  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_VULKAN_1_3));
-  EXPECT_THAT(getDiagnosticString(),
-              AnyVUID("VUID-StandaloneSpirv-UniformConstant-13706"));
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_3));
 }
 
 TEST_F(ValidateSpvEXTDescriptorHeap, UntypedNonHeapVariableDataType) {
@@ -3326,7 +3336,7 @@ TEST_F(ValidateSpvEXTDescriptorHeap, ResourceHeapLoadStruct) {
   CompileSuccessfully(str.c_str(), SPV_ENV_VULKAN_1_3);
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_VULKAN_1_3));
   EXPECT_THAT(getDiagnosticString(),
-              AnyVUID("VUID-StandaloneSpirv-ResourceHeapKHR-13744"));
+              AnyVUID("VUID-StandaloneSpirv-ResourceHeapEXT-13744"));
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("decorated with ResourceHeapEXT as type <id> "
                         "'3[%_struct_3]'"));
@@ -3441,6 +3451,282 @@ TEST_F(ValidateSpvEXTDescriptorHeap, DescriptorSetImageTexelPointer) {
 )";
   CompileSuccessfully(str.c_str(), SPV_ENV_VULKAN_1_3);
   EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_3));
+}
+
+TEST_F(ValidateSpvEXTDescriptorHeap, ResourceHeapLoadImageArray) {
+  const std::string str = GenHeapTypeModule("ResourceHeapEXT", "", R"(
+     %access = OpLoad %image_array4 %heap
+        %im0 = OpCompositeExtract %image %access 0
+)");
+  CompileSuccessfully(str.c_str(), SPV_ENV_VULKAN_1_3);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_VULKAN_1_3));
+  EXPECT_THAT(getDiagnosticString(),
+              AnyVUID("VUID-StandaloneSpirv-ResourceHeapEXT-13744"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("OpLoad reads the variable <id> '2[%2]' decorated with "
+                        "ResourceHeapEXT as type"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("an array of descriptors can't be accessed at once"));
+}
+
+TEST_F(ValidateSpvEXTDescriptorHeap, ResourceHeapLoadImageArrayAccessChain) {
+  const std::string str = GenHeapTypeModule("ResourceHeapEXT", "", R"(
+         %ac = OpUntypedAccessChainKHR %ptr_uc %image_array %heap %uint_1
+       %load = OpLoad %image_array4 %ac
+)");
+  CompileSuccessfully(str.c_str(), SPV_ENV_VULKAN_1_3);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_VULKAN_1_3));
+  EXPECT_THAT(getDiagnosticString(),
+              AnyVUID("VUID-StandaloneSpirv-ResourceHeapEXT-13744"));
+}
+
+TEST_F(ValidateSpvEXTDescriptorHeap, SamplerHeapLoadSamplerArray) {
+  const std::string str = GenHeapTypeModule("SamplerHeapEXT", "", R"(
+         %ac = OpUntypedAccessChainKHR %ptr_uc %sampler_array %heap %uint_1
+       %load = OpLoad %sampler_array4 %ac
+)");
+  CompileSuccessfully(str.c_str(), SPV_ENV_VULKAN_1_3);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_VULKAN_1_3));
+  EXPECT_THAT(getDiagnosticString(),
+              AnyVUID("VUID-StandaloneSpirv-ResourceHeapEXT-13744"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("decorated with SamplerHeapEXT as type"));
+}
+
+TEST_F(ValidateSpvEXTDescriptorHeap, ResourceHeapLoadSingleImageFromArray) {
+  const std::string str = GenHeapTypeModule("ResourceHeapEXT", "", R"(
+         %ac = OpUntypedAccessChainKHR %ptr_uc %image_array4 %heap %uint_1
+       %load = OpLoad %image %ac
+)");
+  CompileSuccessfully(str.c_str(), SPV_ENV_VULKAN_1_3);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_3));
+}
+
+TEST_F(ValidateSpvEXTDescriptorHeap, ResourceHeapCopyMemoryIntoHeap) {
+  const std::string str = GenHeapTypeModule("ResourceHeapEXT", "", R"(
+        %var = OpVariable %ptr_fn_uint Function
+         %ac = OpUntypedAccessChainKHR %ptr_uc %image_array %heap %uint_1
+               OpCopyMemory %ac %var
+)");
+  CompileSuccessfully(str.c_str(), SPV_ENV_VULKAN_1_3);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_VULKAN_1_3));
+  EXPECT_THAT(getDiagnosticString(),
+              AnyVUID("VUID-StandaloneSpirv-ResourceHeapEXT-13744"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("OpCopyMemory writes to the variable <id> '2[%2]' "
+                        "decorated with ResourceHeapEXT as type"));
+}
+
+TEST_F(ValidateSpvEXTDescriptorHeap, ResourceHeapCopyMemorySizedIntoHeap) {
+  const std::string str = GenHeapTypeModule("ResourceHeapEXT", "", R"(
+        %var = OpVariable %ptr_fn_uint Function
+         %ac = OpUntypedAccessChainKHR %ptr_uc %image_array %heap %uint_1
+               OpCopyMemorySized %ac %var %uint_4
+)");
+  CompileSuccessfully(str.c_str(), SPV_ENV_VULKAN_1_3);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_VULKAN_1_3));
+  EXPECT_THAT(getDiagnosticString(),
+              AnyVUID("VUID-StandaloneSpirv-ResourceHeapEXT-13744"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("OpCopyMemorySized writes to the variable <id> "
+                        "'2[%2]' decorated with ResourceHeapEXT without a "
+                        "type"));
+}
+
+TEST_F(ValidateSpvEXTDescriptorHeap, ResourceHeapCopyObjectLoadData) {
+  const std::string str = GenHeapTypeModule("ResourceHeapEXT", "", R"(
+         %ac = OpUntypedAccessChainKHR %ptr_uc %image_array %heap %uint_1
+       %copy = OpCopyObject %ptr_uc %ac
+       %load = OpLoad %uint %copy
+)");
+  CompileSuccessfully(str.c_str(), SPV_ENV_VULKAN_1_3);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_VULKAN_1_3));
+  EXPECT_THAT(getDiagnosticString(),
+              AnyVUID("VUID-StandaloneSpirv-ResourceHeapEXT-13744"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("OpLoad reads the variable <id> '2[%2]' decorated "
+                        "with ResourceHeapEXT as type"));
+}
+
+TEST_F(ValidateSpvEXTDescriptorHeap, ResourceHeapCopyObjectOfHeapLoadData) {
+  const std::string str = GenHeapTypeModule("ResourceHeapEXT", "", R"(
+       %copy = OpCopyObject %ptr_uc %heap
+         %ac = OpUntypedAccessChainKHR %ptr_uc %image_array %copy %uint_1
+       %load = OpLoad %uint %ac
+)");
+  CompileSuccessfully(str.c_str(), SPV_ENV_VULKAN_1_3);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_VULKAN_1_3));
+  EXPECT_THAT(getDiagnosticString(),
+              AnyVUID("VUID-StandaloneSpirv-ResourceHeapEXT-13744"));
+}
+
+TEST_F(ValidateSpvEXTDescriptorHeap, ResourceHeapCopyObjectLoadImage) {
+  const std::string str = GenHeapTypeModule("ResourceHeapEXT", "", R"(
+         %ac = OpUntypedAccessChainKHR %ptr_uc %image_array %heap %uint_1
+       %copy = OpCopyObject %ptr_uc %ac
+       %load = OpLoad %image %copy
+)");
+  CompileSuccessfully(str.c_str(), SPV_ENV_VULKAN_1_3);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_3));
+}
+
+TEST_F(ValidateSpvEXTDescriptorHeap, SamplerHeapCopyObjectLoadImage) {
+  const std::string str = GenHeapTypeModule("SamplerHeapEXT", "", R"(
+         %ac = OpUntypedAccessChainKHR %ptr_uc %image_array %heap %uint_1
+       %copy = OpCopyObject %ptr_uc %ac
+       %load = OpLoad %image %copy
+)");
+  CompileSuccessfully(str.c_str(), SPV_ENV_VULKAN_1_3);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_VULKAN_1_3));
+  EXPECT_THAT(getDiagnosticString(),
+              AnyVUID("VUID-StandaloneSpirv-Result-11337"));
+}
+
+TEST_F(ValidateSpvEXTDescriptorHeap, ResourceHeapArrayLength) {
+  const std::string str = R"(
+               OpCapability Shader
+               OpCapability UntypedPointersKHR
+               OpCapability DescriptorHeapEXT
+               OpExtension "SPV_EXT_descriptor_heap"
+               OpExtension "SPV_KHR_untyped_pointers"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %main "main" %heap
+               OpExecutionMode %main LocalSize 1 1 1
+               OpDecorate %heap BuiltIn ResourceHeapEXT
+               OpDecorate %Hs Block
+               OpDecorateId %image_array ArrayStrideIdEXT %image_size
+               OpMemberDecorateIdEXT %Hs 0 OffsetIdEXT %uint_0
+       %void = OpTypeVoid
+       %uint = OpTypeInt 32 0
+     %uint_0 = OpConstant %uint 0
+      %image = OpTypeImage %uint 2D 0 0 0 2 R32ui
+ %image_size = OpConstantSizeOfEXT %uint %image
+%image_array = OpTypeRuntimeArray %image
+         %Hs = OpTypeStruct %image_array
+     %ptr_uc = OpTypeUntypedPointerKHR UniformConstant
+       %heap = OpUntypedVariableKHR %ptr_uc UniformConstant
+       %func = OpTypeFunction %void
+       %main = OpFunction %void None %func
+      %label = OpLabel
+          %n = OpUntypedArrayLengthKHR %uint %Hs %heap 0
+               OpReturn
+               OpFunctionEnd
+)";
+  CompileSuccessfully(str.c_str(), SPV_ENV_VULKAN_1_3);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_VULKAN_1_3));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("OpUntypedArrayLengthKHR Pointer must be a storage "
+                        "buffer descriptor, but it is derived from the "
+                        "variable <id> '2[%2]' decorated with "
+                        "ResourceHeapEXT"));
+}
+
+TEST_F(ValidateSpvEXTDescriptorHeap, ResourceHeapLoadBuffer) {
+  const std::string str = R"(
+               OpCapability Shader
+               OpCapability UntypedPointersKHR
+               OpCapability DescriptorHeapEXT
+               OpExtension "SPV_EXT_descriptor_heap"
+               OpExtension "SPV_KHR_untyped_pointers"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %main "main" %heap
+               OpExecutionMode %main LocalSize 1 1 1
+               OpDecorate %heap BuiltIn ResourceHeapEXT
+               OpDecorateId %buffer_array ArrayStrideIdEXT %buffer_size
+       %void = OpTypeVoid
+       %uint = OpTypeInt 32 0
+     %uint_1 = OpConstant %uint 1
+     %buffer = OpTypeBufferEXT StorageBuffer
+%buffer_size = OpConstantSizeOfEXT %uint %buffer
+%buffer_array = OpTypeRuntimeArray %buffer
+     %ptr_uc = OpTypeUntypedPointerKHR UniformConstant
+       %heap = OpUntypedVariableKHR %ptr_uc UniformConstant
+       %func = OpTypeFunction %void
+       %main = OpFunction %void None %func
+      %label = OpLabel
+         %ac = OpUntypedAccessChainKHR %ptr_uc %buffer_array %heap %uint_1
+       %load = OpLoad %buffer %ac
+               OpReturn
+               OpFunctionEnd
+)";
+  CompileSuccessfully(str.c_str(), SPV_ENV_VULKAN_1_3);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_VULKAN_1_3));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("OpLoad Result Type <id> '8[%8]' must not be "
+                        "OpTypeBufferEXT, the data of a buffer is accessed "
+                        "with OpBufferPointerEXT"));
+}
+
+TEST_F(ValidateSpvEXTDescriptorHeap, ArrayLengthThroughBufferPointer) {
+  const std::string str = R"(
+               OpCapability Shader
+               OpCapability UntypedPointersKHR
+               OpCapability DescriptorHeapEXT
+               OpExtension "SPV_EXT_descriptor_heap"
+               OpExtension "SPV_KHR_untyped_pointers"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %main "main" %heap
+               OpExecutionMode %main LocalSize 1 1 1
+               OpDecorate %heap BuiltIn ResourceHeapEXT
+               OpDecorateId %buffer_array ArrayStrideIdEXT %buffer_size
+               OpDecorate %S Block
+               OpMemberDecorate %S 0 Offset 0
+               OpDecorate %uint_array ArrayStride 4
+       %void = OpTypeVoid
+       %uint = OpTypeInt 32 0
+     %uint_1 = OpConstant %uint 1
+ %uint_array = OpTypeRuntimeArray %uint
+          %S = OpTypeStruct %uint_array
+     %buffer = OpTypeBufferEXT StorageBuffer
+%buffer_size = OpConstantSizeOfEXT %uint %buffer
+%buffer_array = OpTypeRuntimeArray %buffer
+     %ptr_uc = OpTypeUntypedPointerKHR UniformConstant
+     %ptr_sb = OpTypeUntypedPointerKHR StorageBuffer
+       %heap = OpUntypedVariableKHR %ptr_uc UniformConstant
+       %func = OpTypeFunction %void
+       %main = OpFunction %void None %func
+      %label = OpLabel
+         %ac = OpUntypedAccessChainKHR %ptr_uc %buffer_array %heap %uint_1
+    %buf_ptr = OpBufferPointerEXT %ptr_sb %ac
+          %n = OpUntypedArrayLengthKHR %uint %S %buf_ptr 0
+               OpReturn
+               OpFunctionEnd
+)";
+  CompileSuccessfully(str.c_str(), SPV_ENV_VULKAN_1_3);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_3));
+}
+
+TEST_F(ValidateSpvEXTDescriptorHeap, ResourceHeapVariableStructOfDescriptors) {
+  const std::string str = R"(
+               OpCapability Shader
+               OpCapability UntypedPointersKHR
+               OpCapability DescriptorHeapEXT
+               OpExtension "SPV_EXT_descriptor_heap"
+               OpExtension "SPV_KHR_untyped_pointers"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %main "main" %heap
+               OpExecutionMode %main LocalSize 1 1 1
+               OpDecorate %heap BuiltIn ResourceHeapEXT
+               OpMemberDecorateIdEXT %heap_type 0 OffsetIdEXT %uint_0
+               OpMemberDecorateIdEXT %heap_type 1 OffsetIdEXT %buffer_size
+       %void = OpTypeVoid
+       %uint = OpTypeInt 32 0
+     %uint_0 = OpConstant %uint 0
+     %buffer = OpTypeBufferEXT StorageBuffer
+%buffer_size = OpConstantSizeOfEXT %uint %buffer
+  %heap_type = OpTypeStruct %buffer %uint
+     %ptr_uc = OpTypeUntypedPointerKHR UniformConstant
+       %heap = OpUntypedVariableKHR %ptr_uc UniformConstant %heap_type
+       %func = OpTypeFunction %void
+       %main = OpFunction %void None %func
+      %label = OpLabel
+               OpReturn
+               OpFunctionEnd
+)";
+  CompileSuccessfully(str.c_str(), SPV_ENV_VULKAN_1_3);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_VULKAN_1_3));
+  EXPECT_THAT(getDiagnosticString(),
+              AnyVUID("VUID-StandaloneSpirv-UniformConstant-13745"));
 }
 
 }  // namespace
