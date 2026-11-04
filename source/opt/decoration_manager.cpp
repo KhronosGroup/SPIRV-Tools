@@ -361,7 +361,8 @@ void DecorationManager::AddDecoration(Instruction* inst) {
     case spv::Op::OpDecorate:
     case spv::Op::OpDecorateId:
     case spv::Op::OpDecorateStringGOOGLE:
-    case spv::Op::OpMemberDecorate: {
+    case spv::Op::OpMemberDecorate:
+    case spv::Op::OpMemberDecorateIdEXT: {
       const auto target_id = inst->GetSingleWordInOperand(0u);
       id_to_decoration_insts_[target_id].direct_decorations.push_back(inst);
       break;
@@ -465,6 +466,7 @@ bool DecorationManager::WhileEachDecoration(
   for (const Instruction* inst : GetDecorationsFor(id, true)) {
     switch (inst->opcode()) {
       case spv::Op::OpMemberDecorate:
+      case spv::Op::OpMemberDecorateIdEXT:
         if (inst->GetSingleWordInOperand(2) == decoration) {
           if (!f(*inst)) return false;
         }
@@ -610,7 +612,8 @@ void DecorationManager::RemoveDecoration(Instruction* inst) {
     case spv::Op::OpDecorate:
     case spv::Op::OpDecorateId:
     case spv::Op::OpDecorateStringGOOGLE:
-    case spv::Op::OpMemberDecorate: {
+    case spv::Op::OpMemberDecorate:
+    case spv::Op::OpMemberDecorateIdEXT: {
       const auto target_id = inst->GetSingleWordInOperand(0u);
       auto const iter = id_to_decoration_insts_.find(target_id);
       if (iter == id_to_decoration_insts_.end()) return;

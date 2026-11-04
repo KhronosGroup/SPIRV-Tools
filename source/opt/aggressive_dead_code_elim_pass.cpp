@@ -458,15 +458,19 @@ void AggressiveDCEPass::AddDebugInstructionsToWorkList(
 }
 
 void AggressiveDCEPass::AddDecorationsToWorkList(const Instruction* inst) {
-  // Add OpDecorateId instructions that apply to this instruction to the work
-  // list.  We use the decoration manager to look through the group
-  // decorations to get to the OpDecorate* instructions themselves.
+  // Add OpDecorateId and OpMemberDecorateIdEXT instructions that apply to this
+  // instruction to the work list.  We use the decoration manager to look
+  // through the group decorations to get to the OpDecorate* instructions
+  // themselves.
   auto decorations =
       get_decoration_mgr()->GetDecorationsFor(inst->result_id(), false);
   for (Instruction* dec : decorations) {
-    // We only care about OpDecorateId instructions because the are the only
-    // decorations that will reference an id that will have to be kept live
-    // because of that use.
+    // We only care about these because they are the only decorations that will
+    // reference an id that will have to be kept live because of that use.
+    if (dec->opcode() == spv::Op::OpMemberDecorateIdEXT) {
+      AddToWorklist(dec);
+      continue;
+    }
     if (dec->opcode() != spv::Op::OpDecorateId) {
       continue;
     }
@@ -911,6 +915,7 @@ bool AggressiveDCEPass::ProcessGlobalValues() {
     switch (annotation->opcode()) {
       case spv::Op::OpDecorate:
       case spv::Op::OpMemberDecorate:
+      case spv::Op::OpMemberDecorateIdEXT:
       case spv::Op::OpDecorateStringGOOGLE:
       case spv::Op::OpMemberDecorateStringGOOGLE:
         if (IsTargetDead(annotation)) {

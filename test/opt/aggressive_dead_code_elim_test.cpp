@@ -9259,6 +9259,112 @@ TEST_F(AggressiveDCETest, KeepDebugBuildIdentifier) {
   SinglePassRunAndMatch<AggressiveDCEPass>(spirv, true);
 }
 
+TEST_F(AggressiveDCETest, KeepIdOperandOfMemberDecorateIdEXT) {
+  // %offset is only used by the OpMemberDecorateIdEXT on the live %Heap, so it
+  // has to be kept.
+  const std::string spirv = R"(
+               OpCapability Shader
+               OpCapability Int8
+               OpCapability UntypedPointersKHR
+               OpCapability DescriptorHeapEXT
+               OpExtension "SPV_EXT_descriptor_heap"
+               OpExtension "SPV_KHR_untyped_pointers"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %main "main"
+               OpExecutionMode %main LocalSize 1 1 1
+               OpDecorate %heap BuiltIn ResourceHeapEXT
+               OpDecorateId %buf_arr ArrayStrideIdEXT %buf_size
+               OpDecorate %Heap Block
+; CHECK: OpMemberDecorateIdEXT {{%\w+}} 0 OffsetIdEXT [[offset:%\w+]]
+               OpMemberDecorateIdEXT %Heap 0 OffsetIdEXT %offset
+               OpDecorate %SSBO Block
+               OpMemberDecorate %SSBO 0 Offset 0
+               OpDecorate %bytes ArrayStride 1
+; CHECK: [[offset]] = OpConstant %uint 0
+       %void = OpTypeVoid
+         %fn = OpTypeFunction %void
+     %ptr_uc = OpTypeUntypedPointerKHR UniformConstant
+       %heap = OpUntypedVariableKHR %ptr_uc UniformConstant
+        %buf = OpTypeBufferEXT StorageBuffer
+       %uint = OpTypeInt 32 0
+   %buf_size = OpConstantSizeOfEXT %uint %buf
+    %buf_arr = OpTypeRuntimeArray %buf
+%offset = OpConstant %uint 0
+       %Heap = OpTypeStruct %buf_arr
+        %int = OpTypeInt 32 1
+      %int_0 = OpConstant %int 0
+      %int_1 = OpConstant %int 1
+       %SSBO = OpTypeStruct %uint
+   %ptr_ssbo = OpTypePointer StorageBuffer %SSBO
+   %ptr_uint = OpTypePointer StorageBuffer %uint
+      %uchar = OpTypeInt 8 0
+      %bytes = OpTypeRuntimeArray %uchar
+   %uint_256 = OpConstant %uint 256
+       %main = OpFunction %void None %fn
+      %entry = OpLabel
+       %base = OpUntypedAccessChainKHR %ptr_uc %bytes %heap %uint_256
+       %elem = OpUntypedAccessChainKHR %ptr_uc %Heap %base %int_0 %int_1
+        %ptr = OpBufferPointerEXT %ptr_ssbo %elem
+          %p = OpAccessChain %ptr_uint %ptr %int_0
+               OpStore %p %uint_256
+               OpReturn
+               OpFunctionEnd
+  )";
+  SinglePassRunAndMatch<AggressiveDCEPass>(spirv, true);
+}
+
+TEST_F(AggressiveDCETest, RemoveMemberDecorateIdEXTOnDeadType) {
+  // %Heap is never used, so its OpMemberDecorateIdEXT and %offset go too.
+  const std::string spirv = R"(
+               OpCapability Shader
+               OpCapability Int8
+               OpCapability UntypedPointersKHR
+               OpCapability DescriptorHeapEXT
+               OpExtension "SPV_EXT_descriptor_heap"
+               OpExtension "SPV_KHR_untyped_pointers"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %main "main"
+               OpExecutionMode %main LocalSize 1 1 1
+               OpDecorate %heap BuiltIn ResourceHeapEXT
+               OpDecorateId %buf_arr ArrayStrideIdEXT %buf_size
+               OpDecorate %Heap Block
+; CHECK-NOT: OpMemberDecorateIdEXT
+               OpMemberDecorateIdEXT %Heap 0 OffsetIdEXT %offset
+               OpDecorate %SSBO Block
+               OpMemberDecorate %SSBO 0 Offset 0
+               OpDecorate %bytes ArrayStride 1
+; CHECK-NOT: OpConstant %uint 0
+       %void = OpTypeVoid
+         %fn = OpTypeFunction %void
+     %ptr_uc = OpTypeUntypedPointerKHR UniformConstant
+       %heap = OpUntypedVariableKHR %ptr_uc UniformConstant
+        %buf = OpTypeBufferEXT StorageBuffer
+       %uint = OpTypeInt 32 0
+   %buf_size = OpConstantSizeOfEXT %uint %buf
+    %buf_arr = OpTypeRuntimeArray %buf
+%offset = OpConstant %uint 0
+       %Heap = OpTypeStruct %buf_arr
+        %int = OpTypeInt 32 1
+      %int_0 = OpConstant %int 0
+      %int_1 = OpConstant %int 1
+       %SSBO = OpTypeStruct %uint
+   %ptr_ssbo = OpTypePointer StorageBuffer %SSBO
+   %ptr_uint = OpTypePointer StorageBuffer %uint
+      %uchar = OpTypeInt 8 0
+      %bytes = OpTypeRuntimeArray %uchar
+   %uint_256 = OpConstant %uint 256
+       %main = OpFunction %void None %fn
+      %entry = OpLabel
+       %base = OpUntypedAccessChainKHR %ptr_uc %bytes %heap %uint_256
+        %ptr = OpBufferPointerEXT %ptr_ssbo %base
+          %p = OpAccessChain %ptr_uint %ptr %int_0
+               OpStore %p %uint_256
+               OpReturn
+               OpFunctionEnd
+  )";
+  SinglePassRunAndMatch<AggressiveDCEPass>(spirv, true);
+}
+
 }  // namespace
 }  // namespace opt
 }  // namespace spvtools
