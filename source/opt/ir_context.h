@@ -96,47 +96,11 @@ class IRContext {
   friend inline Analysis& operator<<=(Analysis& a, int shift);
 
   // Creates an |IRContext| that contains an owned |Module|
-  IRContext(spv_target_env env, MessageConsumer c)
-      : syntax_context_(spvContextCreate(env)),
-        grammar_(syntax_context_),
-        unique_id_(0),
-        module_(new Module()),
-        consumer_(std::move(c)),
-        def_use_mgr_(nullptr),
-        feature_mgr_(nullptr),
-        valid_analyses_(kAnalysisNone),
-        constant_mgr_(nullptr),
-        type_mgr_(nullptr),
-        id_to_name_(nullptr),
-        max_id_bound_(kDefaultMaxIdBound),
-        preserve_bindings_(false),
-        preserve_spec_constants_(false),
-        id_overflow_(false) {
-    SetContextMessageConsumer(syntax_context_, consumer_);
-    module_->SetContext(this);
-  }
+  IRContext(spv_target_env env, MessageConsumer c);
 
-  IRContext(spv_target_env env, std::unique_ptr<Module>&& m, MessageConsumer c)
-      : syntax_context_(spvContextCreate(env)),
-        grammar_(syntax_context_),
-        unique_id_(0),
-        module_(std::move(m)),
-        consumer_(std::move(c)),
-        def_use_mgr_(nullptr),
-        feature_mgr_(nullptr),
-        valid_analyses_(kAnalysisNone),
-        type_mgr_(nullptr),
-        id_to_name_(nullptr),
-        max_id_bound_(kDefaultMaxIdBound),
-        preserve_bindings_(false),
-        preserve_spec_constants_(false),
-        id_overflow_(false) {
-    SetContextMessageConsumer(syntax_context_, consumer_);
-    module_->SetContext(this);
-    InitializeCombinators();
-  }
+  IRContext(spv_target_env env, std::unique_ptr<Module>&& m, MessageConsumer c);
 
-  ~IRContext() { spvContextDestroy(syntax_context_); }
+  ~IRContext();
 
   Module* module() const { return module_.get(); }
 
@@ -214,23 +178,23 @@ class IRContext {
   inline IteratorRange<Module::const_inst_iterator> ext_inst_debuginfo() const;
 
   // Add |capability| to the module, if it is not already enabled.
-  inline void AddCapability(spv::Capability capability);
+  void AddCapability(spv::Capability capability);
   // Appends a capability instruction to this module.
-  inline void AddCapability(std::unique_ptr<Instruction>&& c);
+  void AddCapability(std::unique_ptr<Instruction>&& c);
   // Removes instruction declaring `capability` from this module.
   // Returns true if the capability was removed, false otherwise.
   bool RemoveCapability(spv::Capability capability);
 
   // Appends an extension instruction to this module.
-  inline void AddExtension(const std::string& ext_name);
-  inline void AddExtension(std::unique_ptr<Instruction>&& e);
+  void AddExtension(const std::string& ext_name);
+  void AddExtension(std::unique_ptr<Instruction>&& e);
   // Removes instruction declaring `extension` from this module.
   // Returns true if the extension was removed, false otherwise.
   bool RemoveExtension(Extension extension);
 
   // Appends an extended instruction set instruction to this module.
-  inline void AddExtInstImport(const std::string& name);
-  inline void AddExtInstImport(std::unique_ptr<Instruction>&& e);
+  void AddExtInstImport(const std::string& name);
+  void AddExtInstImport(std::unique_ptr<Instruction>&& e);
   // Set the memory model for this module.
   inline void SetMemoryModel(std::unique_ptr<Instruction>&& m);
   // Get the memory model for this module.
@@ -246,18 +210,18 @@ class IRContext {
   // Appends a debug 2 instruction (excluding OpLine & OpNoLine) to this module.
   // "debug 2" instructions are the ones in layout section 7.b), see section
   // 2.4 Logical Layout of a Module from the SPIR-V specification.
-  inline void AddDebug2Inst(std::unique_ptr<Instruction>&& d);
+  void AddDebug2Inst(std::unique_ptr<Instruction>&& d);
   // Appends a debug 3 instruction (OpModuleProcessed) to this module.
   // This is due to decision by the SPIR Working Group, pending publication.
   inline void AddDebug3Inst(std::unique_ptr<Instruction>&& d);
   // Appends a OpExtInst for DebugInfo to this module.
   inline void AddExtInstDebugInfo(std::unique_ptr<Instruction>&& d);
   // Appends an annotation instruction to this module.
-  inline void AddAnnotationInst(std::unique_ptr<Instruction>&& a);
+  void AddAnnotationInst(std::unique_ptr<Instruction>&& a);
   // Appends a type-declaration instruction to this module.
-  inline void AddType(std::unique_ptr<Instruction>&& t);
+  void AddType(std::unique_ptr<Instruction>&& t);
   // Appends a constant, global variable, or OpUndef instruction to this module.
-  inline void AddGlobalValue(std::unique_ptr<Instruction>&& v);
+  void AddGlobalValue(std::unique_ptr<Instruction>&& v);
   // Prepends a function declaration to this module.
   inline void AddFunctionDeclaration(std::unique_ptr<Function>&& f);
   // Appends a function to this module.
@@ -329,11 +293,7 @@ class IRContext {
 
   // Sets the basic block for |inst|. Re-builds the mapping if it has become
   // invalid.
-  void set_instr_block(Instruction* inst, BasicBlock* block) {
-    if (AreAnalysesValid(kAnalysisInstrToBlockMapping)) {
-      instr_to_block_[inst] = block;
-    }
-  }
+  void set_instr_block(Instruction* inst, BasicBlock* block);
 
   // Returns a pointer the decoration manager.  If the decoration manager is
   // invalid, it is rebuilt first.
@@ -386,24 +346,24 @@ class IRContext {
 
   // Build the map from the ids to the OpName and OpMemberName instruction
   // associated with it.
-  inline void BuildIdToNameMap();
+  void BuildIdToNameMap();
 
   // Returns a range of instrucions that contain all of the OpName and
   // OpMemberNames associated with the given id.
-  inline IteratorRange<std::multimap<uint32_t, Instruction*>::iterator>
-  GetNames(uint32_t id);
+  IteratorRange<std::multimap<uint32_t, Instruction*>::iterator> GetNames(
+      uint32_t id);
 
   // Returns an OpMemberName instruction that targets |struct_type_id| at
   // index |index|. Returns nullptr if no such instruction exists.
   // While the SPIR-V spec does not prohibit having multiple OpMemberName
   // instructions for the same structure member, it is hard to imagine a member
   // having more than one name. This method returns the first one it finds.
-  inline Instruction* GetMemberName(uint32_t struct_type_id, uint32_t index);
+  Instruction* GetMemberName(uint32_t struct_type_id, uint32_t index);
 
   // Copy names from |old_id| to |new_id|. Only copy member name if index is
   // less than |max_member_index|.
-  inline void CloneNames(const uint32_t old_id, const uint32_t new_id,
-                         const uint32_t max_member_index = UINT32_MAX);
+  void CloneNames(const uint32_t old_id, const uint32_t new_id,
+                  const uint32_t max_member_index = UINT32_MAX);
 
   // Sets the message consumer to the given |consumer|. |consumer| which will be
   // invoked every time there is a message to be communicated to the outside.
@@ -521,21 +481,7 @@ class IRContext {
 
   // Returns true if |inst| is a combinator in the current context.
   // |combinator_ops_| is built if it has not been already.
-  inline bool IsCombinatorInstruction(const Instruction* inst) {
-    if (!AreAnalysesValid(kAnalysisCombinators)) {
-      InitializeCombinators();
-    }
-    constexpr uint32_t kExtInstSetIdInIndx = 0;
-    constexpr uint32_t kExtInstInstructionInIndx = 1;
-
-    if (inst->opcode() != spv::Op::OpExtInst) {
-      return combinator_ops_[0].count(uint32_t(inst->opcode())) != 0;
-    } else {
-      uint32_t set = inst->GetSingleWordInOperand(kExtInstSetIdInIndx);
-      auto op = inst->GetSingleWordInOperand(kExtInstInstructionInIndx);
-      return combinator_ops_[set].count(op) != 0;
-    }
-  }
+  bool IsCombinatorInstruction(const Instruction* inst);
 
   // Returns a pointer to the CFG for all the functions in |module_|.
   CFG* cfg() {
@@ -555,14 +501,10 @@ class IRContext {
   PostDominatorAnalysis* GetPostDominatorAnalysis(const Function* f);
 
   // Remove the dominator tree of |f| from the cache.
-  inline void RemoveDominatorAnalysis(const Function* f) {
-    dominator_trees_.erase(f);
-  }
+  void RemoveDominatorAnalysis(const Function* f);
 
   // Remove the postdominator tree of |f| from the cache.
-  inline void RemovePostDominatorAnalysis(const Function* f) {
-    post_dominator_trees_.erase(f);
-  }
+  void RemovePostDominatorAnalysis(const Function* f);
 
   // Return the next available SSA id and increment it.  Returns 0 if the
   // maximum SSA id has been reached.
@@ -717,133 +659,61 @@ class IRContext {
 
  private:
   // Builds the def-use manager from scratch, even if it was already valid.
-  void BuildDefUseManager() {
-    def_use_mgr_ = MakeUnique<analysis::DefUseManager>(module());
-    valid_analyses_ = valid_analyses_ | kAnalysisDefUse;
-  }
+  void BuildDefUseManager();
 
   // Builds the liveness manager from scratch, even if it was already valid.
-  void BuildLivenessManager() {
-    liveness_mgr_ = MakeUnique<analysis::LivenessManager>(this);
-    valid_analyses_ = valid_analyses_ | kAnalysisLiveness;
-  }
+  void BuildLivenessManager();
 
   // Builds the instruction-block map for the whole module.
-  void BuildInstrToBlockMapping() {
-    instr_to_block_.clear();
-    for (auto& fn : *module_) {
-      for (auto& block : fn) {
-        block.ForEachInst([this, &block](Instruction* inst) {
-          instr_to_block_[inst] = &block;
-        });
-      }
-    }
-    valid_analyses_ = valid_analyses_ | kAnalysisInstrToBlockMapping;
-  }
+  void BuildInstrToBlockMapping();
 
   // Builds the instruction-function map for the whole module.
-  void BuildIdToFuncMapping() {
-    id_to_func_.clear();
-    for (auto& fn : *module_) {
-      id_to_func_[fn.result_id()] = &fn;
-    }
-    valid_analyses_ = valid_analyses_ | kAnalysisIdToFuncMapping;
-  }
+  void BuildIdToFuncMapping();
 
   // Builds the instruction-graph map for the whole module.
-  void BuildIdToGraphMapping() {
-    id_to_graph_.clear();
-    for (auto& g : module_->graphs()) {
-      id_to_graph_[g->DefInst().result_id()] = g.get();
-    }
-    valid_analyses_ = valid_analyses_ | kAnalysisIdToGraphMapping;
-  }
+  void BuildIdToGraphMapping();
 
-  void BuildDecorationManager() {
-    decoration_mgr_ = MakeUnique<analysis::DecorationManager>(module());
-    valid_analyses_ = valid_analyses_ | kAnalysisDecorations;
-  }
+  void BuildDecorationManager();
 
-  void BuildCFG() {
-    cfg_ = MakeUnique<CFG>(module());
-    valid_analyses_ = valid_analyses_ | kAnalysisCFG;
-  }
+  void BuildCFG();
 
-  void BuildScalarEvolutionAnalysis() {
-    scalar_evolution_analysis_ = MakeUnique<ScalarEvolutionAnalysis>(this);
-    valid_analyses_ = valid_analyses_ | kAnalysisScalarEvolution;
-  }
+  void BuildScalarEvolutionAnalysis();
 
   // Builds the liveness analysis from scratch, even if it was already valid.
-  void BuildRegPressureAnalysis() {
-    reg_pressure_ = MakeUnique<LivenessAnalysis>(this);
-    valid_analyses_ = valid_analyses_ | kAnalysisRegisterPressure;
-  }
+  void BuildRegPressureAnalysis();
 
   // Builds the value number table analysis from scratch, even if it was already
   // valid.
-  void BuildValueNumberTable() {
-    vn_table_ = MakeUnique<ValueNumberTable>(this);
-    valid_analyses_ = valid_analyses_ | kAnalysisValueNumberTable;
-  }
+  void BuildValueNumberTable();
 
   // Builds the structured CFG analysis from scratch, even if it was already
   // valid.
-  void BuildStructuredCFGAnalysis() {
-    struct_cfg_analysis_ = MakeUnique<StructuredCFGAnalysis>(this);
-    valid_analyses_ = valid_analyses_ | kAnalysisStructuredCFG;
-  }
+  void BuildStructuredCFGAnalysis();
 
   // Builds the constant manager from scratch, even if it was already
   // valid.
-  void BuildConstantManager() {
-    constant_mgr_ = MakeUnique<analysis::ConstantManager>(this);
-    valid_analyses_ = valid_analyses_ | kAnalysisConstants;
-  }
+  void BuildConstantManager();
 
   // Builds the type manager from scratch, even if it was already
   // valid.
-  void BuildTypeManager() {
-    type_mgr_ = MakeUnique<analysis::TypeManager>(consumer(), this);
-    valid_analyses_ = valid_analyses_ | kAnalysisTypes;
-  }
+  void BuildTypeManager();
 
   // Builds the debug information manager from scratch, even if it was
   // already valid.
-  void BuildDebugInfoManager() {
-    debug_info_mgr_ = MakeUnique<analysis::DebugInfoManager>(this);
-    valid_analyses_ = valid_analyses_ | kAnalysisDebugInfo;
-  }
+  void BuildDebugInfoManager();
 
   // Removes all computed dominator and post-dominator trees. This will force
   // the context to rebuild the trees on demand.
-  void ResetDominatorAnalysis() {
-    // Clear the cache.
-    dominator_trees_.clear();
-    post_dominator_trees_.clear();
-    valid_analyses_ = valid_analyses_ | kAnalysisDominatorAnalysis;
-  }
+  void ResetDominatorAnalysis();
 
   // Removes all computed loop descriptors.
-  void ResetLoopAnalysis() {
-    // Clear the cache.
-    loop_descriptors_.clear();
-    valid_analyses_ = valid_analyses_ | kAnalysisLoopAnalysis;
-  }
+  void ResetLoopAnalysis();
 
   // Removes all computed loop descriptors.
-  void ResetBuiltinAnalysis() {
-    // Clear the cache.
-    builtin_var_id_map_.clear();
-    valid_analyses_ = valid_analyses_ | kAnalysisBuiltinVarId;
-  }
+  void ResetBuiltinAnalysis();
 
   // Analyzes the features in the owned module. Builds the manager if required.
-  void AnalyzeFeatures() {
-    feature_mgr_ =
-        std::unique_ptr<FeatureManager>(new FeatureManager(grammar_));
-    feature_mgr_->Analyze(module());
-  }
+  void AnalyzeFeatures();
 
   // Scans a module looking for it capabilities, and initializes combinator_ops_
   // accordingly.
@@ -1149,62 +1019,6 @@ IteratorRange<Module::const_inst_iterator> IRContext::ext_inst_debuginfo()
   return ((const Module*)module_.get())->ext_inst_debuginfo();
 }
 
-void IRContext::AddCapability(spv::Capability capability) {
-  if (!get_feature_mgr()->HasCapability(capability)) {
-    std::unique_ptr<Instruction> capability_inst(new Instruction(
-        this, spv::Op::OpCapability, 0, 0,
-        {{SPV_OPERAND_TYPE_CAPABILITY, {static_cast<uint32_t>(capability)}}}));
-    AddCapability(std::move(capability_inst));
-  }
-}
-
-void IRContext::AddCapability(std::unique_ptr<Instruction>&& c) {
-  AddCombinatorsForCapability(c->GetSingleWordInOperand(0));
-  if (feature_mgr_ != nullptr) {
-    feature_mgr_->AddCapability(
-        static_cast<spv::Capability>(c->GetSingleWordInOperand(0)));
-  }
-  if (AreAnalysesValid(kAnalysisDefUse)) {
-    get_def_use_mgr()->AnalyzeInstDefUse(c.get());
-  }
-  module()->AddCapability(std::move(c));
-}
-
-void IRContext::AddExtension(const std::string& ext_name) {
-  std::vector<uint32_t> ext_words = spvtools::utils::MakeVector(ext_name);
-  AddExtension(std::unique_ptr<Instruction>(
-      new Instruction(this, spv::Op::OpExtension, 0u, 0u,
-                      {{SPV_OPERAND_TYPE_LITERAL_STRING, ext_words}})));
-}
-
-void IRContext::AddExtension(std::unique_ptr<Instruction>&& e) {
-  if (AreAnalysesValid(kAnalysisDefUse)) {
-    get_def_use_mgr()->AnalyzeInstDefUse(e.get());
-  }
-  if (feature_mgr_ != nullptr) {
-    feature_mgr_->AddExtension(&*e);
-  }
-  module()->AddExtension(std::move(e));
-}
-
-void IRContext::AddExtInstImport(const std::string& name) {
-  std::vector<uint32_t> ext_words = spvtools::utils::MakeVector(name);
-  AddExtInstImport(std::unique_ptr<Instruction>(
-      new Instruction(this, spv::Op::OpExtInstImport, 0u, TakeNextId(),
-                      {{SPV_OPERAND_TYPE_LITERAL_STRING, ext_words}})));
-}
-
-void IRContext::AddExtInstImport(std::unique_ptr<Instruction>&& e) {
-  AddCombinatorsForExtension(e.get());
-  if (AreAnalysesValid(kAnalysisDefUse)) {
-    get_def_use_mgr()->AnalyzeInstDefUse(e.get());
-  }
-  module()->AddExtInstImport(std::move(e));
-  if (feature_mgr_ != nullptr) {
-    feature_mgr_->AddExtInstImportIds(module());
-  }
-}
-
 void IRContext::SetMemoryModel(std::unique_ptr<Instruction>&& m) {
   module()->SetMemoryModel(std::move(m));
 }
@@ -1225,51 +1039,12 @@ void IRContext::AddDebug1Inst(std::unique_ptr<Instruction>&& d) {
   module()->AddDebug1Inst(std::move(d));
 }
 
-void IRContext::AddDebug2Inst(std::unique_ptr<Instruction>&& d) {
-  if (AreAnalysesValid(kAnalysisNameMap)) {
-    if (d->opcode() == spv::Op::OpName ||
-        d->opcode() == spv::Op::OpMemberName) {
-      // OpName and OpMemberName do not have result-ids. The target of the
-      // instruction is at InOperand index 0.
-      id_to_name_->insert({d->GetSingleWordInOperand(0), d.get()});
-    }
-  }
-  if (AreAnalysesValid(kAnalysisDefUse)) {
-    get_def_use_mgr()->AnalyzeInstDefUse(d.get());
-  }
-  module()->AddDebug2Inst(std::move(d));
-}
-
 void IRContext::AddDebug3Inst(std::unique_ptr<Instruction>&& d) {
   module()->AddDebug3Inst(std::move(d));
 }
 
 void IRContext::AddExtInstDebugInfo(std::unique_ptr<Instruction>&& d) {
   module()->AddExtInstDebugInfo(std::move(d));
-}
-
-void IRContext::AddAnnotationInst(std::unique_ptr<Instruction>&& a) {
-  if (AreAnalysesValid(kAnalysisDecorations)) {
-    get_decoration_mgr()->AddDecoration(a.get());
-  }
-  if (AreAnalysesValid(kAnalysisDefUse)) {
-    get_def_use_mgr()->AnalyzeInstDefUse(a.get());
-  }
-  module()->AddAnnotationInst(std::move(a));
-}
-
-void IRContext::AddType(std::unique_ptr<Instruction>&& t) {
-  module()->AddType(std::move(t));
-  if (AreAnalysesValid(kAnalysisDefUse)) {
-    get_def_use_mgr()->AnalyzeInstDefUse(&*(--types_values_end()));
-  }
-}
-
-void IRContext::AddGlobalValue(std::unique_ptr<Instruction>&& v) {
-  if (AreAnalysesValid(kAnalysisDefUse)) {
-    get_def_use_mgr()->AnalyzeInstDefUse(&*v);
-  }
-  module()->AddGlobalValue(std::move(v));
 }
 
 void IRContext::AddFunctionDeclaration(std::unique_ptr<Function>&& f) {
@@ -1290,60 +1065,6 @@ void IRContext::UpdateDefUse(Instruction* inst) {
   if (AreAnalysesValid(kAnalysisDefUse)) {
     get_def_use_mgr()->UpdateDefUse(inst);
   }
-}
-
-void IRContext::BuildIdToNameMap() {
-  id_to_name_ = MakeUnique<std::multimap<uint32_t, Instruction*>>();
-  for (Instruction& debug_inst : debugs2()) {
-    if (debug_inst.opcode() == spv::Op::OpMemberName ||
-        debug_inst.opcode() == spv::Op::OpName) {
-      id_to_name_->insert({debug_inst.GetSingleWordInOperand(0), &debug_inst});
-    }
-  }
-  valid_analyses_ = valid_analyses_ | kAnalysisNameMap;
-}
-
-IteratorRange<std::multimap<uint32_t, Instruction*>::iterator>
-IRContext::GetNames(uint32_t id) {
-  if (!AreAnalysesValid(kAnalysisNameMap)) {
-    BuildIdToNameMap();
-  }
-  auto result = id_to_name_->equal_range(id);
-  return make_range(std::move(result.first), std::move(result.second));
-}
-
-Instruction* IRContext::GetMemberName(uint32_t struct_type_id, uint32_t index) {
-  if (!AreAnalysesValid(kAnalysisNameMap)) {
-    BuildIdToNameMap();
-  }
-  auto result = id_to_name_->equal_range(struct_type_id);
-  for (auto i = result.first; i != result.second; ++i) {
-    auto* name_instr = i->second;
-    if (name_instr->opcode() == spv::Op::OpMemberName &&
-        name_instr->GetSingleWordInOperand(1) == index) {
-      return name_instr;
-    }
-  }
-  return nullptr;
-}
-
-void IRContext::CloneNames(const uint32_t old_id, const uint32_t new_id,
-                           const uint32_t max_member_index) {
-  std::vector<std::unique_ptr<Instruction>> names_to_add;
-  auto names = GetNames(old_id);
-  for (auto n : names) {
-    Instruction* old_name_inst = n.second;
-    if (old_name_inst->opcode() == spv::Op::OpMemberName) {
-      auto midx = old_name_inst->GetSingleWordInOperand(1);
-      if (midx >= max_member_index) continue;
-    }
-    std::unique_ptr<Instruction> new_name_inst(old_name_inst->Clone(this));
-    new_name_inst->SetInOperand(0, {new_id});
-    names_to_add.push_back(std::move(new_name_inst));
-  }
-  // We can't add the new names when we are iterating over name range above.
-  // We can add all the new names now.
-  for (auto& new_name : names_to_add) AddDebug2Inst(std::move(new_name));
 }
 
 }  // namespace opt

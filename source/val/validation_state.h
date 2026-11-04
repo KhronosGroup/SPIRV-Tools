@@ -225,11 +225,7 @@ class ValidationState_t {
   /// Registers |id| as an entry point with |execution_model| and |interfaces|.
   void RegisterEntryPoint(const uint32_t id,
                           spv::ExecutionModel execution_model,
-                          EntryPointDescription&& desc) {
-    entry_points_.push_back(id);
-    entry_point_to_execution_models_[id].insert(execution_model);
-    entry_point_descriptions_[id].emplace_back(desc);
-  }
+                          EntryPointDescription&& desc);
 
   /// Returns a list of entry point function ids
   const std::vector<uint32_t>& entry_points() const { return entry_points_; }
@@ -242,22 +238,16 @@ class ValidationState_t {
 
   /// Registers execution mode for the given entry point.
   void RegisterExecutionModeForEntryPoint(uint32_t entry_point,
-                                          spv::ExecutionMode execution_mode) {
-    entry_point_to_execution_modes_[entry_point].insert(execution_mode);
-  }
+                                          spv::ExecutionMode execution_mode);
 
   /// Registers that the entry point declares its local size
   void RegisterEntryPointLocalSize(uint32_t entry_point,
-                                   const Instruction* inst) {
-    entry_point_to_local_size_or_id_[entry_point] = inst;
-  }
+                                   const Instruction* inst);
 
   /// Registers that the entry point maximum number of primitives
   /// mesh shader will ever emit
   void RegisterEntryPointOutputPrimitivesEXT(uint32_t entry_point,
-                                             const Instruction* inst) {
-    entry_point_to_output_primitives_[entry_point] = inst;
-  }
+                                             const Instruction* inst);
 
   /// Returns the maximum number of primitives mesh shader can emit
   uint32_t GetOutputPrimitivesEXT(uint32_t entry_point) const {
@@ -272,9 +262,7 @@ class ValidationState_t {
   /// Registers that the entry point maximum number of vertices
   /// mesh shader will ever emit
   void RegisterEntryPointOutputVertices(uint32_t entry_point,
-                                        const Instruction* inst) {
-    entry_point_to_output_vertices_[entry_point] = inst;
-  }
+                                        const Instruction* inst);
 
   /// Returns the maximum number of primitives mesh shader can emit
   uint32_t GetOutputVertices(uint32_t entry_point) const {
@@ -335,9 +323,7 @@ class ValidationState_t {
   void ComputeRecursiveEntryPoints();
 
   /// Registers |id| as a graph entry point.
-  void RegisterGraphEntryPoint(const uint32_t id) {
-    graph_entry_points_.push_back(id);
-  }
+  void RegisterGraphEntryPoint(const uint32_t id);
 
   /// Returns a list of graph entry point graph ids
   const std::vector<uint32_t>& graph_entry_points() const {
@@ -353,10 +339,7 @@ class ValidationState_t {
   std::set<uint32_t> EntryPointReferences(uint32_t id) const;
 
   /// Inserts an <id> to the set of functions that are target of OpFunctionCall.
-  void AddFunctionCallTarget(const uint32_t id) {
-    function_call_targets_.insert(id);
-    current_function().AddFunctionCallTarget(id);
-  }
+  void AddFunctionCallTarget(const uint32_t id);
 
   /// Returns whether or not a function<id> is the target of OpFunctionCall.
   bool IsFunctionCallTarget(const uint32_t id) {
@@ -458,15 +441,12 @@ class ValidationState_t {
   void RegisterDebugInstruction(const Instruction* inst);
 
   /// Registers the decoration for the given <id>
-  void RegisterDecorationForId(uint32_t id, const Decoration& dec) {
-    auto& dec_list = id_decorations_[id];
-    dec_list.insert(dec);
-  }
+  void RegisterDecorationForId(uint32_t id, const Decoration& dec);
 
   /// Registers the list of decorations for the given <id>
   template <class InputIt>
   void RegisterDecorationsForId(uint32_t id, InputIt begin, InputIt end) {
-    std::set<Decoration>& cur_decs = id_decorations_[id];
+    std::set<Decoration>& cur_decs = id_decorations(id);
     cur_decs.insert(begin, end);
   }
 
@@ -476,7 +456,7 @@ class ValidationState_t {
   void RegisterDecorationsForStructMember(uint32_t struct_id,
                                           uint32_t member_index, InputIt begin,
                                           InputIt end) {
-    std::set<Decoration>& cur_decs = id_decorations_[struct_id];
+    std::set<Decoration>& cur_decs = id_decorations(struct_id);
     for (InputIt iter = begin; iter != end; ++iter) {
       Decoration dec = *iter;
       dec.set_struct_member_index(member_index);
@@ -487,9 +467,7 @@ class ValidationState_t {
   /// Returns all the decorations for the given <id>. If no decorations exist
   /// for the <id>, it registers an empty set for it in the map and
   /// returns the empty set.
-  std::set<Decoration>& id_decorations(uint32_t id) {
-    return id_decorations_[id];
-  }
+  std::set<Decoration>& id_decorations(uint32_t id);
 
   /// Returns the range of decorations for the given field of the given <id>.
   struct FieldDecorationsIter {
@@ -497,20 +475,7 @@ class ValidationState_t {
     std::set<Decoration>::const_iterator end;
   };
   FieldDecorationsIter id_member_decorations(uint32_t id,
-                                             uint32_t member_index) {
-    const auto& decorations = id_decorations_[id];
-
-    // The decorations are sorted by member_index, so this look up will give the
-    // exact range of decorations for this member index.
-    Decoration min_decoration((spv::Decoration)0, {}, member_index);
-    Decoration max_decoration(spv::Decoration::Max, {}, member_index);
-
-    FieldDecorationsIter result;
-    result.begin = decorations.lower_bound(min_decoration);
-    result.end = decorations.upper_bound(max_decoration);
-
-    return result;
-  }
+                                             uint32_t member_index);
 
   // Returns const pointer to the internal decoration container.
   const std::map<uint32_t, std::set<Decoration>>& id_decorations() const {
@@ -602,10 +567,10 @@ class ValidationState_t {
   size_t num_local_vars() { return local_vars_.size(); }
 
   /// Inserts a new <id> to the set of Global Variables.
-  void registerGlobalVariable(const uint32_t id) { global_vars_.insert(id); }
+  void registerGlobalVariable(const uint32_t id);
 
   /// Inserts a new <id> to the set of Local Variables.
-  void registerLocalVariable(const uint32_t id) { local_vars_.insert(id); }
+  void registerLocalVariable(const uint32_t id);
 
   // Returns true if using relaxed block layout, equivalent to
   // VK_KHR_relaxed_block_layout.
@@ -620,31 +585,21 @@ class ValidationState_t {
   }
 
   /// Sets the struct nesting depth for a given struct ID
-  void set_struct_nesting_depth(uint32_t id, uint32_t depth) {
-    struct_nesting_depth_[id] = depth;
-  }
+  void set_struct_nesting_depth(uint32_t id, uint32_t depth);
 
   /// Returns the nesting depth of a given structure ID
-  uint32_t struct_nesting_depth(uint32_t id) {
-    return struct_nesting_depth_[id];
-  }
+  uint32_t struct_nesting_depth(uint32_t id);
 
   /// Records the has a nested block/bufferblock decorated struct for a given
   /// struct ID
-  void SetHasNestedBlockOrBufferBlockStruct(uint32_t id, bool has) {
-    struct_has_nested_blockorbufferblock_struct_[id] = has;
-  }
+  void SetHasNestedBlockOrBufferBlockStruct(uint32_t id, bool has);
 
   /// For a given struct ID returns true if it has a nested block/bufferblock
   /// decorated struct
-  bool GetHasNestedBlockOrBufferBlockStruct(uint32_t id) {
-    return struct_has_nested_blockorbufferblock_struct_[id];
-  }
+  bool GetHasNestedBlockOrBufferBlockStruct(uint32_t id);
 
   /// Records that the structure type has a member decorated with a built-in.
-  void RegisterStructTypeWithBuiltInMember(uint32_t id) {
-    builtin_structs_.insert(id);
-  }
+  void RegisterStructTypeWithBuiltInMember(uint32_t id);
 
   /// Returns true if the struct type with the given Id has a BuiltIn member.
   bool IsStructTypeWithBuiltInMember(uint32_t id) const {
@@ -837,9 +792,7 @@ class ValidationState_t {
            pointer_to_uniform_block_.cend();
   }
   // Save the ID of a pointer to uniform block.
-  void RegisterPointerToUniformBlock(uint32_t type_id) {
-    pointer_to_uniform_block_.insert(type_id);
-  }
+  void RegisterPointerToUniformBlock(uint32_t type_id);
   // Is the ID the type of a struct used as a uniform block?
   // The result is only valid after internal method CheckDecorationsOfBuffers
   // has been called.
@@ -848,9 +801,7 @@ class ValidationState_t {
            struct_for_uniform_block_.cend();
   }
   // Save the ID of a struct of a uniform block.
-  void RegisterStructForUniformBlock(uint32_t type_id) {
-    struct_for_uniform_block_.insert(type_id);
-  }
+  void RegisterStructForUniformBlock(uint32_t type_id);
   // Is the ID the type of a pointer to a storage buffer: BufferBlock-decorated
   // struct in uniform storage class, or Block-decorated struct in StorageBuffer
   // storage class? The result is only valid after internal method
@@ -860,9 +811,7 @@ class ValidationState_t {
            pointer_to_storage_buffer_.cend();
   }
   // Save the ID of a pointer to a storage buffer.
-  void RegisterPointerToStorageBuffer(uint32_t type_id) {
-    pointer_to_storage_buffer_.insert(type_id);
-  }
+  void RegisterPointerToStorageBuffer(uint32_t type_id);
   // Is the ID the type of a struct for storage buffer?
   // The result is only valid after internal method CheckDecorationsOfBuffers
   // has been called.
@@ -871,9 +820,7 @@ class ValidationState_t {
            struct_for_storage_buffer_.cend();
   }
   // Save the ID of a struct of a storage buffer.
-  void RegisterStructForStorageBuffer(uint32_t type_id) {
-    struct_for_storage_buffer_.insert(type_id);
-  }
+  void RegisterStructForStorageBuffer(uint32_t type_id);
 
   // Is the ID the type of a pointer to a storage image?  That is, the pointee
   // type is an image type which is known to not use a sampler.
@@ -882,9 +829,7 @@ class ValidationState_t {
            pointer_to_storage_image_.cend();
   }
   // Save the ID of a pointer to a storage image.
-  void RegisterPointerToStorageImage(uint32_t type_id) {
-    pointer_to_storage_image_.insert(type_id);
-  }
+  void RegisterPointerToStorageImage(uint32_t type_id);
 
   // Is the ID the type of a pointer to a tensor?  That is, the pointee
   // type is a tensor type.
@@ -892,9 +837,7 @@ class ValidationState_t {
     return pointer_to_tensor_.find(type_id) != pointer_to_tensor_.cend();
   }
   // Save the ID of a pointer to a tensor.
-  void RegisterPointerToTensor(uint32_t type_id) {
-    pointer_to_tensor_.insert(type_id);
-  }
+  void RegisterPointerToTensor(uint32_t type_id);
 
   // Tries to evaluate a any scalar integer OpConstant as uint64.
   // OpConstantNull is defined as zero for scalar int (will return true)
