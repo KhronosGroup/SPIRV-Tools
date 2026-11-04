@@ -3621,7 +3621,7 @@ TEST_F(ValidateSpvEXTDescriptorHeap, ResourceHeapArrayLength) {
                         "ResourceHeapEXT"));
 }
 
-TEST_F(ValidateSpvEXTDescriptorHeap, ResourceHeapLoadBuffer) {
+TEST_F(ValidateSpvEXTDescriptorHeap, ResourceHeapLoadBufferDescriptor) {
   const std::string str = R"(
                OpCapability Shader
                OpCapability UntypedPointersKHR
@@ -3650,11 +3650,7 @@ TEST_F(ValidateSpvEXTDescriptorHeap, ResourceHeapLoadBuffer) {
                OpFunctionEnd
 )";
   CompileSuccessfully(str.c_str(), SPV_ENV_VULKAN_1_3);
-  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_VULKAN_1_3));
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("OpLoad Result Type <id> '8[%8]' must not be "
-                        "OpTypeBufferEXT, the data of a buffer is accessed "
-                        "with OpBufferPointerEXT"));
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_3));
 }
 
 TEST_F(ValidateSpvEXTDescriptorHeap, ArrayLengthThroughBufferPointer) {
