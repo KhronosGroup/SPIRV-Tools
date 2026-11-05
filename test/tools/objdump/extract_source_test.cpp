@@ -17,7 +17,9 @@
 #include <gtest/gtest.h>
 
 #include <string>
+#include <vector>
 
+#include "source/latest_version_spirv_header.h"
 #include "source/opt/build_module.h"
 #include "source/opt/ir_context.h"
 #include "spirv-tools/libspirv.hpp"
@@ -246,6 +248,29 @@ TEST(ExtractSourceTest, EscapeEscaped) {
   ASSERT_TRUE(result.size() == 1);
   std::string computeHlslResult = result["compute.hlsl"];
   ASSERT_STREQ(computeHlslResult.c_str(), "// check \" escape removed");
+}
+
+TEST(ExtractSourceTest, TrailingBackslashInStringLiteral) {
+  // A crafted OpString whose string operand ends in a backslash with no byte
+  // after it. The binary parser stops at the first null terminator and pads the
+  // operand to a word boundary without requiring the trailing bytes to be zero,
+  // so the escape handling in ExtractStringLiteral must not read past the
+  // operand. The string word below decodes (little-endian) to bytes
+  // {'\\', '\0', 'x', '\\'}: the backslash escape consumes the null, then the
+  // scan reaches the trailing backslash at the last byte of the operand.
+  std::vector<uint32_t> binary = {
+      0x07230203,  // magic
+      0x00010600,  // version 1.6
+      0,           // generator
+      2,           // bound
+      0,           // schema
+      (3u << 16) | static_cast<uint32_t>(spv::Op::OpString),
+      1,           // result id
+      0x5c78005c,  // "\\\0x\\"
+  };
+
+  std::unordered_map<std::string, std::string> output;
+  ASSERT_FALSE(ExtractSourceFromModule(binary, &output));
 }
 
 TEST(ExtractSourceTest, OpSourceWithNoSource) {
