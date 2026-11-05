@@ -946,6 +946,73 @@ TEST_F(ElimDeadOutputStoresTest, VertMultipleLocationsF16) {
                                                        &live_builtins);
 }
 
+TEST_F(ElimDeadOutputStoresTest, DemoteOutputVariableToPrivate) {
+  //
+  // #version 450
+  //
+  // layout(location=0) out vec4 pos;
+  // void main()
+  // {
+  //     pos = vec4(0.0);
+  //     gl_Position = pos;
+  // }
+
+  const std::string text = R"(OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Vertex %main "main" %pos %_
+               OpSource GLSL 450
+               OpName %main "main"
+               OpName %pos "pos"
+               OpName %gl_PerVertex "gl_PerVertex"
+               OpMemberName %gl_PerVertex 0 "gl_Position"
+               OpMemberName %gl_PerVertex 1 "gl_PointSize"
+               OpMemberName %gl_PerVertex 2 "gl_ClipDistance"
+               OpMemberName %gl_PerVertex 3 "gl_CullDistance"
+               OpName %_ ""
+               OpDecorate %pos Location 0
+               OpMemberDecorate %gl_PerVertex 0 BuiltIn Position
+               OpMemberDecorate %gl_PerVertex 1 BuiltIn PointSize
+               OpMemberDecorate %gl_PerVertex 2 BuiltIn ClipDistance
+               OpMemberDecorate %gl_PerVertex 3 BuiltIn CullDistance
+               OpDecorate %gl_PerVertex Block
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+      %float = OpTypeFloat 32
+    %v4float = OpTypeVector %float 4
+%_ptr_Output_v4float = OpTypePointer Output %v4float
+;CHECK: %_ptr_Private_v4float = OpTypePointer Private %v4float
+        %pos = OpVariable %_ptr_Output_v4float Output
+;CHECK: %pos = OpVariable %_ptr_Private_v4float Private
+    %float_0 = OpConstant %float 0
+         %11 = OpConstantComposite %v4float %float_0 %float_0 %float_0 %float_0
+       %uint = OpTypeInt 32 0
+     %uint_1 = OpConstant %uint 1
+%_arr_float_uint_1 = OpTypeArray %float %uint_1
+%gl_PerVertex = OpTypeStruct %v4float %float %_arr_float_uint_1 %_arr_float_uint_1
+%_ptr_Output_gl_PerVertex = OpTypePointer Output %gl_PerVertex
+          %_ = OpVariable %_ptr_Output_gl_PerVertex Output
+        %int = OpTypeInt 32 1
+      %int_0 = OpConstant %int 0
+       %main = OpFunction %void None %3
+          %5 = OpLabel
+               OpStore %pos %11
+;CHECK:        OpStore %pos %11
+         %20 = OpLoad %v4float %pos
+         %21 = OpAccessChain %_ptr_Output_v4float %_ %int_0
+               OpStore %21 %20
+               OpReturn
+               OpFunctionEnd)";
+
+  SetTargetEnv(SPV_ENV_VULKAN_1_3);
+  SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
+
+  std::unordered_set<uint32_t> live_inputs{};
+  std::unordered_set<uint32_t> live_builtins{};
+  SinglePassRunAndMatch<EliminateDeadOutputStoresPass>(text, true, &live_inputs,
+                                                       &live_builtins);
+}
+
 }  // namespace
 }  // namespace opt
 }  // namespace spvtools

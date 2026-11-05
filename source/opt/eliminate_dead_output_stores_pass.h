@@ -69,6 +69,12 @@ class EliminateDeadOutputStoresPass : public Pass {
   // Return true if builtin |bi| is live.
   bool IsLiveBuiltin(uint32_t bi);
 
+  // Return true if an OpLoad is using this variable.
+  bool IsVariableRead(Instruction const* const var);
+
+  // Demote the variable's storage class from output to private.
+  bool DemoteToPrivate(Instruction* const var);
+
   std::unordered_set<uint32_t>* live_locs_;
   std::unordered_set<uint32_t>* live_builtins_;
 
