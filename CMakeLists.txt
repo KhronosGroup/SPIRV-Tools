@@ -182,6 +182,13 @@ else(SPIRV_TOOLS_BUILD_STATIC)
   endif()
 endif(SPIRV_TOOLS_BUILD_STATIC)
 
+# SPIRV-Tools component libraries do not annotate all of their public C++
+# symbols. Generate Windows export tables when those components are shared so
+# that their import libraries can be linked by one another and by consumers.
+if(WIN32 AND SPIRV_TOOLS_LIBRARY_TYPE STREQUAL "SHARED")
+  set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
+endif()
+
 function(spvtools_default_compile_options TARGET)
   target_compile_options(${TARGET} PRIVATE ${SPIRV_WARNINGS})
 
