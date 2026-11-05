@@ -55,6 +55,7 @@ struct spv_validator_options_t {
         allow_localsizeid(false),
         allow_offset_texture_operand(false),
         allow_vulkan_32_bit_bitwise(false),
+        reject_unknown_nsdi_version(false),
         before_hlsl_legalization(false),
         use_friendly_names(true) {}
 
@@ -69,6 +70,7 @@ struct spv_validator_options_t {
   bool allow_localsizeid;
   bool allow_offset_texture_operand;
   bool allow_vulkan_32_bit_bitwise;
+  bool reject_unknown_nsdi_version;
   bool before_hlsl_legalization;
   bool use_friendly_names;
 
