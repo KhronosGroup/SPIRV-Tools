@@ -376,10 +376,11 @@ spv_result_t ValidateLoopMerge(ValidationState_t& _, const Instruction* inst) {
 spv_result_t ValidateLifetime(ValidationState_t& _, const Instruction* inst) {
   const uint32_t pointer_id = _.GetOperandTypeId(inst, 0);
   const Instruction* pointer_inst = _.FindDef(pointer_id);
-  if (pointer_inst->opcode() != spv::Op::OpTypePointer) {
+  if (!_.IsPointerType(pointer_id)) {
     return _.diag(SPV_ERROR_INVALID_DATA, inst)
            << "Op" << spvOpcodeString(inst->opcode())
-           << " pointer operand type must be a OpTypePointer.";
+           << " pointer operand type must be a OpTypePointer or "
+              "OpTypeUntypedPointerKHR.";
   } else if (pointer_inst->GetOperandAs<spv::StorageClass>(1) !=
              spv::StorageClass::Function) {
     return _.diag(SPV_ERROR_INVALID_DATA, inst)

@@ -11,16 +11,6 @@ COMMON_COPTS = [
         "-fvisibility=hidden",
         "-fno-exceptions",
         "-fno-rtti",
-        "-Wall",
-        "-Wextra",
-        "-Wnon-virtual-dtor",
-        "-Wno-missing-field-initializers",
-        "-Werror",
-        "-Wno-long-long",
-        "-Wshadow",
-        "-Wundef",
-        "-Wconversion",
-        "-Wno-sign-conversion",
     ],
 })
 

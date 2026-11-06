@@ -1371,6 +1371,52 @@ TEST_F(CCPTest, LateralLatticeTransition) {
   EXPECT_EQ(std::get<1>(result), Pass::Status::SuccessWithChange);
 }
 
+TEST_F(CCPTest, CooperativeMatrixReplicateIsNotNull) {
+  const std::string text = R"(
+               OpCapability Shader
+               OpCapability Float16
+               OpCapability VulkanMemoryModel
+               OpCapability CooperativeMatrixKHR
+               OpCapability ReplicatedCompositesEXT
+               OpExtension "SPV_KHR_cooperative_matrix"
+               OpExtension "SPV_KHR_vulkan_memory_model"
+               OpExtension "SPV_EXT_replicated_composites"
+               OpMemoryModel Logical Vulkan
+               OpEntryPoint GLCompute %main "main"
+               OpExecutionMode %main LocalSize 64 1 1
+               OpDecorate %blk Block
+               OpMemberDecorate %blk 0 Offset 0
+               OpDecorate %out DescriptorSet 0
+               OpDecorate %out Binding 0
+       %void = OpTypeVoid
+       %func = OpTypeFunction %void
+       %uint = OpTypeInt 32 0
+       %half = OpTypeFloat 16
+     %uint_0 = OpConstant %uint 0
+     %uint_3 = OpConstant %uint 3
+    %uint_16 = OpConstant %uint 16
+    %coopmat = OpTypeCooperativeMatrixKHR %half %uint_3 %uint_16 %uint_16 %uint_0
+     %half_1 = OpConstant %half 1
+        %mat = OpConstantCompositeReplicateEXT %coopmat %half_1
+        %blk = OpTypeStruct %half
+        %ptr = OpTypePointer StorageBuffer %blk
+       %hptr = OpTypePointer StorageBuffer %half
+        %out = OpVariable %ptr StorageBuffer
+       %main = OpFunction %void None %func
+      %entry = OpLabel
+; CHECK-NOT: OpConstantNull
+; CHECK: [[x:%\w+]] = OpCompositeExtract
+          %x = OpCompositeExtract %half %mat 0
+          %p = OpAccessChain %hptr %out %uint_0
+; CHECK: OpStore {{%\w+}} [[x]]
+               OpStore %p %x
+               OpReturn
+               OpFunctionEnd
+)";
+
+  SinglePassRunAndMatch<CCPPass>(text, true);
+}
+
 }  // namespace
 }  // namespace opt
 }  // namespace spvtools
