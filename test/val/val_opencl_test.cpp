@@ -510,6 +510,32 @@ TEST_F(ValidateOpenCL, ImageSampleExplicitLodWithConstOffsetBad) {
           "%coord Lod|ConstOffset %float_0 %coord\n"));
 }
 
+TEST_F(ValidateOpenCL, WorkgroupVariableWithInitializerBad) {
+  const std::string spirv = R"(
+    OpCapability Addresses
+    OpCapability Kernel
+    OpMemoryModel Physical64 OpenCL
+    OpEntryPoint Kernel %kernel "kernel"
+    %uint = OpTypeInt 32 0
+    %ptr = OpTypePointer Workgroup %uint
+    %zero = OpConstantNull %uint
+    %var = OpVariable %ptr Workgroup %zero
+    %void = OpTypeVoid
+    %func_type = OpTypeFunction %void
+    %kernel = OpFunction %void None %func_type
+    %entry = OpLabel
+    OpReturn
+    OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv);
+
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_OPENCL_1_2));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("initializers are not allowed in Workgroup storage "
+                        "class in the OpenCL environment"));
+}
+
 }  // namespace
 }  // namespace val
 }  // namespace spvtools

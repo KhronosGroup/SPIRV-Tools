@@ -290,6 +290,7 @@ spv_result_t GetLocationsForVariable(
   // validator allows duplicate decorations if the location/component/index are
   // equal. Also track Patch and PerTaskNV decorations.
   bool has_location = false;
+  bool has_component = false;
   uint32_t location = 0;
   uint32_t component = 0;
   bool has_index = false;
@@ -304,6 +305,7 @@ spv_result_t GetLocationsForVariable(
       location = dec.params()[0];
     } else if (dec.dec_type() == spv::Decoration::Component) {
       component = dec.params()[0];
+      has_component = true;
     } else if (dec.dec_type() == spv::Decoration::Index) {
       if (!is_output || !is_fragment) {
         return _.diag(SPV_ERROR_INVALID_DATA, variable)
@@ -374,6 +376,16 @@ spv_result_t GetLocationsForVariable(
                      type->opcode() == spv::Op::OpTypeRuntimeArray)) {
     type_id = type->GetOperandAs<uint32_t>(1);
     type = _.FindDef(type_id);
+  }
+
+  if (has_component && type->opcode() == spv::Op::OpTypeArray &&
+      _.GetIdOpcode(type->GetOperandAs<uint32_t>(1)) == spv::Op::OpTypeArray) {
+    return _.diag(SPV_ERROR_INVALID_DATA, variable)
+           << _.VkErrorID(is_output ? 10585 : 10584)
+           << "Entry-point interface variable in the "
+           << (is_output ? "Output" : "Input")
+           << " storage class is decorated with Component and is an array of "
+              "arrays of scalars or vectors";
   }
 
   if (type->opcode() == spv::Op::OpTypeStruct) {

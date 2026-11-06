@@ -644,6 +644,20 @@ spv_result_t ValidateTypePointer(ValidationState_t& _,
     }
   }
 
+  if (storage_class == spv::StorageClass::PhysicalStorageBuffer) {
+    if (_.ContainsType(
+            type_id,
+            [](const Instruction* type_inst) {
+              return type_inst->opcode() == spv::Op::OpTypeBool;
+            },
+            false)) {
+      return _.diag(SPV_ERROR_INVALID_ID, inst)
+             << "OpTypePointer Type <id> " << _.getIdName(type_id)
+             << " contains an OpTypeBool, which must not be used with the "
+                "PhysicalStorageBuffer Storage Class";
+    }
+  }
+
   if (!_.IsValidStorageClass(storage_class)) {
     return _.diag(SPV_ERROR_INVALID_BINARY, inst)
            << _.VkErrorID(4643)
