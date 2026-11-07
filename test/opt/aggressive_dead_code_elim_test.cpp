@@ -29,6 +29,62 @@ using AggressiveDCETest = PassTest<::testing::Test>;
 
 using ::testing::HasSubstr;
 
+TEST_F(AggressiveDCETest, FloatControlsPreserved) {
+  // Float controls restrict live arithmetic; they do not make unused local
+  // arithmetic or stores observable. Keep the controls and NoContraction.
+  const std::string spirv = R"(
+; CHECK: OpCapability DenormPreserve
+; CHECK: OpCapability SignedZeroInfNanPreserve
+; CHECK: OpCapability RoundingModeRTE
+; CHECK: OpExtension "SPV_KHR_float_controls"
+; CHECK: OpExecutionMode {{%\w+}} DenormPreserve 32
+; CHECK: OpExecutionMode {{%\w+}} SignedZeroInfNanPreserve 32
+; CHECK: OpExecutionMode {{%\w+}} RoundingModeRTE 32
+; CHECK: OpDecorate [[sum:%\w+]] NoContraction
+; CHECK: OpFunction
+; CHECK-NOT: OpVariable
+; CHECK: [[value:%\w+]] = OpLoad
+; CHECK-NEXT: [[sum]] = OpFAdd {{%\w+}} [[value]]
+; CHECK-NEXT: OpStore
+; CHECK-NEXT: OpReturn
+               OpCapability Shader
+               OpCapability DenormPreserve
+               OpCapability SignedZeroInfNanPreserve
+               OpCapability RoundingModeRTE
+               OpExtension "SPV_KHR_float_controls"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %main "main" %input %output
+               OpExecutionMode %main OriginUpperLeft
+               OpExecutionMode %main DenormPreserve 32
+               OpExecutionMode %main SignedZeroInfNanPreserve 32
+               OpExecutionMode %main RoundingModeRTE 32
+               OpDecorate %input Location 0
+               OpDecorate %output Location 0
+               OpDecorate %sum NoContraction
+       %void = OpTypeVoid
+      %float = OpTypeFloat 32
+         %fn = OpTypeFunction %void
+         %ip = OpTypePointer Input %float
+         %op = OpTypePointer Output %float
+         %fp = OpTypePointer Function %float
+      %input = OpVariable %ip Input
+     %output = OpVariable %op Output
+        %one = OpConstant %float 1
+       %main = OpFunction %void None %fn
+      %entry = OpLabel
+      %local = OpVariable %fp Function
+      %value = OpLoad %float %input
+       %dead = OpFAdd %float %value %one
+               OpStore %local %dead
+        %sum = OpFAdd %float %value %one
+               OpStore %output %sum
+               OpReturn
+               OpFunctionEnd
+  )";
+  SetTargetEnv(SPV_ENV_UNIVERSAL_1_3);
+  SinglePassRunAndMatch<AggressiveDCEPass>(spirv, true);
+}
+
 TEST_F(AggressiveDCETest, EliminateExtendedInst) {
   //  #version 140
   //
