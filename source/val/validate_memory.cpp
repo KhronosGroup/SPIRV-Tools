@@ -63,9 +63,16 @@ const Instruction* FindDescriptorHeapVariable(ValidationState_t& _,
   if (!pointer || !_.HasCapability(spv::Capability::DescriptorHeapEXT)) {
     return nullptr;
   }
+  uint32_t data_type = 0;
+  spv::StorageClass storage_class;
+  if (!_.GetPointerTypeInfo(pointer->type_id(), &data_type, &storage_class) ||
+      storage_class != spv::StorageClass::UniformConstant) {
+    return nullptr;
+  }
   const Instruction* heap_variable = _.FindUntypedBaseVariable(pointer);
   if (!heap_variable ||
-      heap_variable->opcode() != spv::Op::OpUntypedVariableKHR) {
+      (heap_variable->opcode() != spv::Op::OpUntypedVariableKHR &&
+       heap_variable->opcode() != spv::Op::OpVariable)) {
     return nullptr;
   }
   if (!_.IsBuiltin(heap_variable->id(), spv::BuiltIn::SamplerHeapEXT) &&

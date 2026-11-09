@@ -1584,8 +1584,7 @@ spv_result_t ValidateImageTexelPointer(ValidationState_t& _,
       const Instruction* base_variable =
           _.FindUntypedBaseVariable(_.FindDef(image_id));
       if (base_variable &&
-          (base_variable->opcode() == spv::Op::OpVariable ||
-           base_variable->opcode() == spv::Op::OpUntypedVariableKHR)) {
+          base_variable->opcode() == spv::Op::OpUntypedVariableKHR) {
         const uint32_t base_id = base_variable->id();
         const bool descriptor_set =
             _.HasDecoration(base_id, spv::Decoration::DescriptorSet) &&
