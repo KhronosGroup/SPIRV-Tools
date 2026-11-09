@@ -798,6 +798,40 @@ TEST_F(ValidateExplicitLayout,
   EXPECT_THAT(getDiagnosticString(), Eq(""));
 }
 
+//  https://github.com/KhronosGroup/SPIRV-Tools/issues/7019
+TEST_F(ValidateExplicitLayout, BlockLayoutTightColMajorMatrixWithScalar) {
+  std::string spirv = R"(
+               OpCapability Shader
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Vertex %main "main"
+               OpSource GLSL 450
+               OpMemberDecorate %S 0 ColMajor
+               OpMemberDecorate %S 0 MatrixStride 16
+               OpMemberDecorate %S 0 Offset 0
+               OpMemberDecorate %S 1 Offset 24
+               OpDecorate %S Block
+               OpDecorate %B DescriptorSet 0
+               OpDecorate %B Binding 0
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+      %float = OpTypeFloat 32
+    %v2float = OpTypeVector %float 2
+%mat2v2float = OpTypeMatrix %v2float 2
+          %S = OpTypeStruct %mat2v2float %float
+%_ptr_Uniform_S = OpTypePointer Uniform %S
+          %B = OpVariable %_ptr_Uniform_S Uniform
+       %main = OpFunction %void None %3
+          %5 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  CompileSuccessfully(spirv);
+  spvValidatorOptionsSetScalarBlockLayout(getValidatorOptions(), true);
+  EXPECT_EQ(SPV_SUCCESS, ValidateAndRetrieveValidationState(SPV_ENV_VULKAN_1_0))
+      << getDiagnosticString();
+}
+
 TEST_F(ValidateExplicitLayout,
        BlockLayoutPermitsScalarAlignedArrayWithScalarLayoutGood) {
   // The array at offset 4 is ok with scalar block layout.
