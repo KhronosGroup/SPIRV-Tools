@@ -3326,7 +3326,7 @@ TEST_F(ValidateSpvEXTDescriptorHeap, UntypedNonHeapVariableDataType) {
   CompileSuccessfully(str.c_str(), SPV_ENV_VULKAN_1_3);
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_VULKAN_1_3));
   EXPECT_THAT(getDiagnosticString(),
-              AnyVUID("VUID-StandaloneSpirv-UniformConstant-04655"));
+              AnyVUID("VUID-StandaloneSpirv-UniformConstant-13706"));
 }
 
 TEST_F(ValidateSpvEXTDescriptorHeap, ResourceHeapLoadStruct) {
@@ -3439,18 +3439,52 @@ TEST_F(ValidateSpvEXTDescriptorHeap, DescriptorSetImageTexelPointer) {
      %v2uint = OpTypeVector %uint 2
       %coord = OpConstantComposite %v2uint %uint_0 %uint_0
       %image = OpTypeImage %uint 2D 0 0 0 2 R32ui
+    %ptr_var = OpTypePointer UniformConstant %image
      %ptr_uc = OpTypeUntypedPointerKHR UniformConstant
   %ptr_image = OpTypeUntypedPointerKHR Image
-        %var = OpUntypedVariableKHR %ptr_uc UniformConstant %image
+        %var = OpVariable %ptr_var UniformConstant
        %func = OpTypeFunction %void
        %main = OpFunction %void None %func
       %label = OpLabel
-      %texel = OpUntypedImageTexelPointerEXT %ptr_image %image %var %coord %uint_0
+         %ac = OpUntypedAccessChainKHR %ptr_uc %image %var
+      %texel = OpUntypedImageTexelPointerEXT %ptr_image %image %ac %coord %uint_0
                OpReturn
                OpFunctionEnd
 )";
   CompileSuccessfully(str.c_str(), SPV_ENV_VULKAN_1_3);
   EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_3));
+}
+
+TEST_F(ValidateSpvEXTDescriptorHeap, UntypedUniformConstantNonHeapVariable) {
+  const std::string str = R"(
+               OpCapability Shader
+               OpCapability UntypedPointersKHR
+               OpCapability DescriptorHeapEXT
+               OpExtension "SPV_EXT_descriptor_heap"
+               OpExtension "SPV_KHR_untyped_pointers"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %main "main" %var
+               OpExecutionMode %main LocalSize 1 1 1
+               OpDecorate %var DescriptorSet 0
+               OpDecorate %var Binding 0
+       %void = OpTypeVoid
+       %uint = OpTypeInt 32 0
+      %image = OpTypeImage %uint 2D 0 0 0 2 R32ui
+     %ptr_uc = OpTypeUntypedPointerKHR UniformConstant
+        %var = OpUntypedVariableKHR %ptr_uc UniformConstant %image
+       %func = OpTypeFunction %void
+       %main = OpFunction %void None %func
+      %label = OpLabel
+               OpReturn
+               OpFunctionEnd
+)";
+  CompileSuccessfully(str.c_str(), SPV_ENV_VULKAN_1_3);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_VULKAN_1_3));
+  EXPECT_THAT(getDiagnosticString(),
+              AnyVUID("VUID-StandaloneSpirv-UniformConstant-13706"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Vulkan requires that an OpUntypedVariableKHR be "
+                        "decorated with SamplerHeapEXT or ResourceHeapEXT"));
 }
 
 TEST_F(ValidateSpvEXTDescriptorHeap, ResourceHeapLoadImageArray) {

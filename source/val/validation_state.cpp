@@ -3839,6 +3839,8 @@ std::string ValidationState_t::VkErrorID(uint32_t id,
       return VUID_WRAP(VUID-StandaloneSpirv-Base-12469);
     case 12509:
       return VUID_WRAP(VUID-StandaloneSpirv-Offset-12509);
+    case 13706:
+      return VUID_WRAP(VUID-StandaloneSpirv-UniformConstant-13706);
     case 13743:
       return VUID_WRAP(VUID-StandaloneSpirv-OpUntypedImageTexelPointerEXT-13743);
     case 13744:

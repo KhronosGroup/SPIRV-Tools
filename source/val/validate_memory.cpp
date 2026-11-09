@@ -1354,6 +1354,18 @@ spv_result_t ValidateVariable(ValidationState_t& _, const Instruction* inst) {
         return _.diag(SPV_ERROR_INVALID_ID, inst)
                << "Data type must be a type instruction";
       }
+      // Untyped pointers are only permitted in storage classes with an explicit
+      // layout. UniformConstant only has an explicit layout if it is one of the
+      // heaps.
+      if (spvIsVulkanEnv(_.context()->target_env) &&
+          storage_class == spv::StorageClass::UniformConstant &&
+          !_.IsDescriptorHeapBaseVariable(inst)) {
+        return _.diag(SPV_ERROR_INVALID_ID, inst)
+               << _.VkErrorID(13706)
+               << "Storage class is UniformConstant, but Vulkan requires "
+                  "that an OpUntypedVariableKHR be decorated with "
+                  "SamplerHeapEXT or ResourceHeapEXT";
+      }
     } else {
       if (storage_class == spv::StorageClass::Function ||
           storage_class == spv::StorageClass::Private ||
