@@ -567,6 +567,8 @@ struct Impl {
       case spv::Op::OpTypeBufferEXT:
       case spv::Op::OpTypeAccelerationStructureKHR:
         return vstate.options()->buffer_descriptor_layout.alignment;
+      case spv::Op::OpTypeTensorARM:
+        return vstate.options()->tensor_descriptor_layout.alignment;
       case spv::Op::OpTypeInt:
       case spv::Op::OpTypeFloat:
         return type_inst->GetOperandAs<uint32_t>(1u) / 8;
@@ -662,6 +664,8 @@ struct Impl {
       case spv::Op::OpTypeBufferEXT:
       case spv::Op::OpTypeAccelerationStructureKHR:
         return vstate.options()->buffer_descriptor_layout.size;
+      case spv::Op::OpTypeTensorARM:
+        return vstate.options()->tensor_descriptor_layout.size;
       case spv::Op::OpTypeInt:
       case spv::Op::OpTypeFloat:
         return type_inst->GetOperandAs<uint32_t>(1u) / 8;
