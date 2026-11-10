@@ -839,6 +839,64 @@ INSTANTIATE_TEST_SUITE_P(
         // clang-format on
     })));
 
+TEST_F(EliminateDeadConstantBasicTest, DecorateIdOperandsAreUses) {
+  const std::string spirv = R"(
+; CHECK: %offset = OpSpecConstant %uint 4
+; CHECK: %stride = OpSpecConstant %uint 16
+; CHECK-NOT: %dead = OpSpecConstant
+OpCapability Shader
+OpCapability UntypedPointersKHR
+OpCapability DescriptorHeapEXT
+OpExtension "SPV_EXT_descriptor_heap"
+OpExtension "SPV_KHR_untyped_pointers"
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %main "main" %heap %out
+OpExecutionMode %main LocalSize 1 1 1
+OpName %S "S"
+OpName %offset "offset"
+OpName %stride "stride"
+OpName %dead "dead"
+OpDecorate %heap BuiltIn ResourceHeapEXT
+OpMemberDecorateIdEXT %S 0 OffsetIdEXT %offset
+OpDecorateId %arr ArrayStrideIdEXT %stride
+OpDecorate %dead SpecId 0
+OpDecorate %Out Block
+OpMemberDecorate %Out 0 Offset 0
+OpDecorate %out DescriptorSet 0
+OpDecorate %out Binding 0
+%void = OpTypeVoid
+%func = OpTypeFunction %void
+%uint = OpTypeInt 32 0
+%uint_0 = OpConstant %uint 0
+%offset = OpSpecConstant %uint 4
+%stride = OpSpecConstant %uint 16
+%dead = OpSpecConstant %uint 8
+%buf = OpTypeBufferEXT StorageBuffer
+%S = OpTypeStruct %buf
+%arr = OpTypeRuntimeArray %buf
+%ptr_uc = OpTypeUntypedPointerKHR UniformConstant
+%ptr_sb = OpTypeUntypedPointerKHR StorageBuffer
+%heap = OpUntypedVariableKHR %ptr_uc UniformConstant
+%Out = OpTypeStruct %uint
+%ptr_Out = OpTypePointer StorageBuffer %Out
+%ptr_uint = OpTypePointer StorageBuffer %uint
+%out = OpVariable %ptr_Out StorageBuffer
+%main = OpFunction %void None %func
+%entry = OpLabel
+%elem = OpUntypedAccessChainKHR %ptr_uc %arr %heap %uint_0
+%desc = OpUntypedAccessChainKHR %ptr_uc %S %elem %uint_0
+%b = OpBufferPointerEXT %ptr_sb %desc
+%v = OpLoad %uint %b
+%o = OpAccessChain %ptr_uint %out %uint_0
+OpStore %o %v
+OpReturn
+OpFunctionEnd
+)";
+
+  SetTargetEnv(SPV_ENV_UNIVERSAL_1_6);
+  SinglePassRunAndMatch<EliminateDeadConstantPass>(spirv, true);
+}
+
 }  // namespace
 }  // namespace opt
 }  // namespace spvtools

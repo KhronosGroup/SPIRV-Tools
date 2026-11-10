@@ -30,7 +30,8 @@ Pass::Status EliminateDeadConstantPass::Process() {
   std::unordered_set<Instruction*> working_list;
   // Traverse all the instructions to get the initial set of dead constants as
   // working list and count number of real uses for constants. Uses in
-  // annotation instructions do not count.
+  // annotation instructions do not count, except for the <id> operands of
+  // OpDecorateId and OpMemberDecorateIdEXT.
   std::unordered_map<Instruction*, size_t> use_counts;
   std::vector<Instruction*> constants = context()->GetConstants();
   for (auto* c : constants) {
@@ -38,9 +39,13 @@ Pass::Status EliminateDeadConstantPass::Process() {
     size_t count = 0;
     context()->get_def_use_mgr()->ForEachUse(
         const_id, [&count](Instruction* user, uint32_t index) {
-          (void)index;
           spv::Op op = user->opcode();
-          if (!(IsAnnotationInst(op) || IsDebug1Inst(op) || IsDebug2Inst(op) ||
+          const bool decoration_id_operand =
+              (op == spv::Op::OpDecorateId ||
+               op == spv::Op::OpMemberDecorateIdEXT) &&
+              index != 0;
+          if (decoration_id_operand ||
+              !(IsAnnotationInst(op) || IsDebug1Inst(op) || IsDebug2Inst(op) ||
                 IsDebug3Inst(op))) {
             ++count;
           }
