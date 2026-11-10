@@ -1724,6 +1724,10 @@ const Instruction* ValidationState_t::FindUntypedBaseVariable(
       case spv::Op::OpUntypedArrayLengthKHR:
         base_inst = FindDef(base_inst->GetOperandAs<uint32_t>(3));
         break;
+      case spv::Op::OpAccessChain:
+      case spv::Op::OpInBoundsAccessChain:
+      case spv::Op::OpPtrAccessChain:
+      case spv::Op::OpInBoundsPtrAccessChain:
       case spv::Op::OpCopyObject:
         base_inst = FindDef(base_inst->GetOperandAs<uint32_t>(2));
         break;
@@ -1786,8 +1790,10 @@ bool ValidationState_t::IsDescriptorHeapBaseVariable(const Instruction* inst) {
       IsBuiltin(base_inst->id(), spv::BuiltIn::SamplerHeapEXT) ||
       IsBuiltin(base_inst->id(), spv::BuiltIn::ResourceHeapEXT);
 
-  return FindDef(base_inst->id())->opcode() == spv::Op::OpBufferPointerEXT ||
-         (FindDef(base_inst->id())->opcode() == spv::Op::OpUntypedVariableKHR &&
+  const spv::Op base_opcode = base_inst->opcode();
+  return base_opcode == spv::Op::OpBufferPointerEXT ||
+         ((base_opcode == spv::Op::OpUntypedVariableKHR ||
+           base_opcode == spv::Op::OpVariable) &&
           is_heap_base);
 }
 

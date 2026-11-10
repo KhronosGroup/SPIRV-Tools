@@ -98,8 +98,6 @@ spv_result_t ValidateDescriptorHeapAccessType(ValidationState_t& _,
   if (!heap_variable) {
     return SPV_SUCCESS;
   }
-  const bool sampler_heap =
-      _.IsBuiltin(heap_variable->id(), spv::BuiltIn::SamplerHeapEXT);
 
   // Each access is a single descriptor, an array of descriptors is not allowed.
   // If using OpCopyMemorySized there is no type,
@@ -107,6 +105,9 @@ spv_result_t ValidateDescriptorHeapAccessType(ValidationState_t& _,
   if (type && _.IsDescriptorType(type->opcode())) {
     return SPV_SUCCESS;
   }
+
+  const bool sampler_heap =
+      _.IsBuiltin(heap_variable->id(), spv::BuiltIn::SamplerHeapEXT);
 
   auto diag = _.diag(SPV_ERROR_INVALID_ID, inst);
   diag << _.VkErrorID(13744) << "Op" << spvOpcodeString(inst->opcode())
@@ -3061,9 +3062,11 @@ spv_result_t ValidateBufferPointerEXT(ValidationState_t& _,
   }
 
   // Buffer operand
-  auto buffer =
-      _.FindUntypedBaseVariable(_.FindDef(inst->GetOperandAs<uint32_t>(2)));
-  if (!buffer || !_.IsBuiltin(buffer->id(), spv::BuiltIn::ResourceHeapEXT)) {
+  const uint32_t buffer_id = inst->GetOperandAs<uint32_t>(2);
+  auto buffer = _.FindUntypedBaseVariable(_.FindDef(buffer_id));
+  if (_.GetIdOpcode(_.GetTypeId(buffer_id)) !=
+          spv::Op::OpTypeUntypedPointerKHR ||
+      !buffer || !_.IsBuiltin(buffer->id(), spv::BuiltIn::ResourceHeapEXT)) {
     return _.diag(SPV_ERROR_INVALID_ID, inst)
            << "OpBufferPointerEXT's buffer must be an untyped pointer"
            << " into a variable declared with the ResourceHeapEXT built-in";
