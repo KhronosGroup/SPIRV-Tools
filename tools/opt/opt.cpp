@@ -445,6 +445,10 @@ Options (in lexicographical order):)",
                Looks for instructions in the same function that compute the
                same value, and deletes the redundant ones.)");
   printf(R"(
+  --reject-unknown-nsdi-version
+               Forwards this option to the validator.  See the validator help
+               for details.)");
+  printf(R"(
   --relax-block-layout
                Forwards this option to the validator.  See the validator help
                for details.)");
@@ -837,6 +841,8 @@ OptStatus ParseFlags(int argc, const char** argv,
         optimizer->SetValidateAfterAll(true);
       } else if (0 == strcmp(cur_arg, "--before-hlsl-legalization")) {
         validator_options->SetBeforeHlslLegalization(true);
+      } else if (0 == strcmp(cur_arg, "--reject-unknown-nsdi-version")) {
+        validator_options->SetRejectUnknownNsdiVersion(true);
       } else if (0 == strcmp(cur_arg, "--relax-logical-pointer")) {
         validator_options->SetRelaxLogicalPointer(true);
       } else if (0 == strcmp(cur_arg, "--relax-block-layout")) {

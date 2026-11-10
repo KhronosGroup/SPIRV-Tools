@@ -14,10 +14,14 @@
 
 // Source code for logical layout validation as described in section 2.4
 
+#include <string>
+
 #include "DebugInfo.h"
 #include "OpenCLDebugInfo100.h"
+#include "source/ext_inst.h"
 #include "source/opcode.h"
 #include "source/operand.h"
+#include "source/table2.h"
 #include "source/val/function.h"
 #include "source/val/instruction.h"
 #include "source/val/validate.h"
@@ -27,6 +31,29 @@
 namespace spvtools {
 namespace val {
 namespace {
+
+// Returns true if |inst| is a NonSemantic.Shader.DebugInfo instruction whose
+// opcode is not in the grammar, and whose import has a version newer than the
+// latest known version.
+bool IsUnknownShaderDebugInfoInst(const ValidationState_t& _,
+                                  const Instruction* inst) {
+  if (inst->ext_inst_type() !=
+      SPV_EXT_INST_TYPE_NONSEMANTIC_SHADER_DEBUGINFO_100) {
+    return false;
+  }
+  const ExtInstDesc* desc = nullptr;
+  if (LookupExtInst(inst->ext_inst_type(), inst->word(4), &desc) ==
+      SPV_SUCCESS) {
+    return false;
+  }
+  const Instruction* import_inst = _.FindDef(inst->word(3));
+  if (!import_inst) {
+    return false;
+  }
+  const std::string name = import_inst->GetOperandAs<std::string>(1);
+  return spvExtInstShaderDebugInfoVersion(name.c_str()) >
+         NonSemanticShaderDebugInfoVersion;
+}
 
 // Module scoped instructions are processed by determining if the opcode
 // is part of the current layout section. If it is not then the next sections is
@@ -245,6 +272,11 @@ spv_result_t FunctionScopedInstructions(ValidationState_t& _,
 
       case spv::Op::OpExtInst:
       case spv::Op::OpExtInstWithForwardRefsKHR:
+        // Instructions added by newer NonSemantic.Shader.DebugInfo versions
+        // are also allowed in a block.
+        if (_.in_block() && IsUnknownShaderDebugInfoInst(_, inst)) {
+          break;
+        }
         if (spvExtInstIsDebugInfo(inst->ext_inst_type())) {
           const uint32_t ext_inst_index = inst->word(4);
           bool local_debug_info = false;
