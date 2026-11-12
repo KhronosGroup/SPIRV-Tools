@@ -99,9 +99,12 @@ class TextToBinaryTestBase : public T {
     SCOPED_TRACE(flip_words ? "Flipped Endianness" : "Normal Endianness");
     if (flip_words) {
       std::transform(begin, end, begin, [](const uint32_t raw_word) {
-        return spvFixWord(raw_word, I32_ENDIAN_HOST == I32_ENDIAN_BIG
-                                        ? SPV_ENDIANNESS_LITTLE
-                                        : SPV_ENDIANNESS_BIG);
+        uint32_t bits0_7 = 0xffu & raw_word;
+        uint32_t bits8_15 = 0xffu & (raw_word >> 8);
+        uint32_t bits16_23 = 0xffu & (raw_word >> 16);
+        uint32_t bits24_31 = 0xffu & (raw_word >> 24);
+        return (bits0_7 << 24) | (bits8_15 << 16) | (bits16_23 << 8) |
+               (bits24_31);
       });
     }
   }
