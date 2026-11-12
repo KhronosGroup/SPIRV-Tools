@@ -153,7 +153,7 @@ std::vector<uint32_t> GetWordsFromScalarFloatConstant(
     const analysis::FloatConstant* c) {
   assert(c != nullptr);
   uint32_t width = c->type()->AsFloat()->width();
-  assert(width == 8 || width == 16 || width == 32 || width == 64);
+  assert(width == 16 || width == 32 || width == 64);
   if (width == 64) {
     utils::FloatProxy<double> result(c->GetDouble());
     return result.GetWords();
@@ -330,28 +330,20 @@ uint32_t Reciprocal(analysis::ConstantManager* const_mgr,
                     const analysis::Constant* c) {
   assert(const_mgr && c);
 
-  if (c->IsZero()) {
+  // The scalar paths below only support Float constants. Folding rules may
+  // hand this helper vector (or other non-float) constants; skip the fold
+  // for those instead of dereferencing a null AsFloat().
+  if (!c->type()->AsFloat()) {
     return 0;
   }
-
-  if (c->type()->AsVector()) {
-    std::vector<uint32_t> words;
-    for (auto& comp : c->AsVectorConstant()->GetComponents()) {
-      uint32_t id = Reciprocal(const_mgr, comp);
-      if (id == 0) return 0;
-      words.push_back(id);
-    }
-
-    const analysis::Constant* reciprocal_const =
-        const_mgr->GetConstant(c->type(), std::move(words));
-    return const_mgr->GetDefiningInstruction(reciprocal_const)->result_id();
-  }
-
-  assert(c->type()->AsFloat());
 
   uint32_t width = c->type()->AsFloat()->width();
   assert(width == 32 || width == 64);
   std::vector<uint32_t> words;
+
+  if (c->IsZero()) {
+    return 0;
+  }
 
   if (width == 64) {
     spvtools::utils::FloatProxy<double> result(1.0 / c->GetDouble());
