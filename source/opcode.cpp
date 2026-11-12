@@ -157,6 +157,8 @@ int32_t spvOpcodeIsConstant(const spv::Op opcode) {
     case spv::Op::OpConstantSizeOfEXT:
     case spv::Op::OpConstantDataKHR:
     case spv::Op::OpSpecConstantDataKHR:
+    case spv::Op::OpConstantCompositeContinuedINTEL:
+    case spv::Op::OpSpecConstantCompositeContinuedINTEL:
       return true;
     default:
       return false;

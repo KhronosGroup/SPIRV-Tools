@@ -702,6 +702,47 @@ OpBranch %merge
                         "OpBranchConditional or OpSwitch instruction"));
 }
 
+TEST_F(ValidateAdjacency, OpConstantCompositeContinuedINTELSuccess) {
+  const std::string text = R"(
+               OpCapability Shader
+               OpCapability Linkage
+               OpCapability LongCompositesINTEL
+               OpExtension "SPV_INTEL_long_composites"
+               OpMemoryModel Logical Simple
+       %uint = OpTypeInt 32 0
+     %uint_1 = OpConstant %uint 1
+     %uint_2 = OpConstant %uint 2
+   %arr_type = OpTypeArray %uint %uint_2
+%composite_1 = OpConstantComposite %arr_type %uint_1
+               OpConstantCompositeContinuedINTEL %uint_2
+)";
+
+  CompileSuccessfully(text);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+TEST_F(ValidateAdjacency, OpConstantCompositeContinuedINTELBadPrecedingOpFail) {
+  const std::string text = R"(
+               OpCapability Shader
+               OpCapability Linkage
+               OpCapability LongCompositesINTEL
+               OpExtension "SPV_INTEL_long_composites"
+               OpMemoryModel Logical Simple
+       %uint = OpTypeInt 32 0
+     %uint_1 = OpConstant %uint 1
+     %uint_2 = OpConstant %uint 2
+               OpConstantCompositeContinuedINTEL %uint_2
+)";
+
+  CompileSuccessfully(text);
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("OpConstantCompositeContinuedINTEL must immediately follow an "
+                "OpConstantComposite or OpConstantCompositeContinuedINTEL "
+                "instruction"));
+}
+
 }  // namespace
 }  // namespace val
 }  // namespace spvtools

@@ -126,6 +126,30 @@ spv_result_t ValidateAdjacency(ValidationState_t& _) {
                     "be the first instructions in the first block.";
         }
         break;
+      case spv::Op::OpConstantCompositeContinuedINTEL:
+        adjacency_status = PHI_AND_VAR_INVALID;
+        if (i == 0 ||
+            (instructions[i - 1].opcode() != spv::Op::OpConstantComposite &&
+             instructions[i - 1].opcode() !=
+                 spv::Op::OpConstantCompositeContinuedINTEL)) {
+          return _.diag(SPV_ERROR_INVALID_DATA, &inst)
+                 << "OpConstantCompositeContinuedINTEL must immediately follow "
+                    "an OpConstantComposite or "
+                    "OpConstantCompositeContinuedINTEL instruction.";
+        }
+        break;
+      case spv::Op::OpSpecConstantCompositeContinuedINTEL:
+        adjacency_status = PHI_AND_VAR_INVALID;
+        if (i == 0 ||
+            (instructions[i - 1].opcode() != spv::Op::OpSpecConstantComposite &&
+             instructions[i - 1].opcode() !=
+                 spv::Op::OpSpecConstantCompositeContinuedINTEL)) {
+          return _.diag(SPV_ERROR_INVALID_DATA, &inst)
+                 << "OpSpecConstantCompositeContinuedINTEL must immediately "
+                    "follow an OpSpecConstantComposite or "
+                    "OpSpecConstantCompositeContinuedINTEL instruction.";
+        }
+        break;
       default:
         adjacency_status = PHI_AND_VAR_INVALID;
         break;
