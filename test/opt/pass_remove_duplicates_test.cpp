@@ -764,6 +764,49 @@ OpCapability Kernel
   EXPECT_EQ(GetErrorMessage(), "");
 }
 
+TEST_F(RemoveDuplicatesTest, SameTypeDifferentMemberDecorateIdEXT) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpCapability Linkage
+OpCapability DescriptorHeapEXT
+OpExtension "SPV_EXT_descriptor_heap"
+OpMemoryModel Logical GLSL450
+OpMemberDecorateIdEXT %1 0 OffsetIdEXT %2
+OpMemberDecorateIdEXT %3 0 OffsetIdEXT %4
+%5 = OpTypeInt 32 0
+%2 = OpSpecConstant %5 0
+%4 = OpSpecConstant %5 16
+%1 = OpTypeStruct %5
+%3 = OpTypeStruct %5
+)";
+
+  const std::string result = RunPass(spirv);
+  EXPECT_NE(result.find("%1 = OpTypeStruct %5"), std::string::npos) << result;
+  EXPECT_NE(result.find("%3 = OpTypeStruct %5"), std::string::npos) << result;
+  EXPECT_EQ(GetErrorMessage(), "");
+}
+
+TEST_F(RemoveDuplicatesTest, SameTypeAndMemberDecorateIdEXT) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpCapability Linkage
+OpCapability DescriptorHeapEXT
+OpExtension "SPV_EXT_descriptor_heap"
+OpMemoryModel Logical GLSL450
+OpMemberDecorateIdEXT %1 0 OffsetIdEXT %2
+OpMemberDecorateIdEXT %3 0 OffsetIdEXT %2
+%4 = OpTypeInt 32 0
+%2 = OpSpecConstant %4 0
+%1 = OpTypeStruct %4
+%3 = OpTypeStruct %4
+)";
+
+  const std::string result = RunPass(spirv);
+  EXPECT_NE(result.find("%1 = OpTypeStruct %4"), std::string::npos) << result;
+  EXPECT_EQ(result.find("%3 = OpTypeStruct %4"), std::string::npos) << result;
+  EXPECT_EQ(GetErrorMessage(), "");
+}
+
 }  // namespace
 }  // namespace opt
 }  // namespace spvtools

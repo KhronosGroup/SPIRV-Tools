@@ -1194,7 +1194,8 @@ void TypeManager::AttachDecoration(const Instruction& inst, Type* type) {
       }
       type->AddDecoration(std::move(data));
     } break;
-    case spv::Op::OpMemberDecorate: {
+    case spv::Op::OpMemberDecorate:
+    case spv::Op::OpMemberDecorateIdEXT: {
       const auto count = inst.NumOperands();
       const uint32_t index = inst.GetSingleWordOperand(1);
       std::vector<uint32_t> data;
