@@ -26,6 +26,9 @@ namespace opt {
 Pass::Status CodeSinkingPass::Process() {
   bool modified = false;
   for (Function& function : *get_module()) {
+    if (function.IsDeclaration()) {
+      continue;
+    }
     cfg()->ForEachBlockInPostOrder(function.entry().get(),
                                    [&modified, this](BasicBlock* bb) {
                                      if (SinkInstructionsInBB(bb)) {

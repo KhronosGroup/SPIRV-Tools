@@ -519,6 +519,10 @@ void LoopDescriptor::PopulateList(IRContext* context, const Function* f) {
 
   ClearLoops();
 
+  if (f->IsDeclaration()) {
+    return;
+  }
+
   // Post-order traversal of the dominator tree to find all the OpLoopMerge
   // instructions.
   DominatorTree& dom_tree = dom_analysis->GetDomTree();

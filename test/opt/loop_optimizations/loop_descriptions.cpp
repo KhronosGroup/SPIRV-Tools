@@ -415,6 +415,43 @@ TEST_F(PassClassTest, UnreachableMerge) {
   EXPECT_EQ(ld.NumLoops(), 1u);
 }
 
+TEST_F(PassClassTest, FunctionDeclarationHasNoLoops) {
+  // The declaration 'ext' has no blocks, so it has no loops.
+  const std::string text = R"(OpCapability Linkage
+OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %1 "main" %2
+OpExecutionMode %1 OriginUpperLeft
+OpDecorate %3 LinkageAttributes "ext" Import
+OpDecorate %2 Location 0
+%void = OpTypeVoid
+%5 = OpTypeFunction %void
+%float = OpTypeFloat 32
+%v4float = OpTypeVector %float 4
+%8 = OpTypeFunction %v4float
+%_ptr_Output_v4float = OpTypePointer Output %v4float
+%2 = OpVariable %_ptr_Output_v4float Output
+%3 = OpFunction %v4float None %8
+OpFunctionEnd
+%1 = OpFunction %void None %5
+%10 = OpLabel
+%11 = OpFunctionCall %v4float %3
+OpStore %2 %11
+OpReturn
+OpFunctionEnd
+)";
+
+  std::unique_ptr<IRContext> context =
+      BuildModule(SPV_ENV_UNIVERSAL_1_3, nullptr, text,
+                  SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
+  Module* module = context->module();
+  EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
+                             << text << std::endl;
+  for (Function& f : *module) {
+    EXPECT_EQ(context->GetLoopDescriptor(&f)->NumLoops(), 0u);
+  }
+}
+
 }  // namespace
 }  // namespace opt
 }  // namespace spvtools

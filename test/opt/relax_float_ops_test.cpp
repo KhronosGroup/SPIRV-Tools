@@ -216,6 +216,36 @@ OpFunctionEnd
       true);
 }
 
+TEST_F(RelaxFloatOpsTest, FunctionDeclaration) {
+  // The pass must skip the declaration 'ext', which has no blocks.
+  const std::string text = R"(OpCapability Linkage
+OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %1 "main" %2
+OpExecutionMode %1 OriginUpperLeft
+OpDecorate %3 LinkageAttributes "ext" Import
+OpDecorate %2 Location 0
+%void = OpTypeVoid
+%5 = OpTypeFunction %void
+%float = OpTypeFloat 32
+%v4float = OpTypeVector %float 4
+%8 = OpTypeFunction %v4float
+%_ptr_Output_v4float = OpTypePointer Output %v4float
+%2 = OpVariable %_ptr_Output_v4float Output
+%3 = OpFunction %v4float None %8
+OpFunctionEnd
+%1 = OpFunction %void None %5
+%10 = OpLabel
+%11 = OpFunctionCall %v4float %3
+OpStore %2 %11
+OpReturn
+OpFunctionEnd
+)";
+
+  SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
+  SinglePassRunAndCheck<RelaxFloatOpsPass>(text, text, true, true);
+}
+
 }  // namespace
 }  // namespace opt
 }  // namespace spvtools

@@ -198,7 +198,7 @@ class Function {
   void Dump() const;
 
   // Returns true is a function declaration and not a function definition.
-  bool IsDeclaration() { return begin() == end(); }
+  bool IsDeclaration() const { return begin() == end(); }
 
   // Reorders the basic blocks in the function to match the structured order.
   void ReorderBasicBlocksInStructuredOrder();
