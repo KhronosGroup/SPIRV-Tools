@@ -1672,6 +1672,40 @@ TEST_F(ValidateImage, ImageTexelPointerResultTypeNotPointer) {
               HasSubstr("Expected Result Type to be a pointer"));
 }
 
+TEST_F(ValidateImage, ImageTexelPointerUntypedResultType) {
+  const std::string str = R"(
+               OpCapability Shader
+               OpCapability UntypedPointersKHR
+               OpExtension "SPV_KHR_untyped_pointers"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %main "main" %var
+               OpExecutionMode %main LocalSize 1 1 1
+       %void = OpTypeVoid
+       %func = OpTypeFunction %void
+       %uint = OpTypeInt 32 0
+     %uint_0 = OpConstant %uint 0
+     %uint_1 = OpConstant %uint 1
+     %v2uint = OpTypeVector %uint 2
+      %coord = OpConstantComposite %v2uint %uint_0 %uint_0
+      %image = OpTypeImage %uint 2D 0 0 0 2 R32ui
+  %ptr_image = OpTypePointer UniformConstant %image
+  %ptr_texel = OpTypeUntypedPointerKHR Image
+        %var = OpVariable %ptr_image UniformConstant
+       %main = OpFunction %void None %func
+      %label = OpLabel
+      %texel = OpImageTexelPointer %ptr_texel %var %coord %uint_0
+          %a = OpAtomicIAdd %uint %texel %uint_1 %uint_0 %uint_1
+               OpReturn
+               OpFunctionEnd
+)";
+  CompileSuccessfully(str.c_str(), SPV_ENV_UNIVERSAL_1_6);
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA,
+            ValidateInstructions(SPV_ENV_UNIVERSAL_1_6));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Expected Result Type to be a pointer declared with "
+                        "OpTypePointer"));
+}
+
 TEST_F(ValidateImage, ImageTexelPointerResultTypeNotImageClass) {
   const std::string body = R"(
 %texel_ptr = OpImageTexelPointer %ptr_image_f32_cube_0101 %private_image_u32_buffer_0002_r32ui %u32_0 %u32_0

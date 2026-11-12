@@ -3598,6 +3598,48 @@ TEST_F(ValidateSpvEXTDescriptorHeap, TypedDescriptorArrayImageTexelPointer) {
   EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_3));
 }
 
+TEST_F(ValidateSpvEXTDescriptorHeap, ImageTexelPointerTypedResultType) {
+  const std::string str = R"(
+               OpCapability Shader
+               OpCapability UntypedPointersKHR
+               OpCapability DescriptorHeapEXT
+               OpExtension "SPV_EXT_descriptor_heap"
+               OpExtension "SPV_KHR_untyped_pointers"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %main "main" %resource_heap
+               OpExecutionMode %main OriginUpperLeft
+               OpDecorate %resource_heap BuiltIn ResourceHeapEXT
+               OpDecorateId %img_arr ArrayStrideIdEXT %img_size
+       %void = OpTypeVoid
+       %func = OpTypeFunction %void
+       %uint = OpTypeInt 32 0
+        %int = OpTypeInt 32 1
+     %uint_0 = OpConstant %uint 0
+     %uint_1 = OpConstant %uint 1
+      %int_0 = OpConstant %int 0
+      %v2int = OpTypeVector %int 2
+    %v2int_0 = OpConstantComposite %v2int %int_0 %int_0
+     %ptr_uc = OpTypeUntypedPointerKHR UniformConstant
+%resource_heap = OpUntypedVariableKHR %ptr_uc UniformConstant
+      %img_t = OpTypeImage %uint 2D 0 0 0 2 R32ui
+   %img_size = OpConstantSizeOfEXT %uint %img_t
+    %img_arr = OpTypeRuntimeArray %img_t
+%ptr_img_typed = OpTypePointer Image %uint
+       %main = OpFunction %void None %func
+      %label = OpLabel
+          %p = OpUntypedAccessChainKHR %ptr_uc %img_arr %resource_heap %uint_0
+         %tp = OpUntypedImageTexelPointerEXT %ptr_img_typed %img_t %p %v2int_0 %uint_0
+          %a = OpAtomicIAdd %uint %tp %uint_1 %uint_0 %uint_1
+               OpReturn
+               OpFunctionEnd
+)";
+  CompileSuccessfully(str.c_str(), SPV_ENV_VULKAN_1_3);
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_VULKAN_1_3));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Expected Result Type to be a pointer declared with "
+                        "OpTypeUntypedPointerKHR"));
+}
+
 TEST_F(ValidateSpvEXTDescriptorHeap, TypedSamplerHeapImageTexelPointer) {
   const std::string str = R"(
                OpCapability Shader
