@@ -834,6 +834,8 @@ spv_result_t ValidateImageOperands(ValidationState_t& _,
 
   if (mask & uint32_t(spv::ImageOperandsMask::Offsets)) {
     // TODO: add validation
+    // Skip the operand so the ones after it are read from the right word.
+    word_index++;
   }
 
   if (mask & uint32_t(spv::ImageOperandsMask::Nontemporal)) {

@@ -222,18 +222,16 @@ spv_result_t CheckDecorationsOfEntryPoints(ValidationState_t& vstate) {
           }
         }
 
-        // Descriptor heap's base variables have no data type in declaration.
-        if (untyped_pointers && var_instr->words().size() < 5 &&
-            vstate.IsDescriptorHeapBaseVariable(var_instr))
-          continue;
-
         // It is guaranteed (by validator ID checks) that ptr_instr is
         // OpTypePointer. Word 3 of this instruction is the type being pointed
-        // to. For untyped variables, the pointee type comes from the data type
-        // operand.
-        const uint32_t type_id =
-            untyped_pointers ? var_instr->word(4)
-                             : vstate.FindDef(var_instr->word(1))->word(3);
+        // to. For untyped variables, the pointee type comes from the optional
+        // data type operand (0 if there is none).
+        uint32_t type_id = 0;
+        if (!untyped_pointers) {
+          type_id = vstate.FindDef(var_instr->word(1))->word(3);
+        } else if (var_instr->words().size() > 4) {
+          type_id = var_instr->word(4);
+        }
         Instruction* type_instr = vstate.FindDef(type_id);
         const bool is_struct =
             type_instr && spv::Op::OpTypeStruct == type_instr->opcode();
