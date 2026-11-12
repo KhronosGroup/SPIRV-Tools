@@ -2594,6 +2594,35 @@ TEST_F(ValidateSpvEXTDescriptorHeap, ArrayStrideSpecConstantZero) {
   EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_4));
 }
 
+TEST_F(ValidateSpvEXTDescriptorHeap, ArrayStrideConstantNegative) {
+  const std::string str = R"(
+      OpCapability Shader
+      OpCapability DescriptorHeapEXT
+      OpExtension "SPV_EXT_descriptor_heap"
+      OpMemoryModel Logical GLSL450
+      OpEntryPoint GLCompute %main "main"
+      OpExecutionMode %main LocalSize 1 1 1
+      OpDecorateId %array ArrayStrideIdEXT %int_n16
+%int = OpTypeInt 32 1
+%uint = OpTypeInt 32 0
+%uint_2 = OpConstant %uint 2
+%int_n16 = OpConstant %int -16
+%sampler = OpTypeSampler
+%array = OpTypeArray %sampler %uint_2
+%void = OpTypeVoid
+  %3 = OpTypeFunction %void
+%main = OpFunction %void None %3
+  %5 = OpLabel
+      OpReturn
+      OpFunctionEnd
+
+  )";
+  CompileSuccessfully(str.c_str(), SPV_ENV_VULKAN_1_4);
+  EXPECT_NE(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_4));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("ArrayStrideIdEXT contains a negative stride of -16"));
+}
+
 // https://github.com/KhronosGroup/SPIRV-Tools/issues/6696
 TEST_F(ValidateSpvEXTDescriptorHeap, OffsetIdOnArray) {
   const std::string str = R"(

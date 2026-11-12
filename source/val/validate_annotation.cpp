@@ -437,11 +437,16 @@ spv_result_t ValidateDecorateId(ValidationState_t& _, const Instruction* inst) {
       }
 
       // Even if spec constant, validation layers will test when frozen
-      uint64_t stride_value = 0;
-      if (_.EvalConstantValUint64(operand_id, &stride_value)) {
+      int64_t stride_value = 0;
+      if (_.EvalConstantValInt64(operand_id, &stride_value)) {
         if (stride_value == 0) {
           return _.diag(SPV_ERROR_INVALID_ID, inst)
                  << "ArrayStrideIdEXT contains a stride of zero.";
+        } else if (stride_value < 0 &&
+                   _.IsSignedIntScalarType(_.GetTypeId(operand_id))) {
+          return _.diag(SPV_ERROR_INVALID_ID, inst)
+                 << "ArrayStrideIdEXT contains a negative stride of "
+                 << stride_value << ".";
         }
       }
 
