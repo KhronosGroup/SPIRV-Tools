@@ -330,9 +330,19 @@ uint32_t Reciprocal(analysis::ConstantManager* const_mgr,
                     const analysis::Constant* c) {
   assert(const_mgr && c);
 
-  // The scalar paths below only support Float constants. Folding rules may
-  // hand this helper vector (or other non-float) constants; skip the fold
-  // for those instead of dereferencing a null AsFloat().
+  if (const auto* vector_const = c->AsVectorConstant()) {
+    // Component-wise reciprocal for vector constants.
+    std::vector<uint32_t> rcp_ids;
+    for (const analysis::Constant* comp : vector_const->GetComponents()) {
+      uint32_t id = Reciprocal(const_mgr, comp);
+      if (id == 0) return 0;
+      rcp_ids.push_back(id);
+    }
+    const analysis::Constant* composite =
+        const_mgr->GetConstant(c->type(), std::move(rcp_ids));
+    return const_mgr->GetDefiningInstruction(composite)->result_id();
+  }
+
   if (!c->type()->AsFloat()) {
     return 0;
   }
