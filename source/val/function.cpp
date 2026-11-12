@@ -431,5 +431,38 @@ bool Function::CheckLimitations(const ValidationState_t& _,
   return return_value;
 }
 
+void Function::RegisterExecutionModelLimitation(
+    std::function<bool(spv::ExecutionModel, std::string*)> is_compatible) {
+  execution_model_limitations_.push_back(is_compatible);
+}
+
+void Function::RegisterLimitation(
+    std::function<bool(const ValidationState_t& _, const Function*,
+                       std::string*)>
+        is_compatible) {
+  limitations_.push_back(is_compatible);
+}
+
+void Function::AddFunctionCallTarget(uint32_t call_target_id) {
+  function_call_targets_.insert(call_target_id);
+}
+
+const std::set<uint32_t> Function::function_call_targets() const {
+  return function_call_targets_;
+}
+
+BasicBlock* Function::GetMergeHeader(BasicBlock* merge_block) {
+  return merge_block_header_[merge_block];
+}
+
+std::vector<BasicBlock*> Function::GetContinueHeaders(
+    BasicBlock* continue_target) {
+  if (continue_target_headers_.find(continue_target) ==
+      continue_target_headers_.end()) {
+    return {};
+  }
+  return continue_target_headers_[continue_target];
+}
+
 }  // namespace val
 }  // namespace spvtools

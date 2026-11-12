@@ -3861,5 +3861,121 @@ std::string ValidationState_t::VkErrorID(uint32_t id,
   // clang-format on
 }
 
+void ValidationState_t::RegisterEntryPoint(const uint32_t id,
+                                           spv::ExecutionModel execution_model,
+                                           EntryPointDescription&& desc) {
+  entry_points_.push_back(id);
+  entry_point_to_execution_models_[id].insert(execution_model);
+  entry_point_descriptions_[id].emplace_back(desc);
+}
+
+void ValidationState_t::RegisterExecutionModeForEntryPoint(
+    uint32_t entry_point, spv::ExecutionMode execution_mode) {
+  entry_point_to_execution_modes_[entry_point].insert(execution_mode);
+}
+
+void ValidationState_t::RegisterEntryPointLocalSize(uint32_t entry_point,
+                                                    const Instruction* inst) {
+  entry_point_to_local_size_or_id_[entry_point] = inst;
+}
+
+void ValidationState_t::RegisterEntryPointOutputPrimitivesEXT(
+    uint32_t entry_point, const Instruction* inst) {
+  entry_point_to_output_primitives_[entry_point] = inst;
+}
+
+void ValidationState_t::RegisterEntryPointOutputVertices(
+    uint32_t entry_point, const Instruction* inst) {
+  entry_point_to_output_vertices_[entry_point] = inst;
+}
+
+void ValidationState_t::RegisterGraphEntryPoint(const uint32_t id) {
+  graph_entry_points_.push_back(id);
+}
+
+void ValidationState_t::AddFunctionCallTarget(const uint32_t id) {
+  function_call_targets_.insert(id);
+  current_function().AddFunctionCallTarget(id);
+}
+
+void ValidationState_t::RegisterDecorationForId(uint32_t id,
+                                                const Decoration& dec) {
+  auto& dec_list = id_decorations_[id];
+  dec_list.insert(dec);
+}
+
+std::set<Decoration>& ValidationState_t::id_decorations(uint32_t id) {
+  return id_decorations_[id];
+}
+
+ValidationState_t::FieldDecorationsIter
+ValidationState_t::id_member_decorations(uint32_t id, uint32_t member_index) {
+  const auto& decorations = id_decorations_[id];
+
+  // The decorations are sorted by member_index, so this look up will give the
+  // exact range of decorations for this member index.
+  Decoration min_decoration((spv::Decoration)0, {}, member_index);
+  Decoration max_decoration(spv::Decoration::Max, {}, member_index);
+
+  FieldDecorationsIter result;
+  result.begin = decorations.lower_bound(min_decoration);
+  result.end = decorations.upper_bound(max_decoration);
+
+  return result;
+}
+
+void ValidationState_t::registerGlobalVariable(const uint32_t id) {
+  global_vars_.insert(id);
+}
+
+void ValidationState_t::registerLocalVariable(const uint32_t id) {
+  local_vars_.insert(id);
+}
+
+void ValidationState_t::set_struct_nesting_depth(uint32_t id, uint32_t depth) {
+  struct_nesting_depth_[id] = depth;
+}
+
+uint32_t ValidationState_t::struct_nesting_depth(uint32_t id) {
+  return struct_nesting_depth_[id];
+}
+
+void ValidationState_t::SetHasNestedBlockOrBufferBlockStruct(uint32_t id,
+                                                             bool has) {
+  struct_has_nested_blockorbufferblock_struct_[id] = has;
+}
+
+bool ValidationState_t::GetHasNestedBlockOrBufferBlockStruct(uint32_t id) {
+  return struct_has_nested_blockorbufferblock_struct_[id];
+}
+
+void ValidationState_t::RegisterStructTypeWithBuiltInMember(uint32_t id) {
+  builtin_structs_.insert(id);
+}
+
+void ValidationState_t::RegisterPointerToUniformBlock(uint32_t type_id) {
+  pointer_to_uniform_block_.insert(type_id);
+}
+
+void ValidationState_t::RegisterStructForUniformBlock(uint32_t type_id) {
+  struct_for_uniform_block_.insert(type_id);
+}
+
+void ValidationState_t::RegisterPointerToStorageBuffer(uint32_t type_id) {
+  pointer_to_storage_buffer_.insert(type_id);
+}
+
+void ValidationState_t::RegisterStructForStorageBuffer(uint32_t type_id) {
+  struct_for_storage_buffer_.insert(type_id);
+}
+
+void ValidationState_t::RegisterPointerToStorageImage(uint32_t type_id) {
+  pointer_to_storage_image_.insert(type_id);
+}
+
+void ValidationState_t::RegisterPointerToTensor(uint32_t type_id) {
+  pointer_to_tensor_.insert(type_id);
+}
+
 }  // namespace val
 }  // namespace spvtools
