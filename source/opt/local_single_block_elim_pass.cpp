@@ -239,6 +239,7 @@ void LocalSingleBlockLoadStoreElimPass::InitExtensions() {
       "SPV_AMD_shader_explicit_vertex_parameter",
       "SPV_AMD_shader_trinary_minmax",
       "SPV_AMD_gcn_shader",
+      "SPV_KHR_float_controls",
       "SPV_KHR_shader_ballot",
       "SPV_AMD_shader_ballot",
       "SPV_AMD_gpu_shader_half_float",

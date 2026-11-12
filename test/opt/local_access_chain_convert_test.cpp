@@ -24,6 +24,65 @@ namespace {
 
 using LocalAccessChainConvertTest = PassTest<::testing::Test>;
 
+TEST_F(LocalAccessChainConvertTest, FloatControlsPreserved) {
+  const std::string spirv = R"(
+; CHECK: OpCapability DenormPreserve
+; CHECK: OpCapability SignedZeroInfNanPreserve
+; CHECK: OpCapability RoundingModeRTE
+; CHECK: OpExtension "SPV_KHR_float_controls"
+; CHECK: OpExecutionMode {{%\w+}} DenormPreserve 32
+; CHECK: OpExecutionMode {{%\w+}} SignedZeroInfNanPreserve 32
+; CHECK: OpExecutionMode {{%\w+}} RoundingModeRTE 32
+; CHECK: OpDecorate [[sum:%\w+]] NoContraction
+OpCapability Shader
+OpCapability DenormPreserve
+OpCapability SignedZeroInfNanPreserve
+OpCapability RoundingModeRTE
+OpExtension "SPV_KHR_float_controls"
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %main "main" %input %output
+OpExecutionMode %main OriginUpperLeft
+OpExecutionMode %main DenormPreserve 32
+OpExecutionMode %main SignedZeroInfNanPreserve 32
+OpExecutionMode %main RoundingModeRTE 32
+OpDecorate %input Location 0
+OpDecorate %output Location 0
+OpDecorate %sum NoContraction
+%void = OpTypeVoid
+%float = OpTypeFloat 32
+%fn = OpTypeFunction %void
+%ip = OpTypePointer Input %float
+%op = OpTypePointer Output %float
+%fp = OpTypePointer Function %float
+%input = OpVariable %ip Input
+%output = OpVariable %op Output
+%one = OpConstant %float 1
+%vec = OpTypeVector %float 2
+%vp = OpTypePointer Function %vec
+%uint = OpTypeInt 32 0
+%zero = OpConstant %uint 0
+%ones = OpConstantComposite %vec %one %one
+; CHECK: OpFunction
+; CHECK: [[whole:%\w+]] = OpLoad {{%\w+}} {{%\w+}}
+; CHECK-NEXT: [[value:%\w+]] = OpCompositeExtract {{%\w+}} [[whole]] 0
+; CHECK-NEXT: [[sum]] = OpFAdd {{%\w+}} [[value]]
+; CHECK-NEXT: OpStore {{%\w+}} [[sum]]
+; CHECK-NEXT: OpReturn
+%main = OpFunction %void None %fn
+%entry = OpLabel
+%local = OpVariable %vp Function
+OpStore %local %ones
+%element = OpAccessChain %fp %local %zero
+%value = OpLoad %float %element
+%sum = OpFAdd %float %value %one
+OpStore %output %sum
+OpReturn
+OpFunctionEnd
+  )";
+  SetTargetEnv(SPV_ENV_UNIVERSAL_1_3);
+  SinglePassRunAndMatch<LocalAccessChainConvertPass>(spirv, true);
+}
+
 TEST_F(LocalAccessChainConvertTest, StructOfVecsOfFloatConverted) {
   //  #version 140
   //
