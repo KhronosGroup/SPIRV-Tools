@@ -407,7 +407,7 @@ spv_result_t ValidateOperandDebugType(ValidationState_t& _,
             return true;
           // DebugTypeVectorIdEXT and DebugTypeCooperativeMatrixKHR were added
           // in NonSemantic.Shader.DebugInfo version 101.
-          if (nsdi_version >= NonSemanticShaderDebugInfoVersion &&
+          if (nsdi_version >= 101 &&
               (dbg_inst == NonSemanticShaderDebugInfoDebugTypeVectorIdEXT ||
                dbg_inst ==
                    NonSemanticShaderDebugInfoDebugTypeCooperativeMatrixKHR))
@@ -3592,7 +3592,7 @@ spv_result_t ValidateExtInstDebugInfo(ValidationState_t& _,
         break;
       }
       case NonSemanticShaderDebugInfoDebugTypeVectorIdEXT: {
-        CHECK_NSDI_MIN_VERSION(NonSemanticShaderDebugInfoVersion);
+        CHECK_NSDI_MIN_VERSION(101);
         CHECK_DEBUG_OPERAND("Component Type", CommonDebugInfoDebugTypeBasic, 5);
         // Component Count may be OpSpecConstant when the cooperative vector
         // type uses a specialization constant for its size.
@@ -3600,7 +3600,7 @@ spv_result_t ValidateExtInstDebugInfo(ValidationState_t& _,
         break;
       }
       case NonSemanticShaderDebugInfoDebugTypeCooperativeMatrixKHR: {
-        CHECK_NSDI_MIN_VERSION(NonSemanticShaderDebugInfoVersion);
+        CHECK_NSDI_MIN_VERSION(101);
         CHECK_DEBUG_OPERAND("Component Type", CommonDebugInfoDebugTypeBasic, 5);
         // Scope, Rows, Columns, and Use may be OpSpecConstant when the
         // cooperative matrix type uses specialization constants.
