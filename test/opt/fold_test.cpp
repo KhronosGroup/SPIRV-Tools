@@ -1556,7 +1556,7 @@ TEST_P(UIntVectorInstructionFoldingTest, Case) {
   std::unique_ptr<IRContext> context;
   Instruction* inst;
   std::tie(context, inst) =
-      FoldInstruction(tc.test_body, tc.id_to_fold, SPV_ENV_UNIVERSAL_1_1);
+      FoldInstruction(tc.test_body, tc.id_to_fold, SPV_ENV_UNIVERSAL_1_5);
 
   CheckForExpectedVectorConstant(
       inst, tc.expected_result,
@@ -1682,7 +1682,7 @@ TEST_P(IntVectorInstructionFoldingTest, Case) {
   std::unique_ptr<IRContext> context;
   Instruction* inst;
   std::tie(context, inst) =
-      FoldInstruction(tc.test_body, tc.id_to_fold, SPV_ENV_UNIVERSAL_1_1);
+      FoldInstruction(tc.test_body, tc.id_to_fold, SPV_ENV_UNIVERSAL_1_5);
 
   CheckForExpectedVectorConstant(
       inst, tc.expected_result,
@@ -1736,7 +1736,7 @@ TEST_P(LongIntVectorInstructionFoldingTest, Case) {
   std::unique_ptr<IRContext> context;
   Instruction* inst;
   std::tie(context, inst) =
-      FoldInstruction(tc.test_body, tc.id_to_fold, SPV_ENV_UNIVERSAL_1_1);
+      FoldInstruction(tc.test_body, tc.id_to_fold, SPV_ENV_UNIVERSAL_1_5);
   CheckForExpectedVectorConstant(
       inst, tc.expected_result,
       [](const analysis::Constant* c) { return c->GetU64(); });
@@ -1781,7 +1781,7 @@ TEST_P(DoubleVectorInstructionFoldingTest, Case) {
   std::unique_ptr<IRContext> context;
   Instruction* inst;
   std::tie(context, inst) =
-      FoldInstruction(tc.test_body, tc.id_to_fold, SPV_ENV_UNIVERSAL_1_1);
+      FoldInstruction(tc.test_body, tc.id_to_fold, SPV_ENV_UNIVERSAL_1_5);
   CheckForExpectedVectorConstant(
       inst, tc.expected_result,
       [](const analysis::Constant* c) { return c->GetDouble(); });
@@ -1881,7 +1881,7 @@ TEST_P(FloatVectorInstructionFoldingTest, Case) {
 
   std::unique_ptr<IRContext> context;
   Instruction* inst;
-  std::tie(context, inst) = FoldInstruction(tc.test_body, tc.id_to_fold,SPV_ENV_UNIVERSAL_1_1);
+  std::tie(context, inst) = FoldInstruction(tc.test_body, tc.id_to_fold,SPV_ENV_UNIVERSAL_1_5);
   CheckForExpectedVectorConstant(inst, tc.expected_result, [](const analysis::Constant* c){ return c->GetFloat();});
 }
 
@@ -1896,6 +1896,31 @@ INSTANTIATE_TEST_SUITE_P(TestCase, FloatVectorInstructionFoldingTest,
            "OpReturn\n" +
            "OpFunctionEnd",
        2, {1.6f,1.5f}),
+   // Test case 0a: FMix v3float
+   InstructionFoldingCase<std::vector<float>>(
+       Header() + "%v3float = OpTypeVector %float 3\n" +
+           "%float_0p1 = OpConstant %float 0.1\n" +
+           "%v3float_2_3_4 = OpConstantComposite %v3float %float_2 %float_3 %float_4\n" +
+           "%v3float_0_0_0 = OpConstantComposite %v3float %float_0 %float_0 %float_0\n" +
+           "%v3float_0p2_0p5_0p1 = OpConstantComposite %v3float %float_0p2 %float_0p5 %float_0p1\n" +
+           "%main = OpFunction %void None %void_func\n" +
+           "%main_lab = OpLabel\n" +
+           "%2 = OpExtInst %v3float %1 FMix %v3float_2_3_4 %v3float_0_0_0 %v3float_0p2_0p5_0p1\n" +
+           "OpReturn\n" +
+           "OpFunctionEnd",
+       2, {1.6f,1.5f,3.6f}),
+   // Test case 0b: FMix v8float
+   InstructionFoldingCase<std::vector<float>>(
+       Header() + "%v8float = OpTypeVector %float 8\n" +
+           "%v8float_ones = OpConstantComposite %v8float %float_1 %float_1 %float_1 %float_1 %float_1 %float_1 %float_1 %float_1\n" +
+           "%v8float_zeros = OpConstantComposite %v8float %float_0 %float_0 %float_0 %float_0 %float_0 %float_0 %float_0 %float_0\n" +
+           "%v8float_a = OpConstantComposite %v8float %float_0p5 %float_0p5 %float_0p5 %float_0p5 %float_0p5 %float_0p5 %float_0p5 %float_0p5\n" +
+           "%main = OpFunction %void None %void_func\n" +
+           "%main_lab = OpLabel\n" +
+           "%2 = OpExtInst %v8float %1 FMix %v8float_ones %v8float_zeros %v8float_a\n" +
+           "OpReturn\n" +
+           "OpFunctionEnd",
+       2, {0.5f,0.5f,0.5f,0.5f,0.5f,0.5f,0.5f,0.5f}),
    // Test case 1: bit-cast unsigned int vector {0x3f800000, 0xbf800000} to
    //              float vector
    InstructionFoldingCase<std::vector<float>>(
@@ -1988,6 +2013,218 @@ INSTANTIATE_TEST_SUITE_P(TestCase, FloatVectorInstructionFoldingTest,
 ));
 // clang-format on
 
+INSTANTIATE_TEST_SUITE_P(
+    RedundantDivVectorFloatTest, FloatVectorInstructionFoldingTest,
+    ::testing::Values(
+        // Test case 0: FDiv v2float self-division x / x
+        InstructionFoldingCase<std::vector<float>>(
+            Header() + "%main = OpFunction %void None %void_func\n" +
+                "%main_lab = OpLabel\n" +
+                "%n = OpVariable %_ptr_v2float Function\n" +
+                "%3 = OpLoad %v2float %n\n" + "%2 = OpFDiv %v2float %3 %3\n" +
+                "OpReturn\n" + "OpFunctionEnd",
+            2, {1.0f, 1.0f}),
+        // Test case 1: FDiv v2float -x / x
+        InstructionFoldingCase<std::vector<float>>(
+            Header() + "%main = OpFunction %void None %void_func\n" +
+                "%main_lab = OpLabel\n" +
+                "%n = OpVariable %_ptr_v2float Function\n" +
+                "%3 = OpLoad %v2float %n\n" + "%4 = OpFNegate %v2float %3\n" +
+                "%2 = OpFDiv %v2float %4 %3\n" + "OpReturn\n" + "OpFunctionEnd",
+            2, {-1.0f, -1.0f}),
+        // Test case 2: FDiv v2float x / -x
+        InstructionFoldingCase<std::vector<float>>(
+            Header() + "%main = OpFunction %void None %void_func\n" +
+                "%main_lab = OpLabel\n" +
+                "%n = OpVariable %_ptr_v2float Function\n" +
+                "%3 = OpLoad %v2float %n\n" + "%4 = OpFNegate %v2float %3\n" +
+                "%2 = OpFDiv %v2float %3 %4\n" + "OpReturn\n" + "OpFunctionEnd",
+            2, {-1.0f, -1.0f}),
+        // Test case 3: FDiv v3float self-division
+        InstructionFoldingCase<std::vector<float>>(
+            Header() + "%v3float = OpTypeVector %float 3\n" +
+                "%_ptr_v3float = OpTypePointer Function %v3float\n" +
+                "%main = OpFunction %void None %void_func\n" +
+                "%main_lab = OpLabel\n" +
+                "%n = OpVariable %_ptr_v3float Function\n" +
+                "%3 = OpLoad %v3float %n\n" + "%2 = OpFDiv %v3float %3 %3\n" +
+                "OpReturn\n" + "OpFunctionEnd",
+            2, {1.0f, 1.0f, 1.0f}),
+        // Test case 4: FDiv v4float self-division
+        InstructionFoldingCase<std::vector<float>>(
+            Header() + "%main = OpFunction %void None %void_func\n" +
+                "%main_lab = OpLabel\n" +
+                "%n = OpVariable %_ptr_v4float Function\n" +
+                "%3 = OpLoad %v4float %n\n" + "%2 = OpFDiv %v4float %3 %3\n" +
+                "OpReturn\n" + "OpFunctionEnd",
+            2, {1.0f, 1.0f, 1.0f, 1.0f}),
+        // Test case 5: FDiv v8float self-division
+        InstructionFoldingCase<std::vector<float>>(
+            Header() + "%v8float = OpTypeVector %float 8\n" +
+                "%_ptr_v8float = OpTypePointer Function %v8float\n" +
+                "%main = OpFunction %void None %void_func\n" +
+                "%main_lab = OpLabel\n" +
+                "%n = OpVariable %_ptr_v8float Function\n" +
+                "%3 = OpLoad %v8float %n\n" + "%2 = OpFDiv %v8float %3 %3\n" +
+                "OpReturn\n" + "OpFunctionEnd",
+            2, {1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f}),
+        // Test case 6: FDiv v16float self-division
+        InstructionFoldingCase<std::vector<float>>(
+            Header() + "%v16float = OpTypeVector %float 16\n" +
+                "%_ptr_v16float = OpTypePointer Function %v16float\n" +
+                "%main = OpFunction %void None %void_func\n" +
+                "%main_lab = OpLabel\n" +
+                "%n = OpVariable %_ptr_v16float Function\n" +
+                "%3 = OpLoad %v16float %n\n" + "%2 = OpFDiv %v16float %3 %3\n" +
+                "OpReturn\n" + "OpFunctionEnd",
+            2,
+            {1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
+             1.0f, 1.0f, 1.0f, 1.0f, 1.0f})));
+
+INSTANTIATE_TEST_SUITE_P(
+    RedundantDivVectorDoubleTest, DoubleVectorInstructionFoldingTest,
+    ::testing::Values(
+        // Test case 0: FDiv v2double self-division x / x
+        InstructionFoldingCase<std::vector<double>>(
+            Header() + "%main = OpFunction %void None %void_func\n" +
+                "%main_lab = OpLabel\n" +
+                "%n = OpVariable %_ptr_v2double Function\n" +
+                "%3 = OpLoad %v2double %n\n" + "%2 = OpFDiv %v2double %3 %3\n" +
+                "OpReturn\n" + "OpFunctionEnd",
+            2, {1.0, 1.0})));
+
+INSTANTIATE_TEST_SUITE_P(
+    RedundantDivVectorIntTest, IntVectorInstructionFoldingTest,
+    ::testing::Values(
+        // Test case 0: SDiv v2int self-division x / x
+        InstructionFoldingCase<std::vector<int32_t>>(
+            Header() + "%main = OpFunction %void None %void_func\n" +
+                "%main_lab = OpLabel\n" +
+                "%n = OpVariable %_ptr_v2int Function\n" +
+                "%3 = OpLoad %v2int %n\n" + "%2 = OpSDiv %v2int %3 %3\n" +
+                "OpReturn\n" + "OpFunctionEnd",
+            2, {1, 1}),
+        // Test case 1: SDiv v2int -x / x
+        InstructionFoldingCase<std::vector<int32_t>>(
+            Header() + "%main = OpFunction %void None %void_func\n" +
+                "%main_lab = OpLabel\n" +
+                "%n = OpVariable %_ptr_v2int Function\n" +
+                "%3 = OpLoad %v2int %n\n" + "%4 = OpSNegate %v2int %3\n" +
+                "%2 = OpSDiv %v2int %4 %3\n" + "OpReturn\n" + "OpFunctionEnd",
+            2, {-1, -1})));
+
+INSTANTIATE_TEST_SUITE_P(
+    RedundantDivVectorUIntTest, UIntVectorInstructionFoldingTest,
+    ::testing::Values(
+        // Test case 0: UDiv v2uint self-division x / x
+        InstructionFoldingCase<std::vector<uint32_t>>(
+            Header() + "%_ptr_v2uint = OpTypePointer Function %v2uint\n" +
+                "%main = OpFunction %void None %void_func\n" +
+                "%main_lab = OpLabel\n" +
+                "%n = OpVariable %_ptr_v2uint Function\n" +
+                "%3 = OpLoad %v2uint %n\n" + "%2 = OpUDiv %v2uint %3 %3\n" +
+                "OpReturn\n" + "OpFunctionEnd",
+            2, {1, 1})));
+
+INSTANTIATE_TEST_SUITE_P(
+    ChallengerStressTest, FloatVectorInstructionFoldingTest,
+    ::testing::Values(
+        // Challenger Test case 0: FMix v3float
+        InstructionFoldingCase<std::vector<float>>(
+            Header() + "%v3float = OpTypeVector %float 3\n" +
+                "%v3float_2_3_4 = OpConstantComposite %v3float %float_2 "
+                "%float_3 %float_4\n" +
+                "%v3float_0_0_0 = OpConstantComposite %v3float %float_0 "
+                "%float_0 %float_0\n" +
+                "%v3float_0p2_0p5_0p5 = OpConstantComposite %v3float "
+                "%float_0p2 %float_0p5 %float_0p5\n" +
+                "%main = OpFunction %void None %void_func\n" +
+                "%main_lab = OpLabel\n" +
+                "%2 = OpExtInst %v3float %1 FMix %v3float_2_3_4 %v3float_0_0_0 "
+                "%v3float_0p2_0p5_0p5\n" +
+                "OpReturn\n" + "OpFunctionEnd",
+            2, {1.6f, 1.5f, 2.0f}),
+        // Challenger Test case 1: FMix v4float with different components
+        InstructionFoldingCase<std::vector<float>>(
+            Header() +
+                "%v4float_2_3_4_5 = OpConstantComposite %v4float %float_2 "
+                "%float_3 %float_4 %float_0\n" +
+                "%v4float_0p2_0p5_0p5_0p1 = OpConstantComposite %v4float "
+                "%float_0p2 %float_0p5 %float_0p5 %float_0p2\n" +
+                "%main = OpFunction %void None %void_func\n" +
+                "%main_lab = OpLabel\n" +
+                "%2 = OpExtInst %v4float %1 FMix %v4float_2_3_4_5 "
+                "%v4float_0_0_0_0 %v4float_0p2_0p5_0p5_0p1\n" +
+                "OpReturn\n" + "OpFunctionEnd",
+            2, {1.6f, 1.5f, 2.0f, 0.0f})));
+
+INSTANTIATE_TEST_SUITE_P(
+    ChallengerStressTestInt, IntVectorInstructionFoldingTest,
+    ::testing::Values(
+        // Challenger Test case 0: SDiv v3int self-division x / x
+        InstructionFoldingCase<std::vector<int32_t>>(
+            Header() + "%v3int = OpTypeVector %int 3\n" +
+                "%_ptr_v3int = OpTypePointer Function %v3int\n" +
+                "%main = OpFunction %void None %void_func\n" +
+                "%main_lab = OpLabel\n" +
+                "%n = OpVariable %_ptr_v3int Function\n" +
+                "%3 = OpLoad %v3int %n\n" + "%2 = OpSDiv %v3int %3 %3\n" +
+                "OpReturn\n" + "OpFunctionEnd",
+            2, {1, 1, 1}),
+        // Challenger Test case 1: SDiv v4int self-division x / x
+        InstructionFoldingCase<std::vector<int32_t>>(
+            Header() + "%main = OpFunction %void None %void_func\n" +
+                "%main_lab = OpLabel\n" +
+                "%n = OpVariable %_ptr_v4int Function\n" +
+                "%3 = OpLoad %v4int %n\n" + "%2 = OpSDiv %v4int %3 %3\n" +
+                "OpReturn\n" + "OpFunctionEnd",
+            2, {1, 1, 1, 1})));
+
+INSTANTIATE_TEST_SUITE_P(
+    ChallengerStressTestUInt, UIntVectorInstructionFoldingTest,
+    ::testing::Values(
+        // Challenger Test case 0: UDiv v3uint self-division x / x
+        InstructionFoldingCase<std::vector<uint32_t>>(
+            Header() + "%v3uint = OpTypeVector %uint 3\n" +
+                "%_ptr_v3uint = OpTypePointer Function %v3uint\n" +
+                "%main = OpFunction %void None %void_func\n" +
+                "%main_lab = OpLabel\n" +
+                "%n = OpVariable %_ptr_v3uint Function\n" +
+                "%3 = OpLoad %v3uint %n\n" + "%2 = OpUDiv %v3uint %3 %3\n" +
+                "OpReturn\n" + "OpFunctionEnd",
+            2, {1, 1, 1}),
+        // Challenger Test case 1: UDiv v4uint self-division x / x
+        InstructionFoldingCase<std::vector<uint32_t>>(
+            Header() + "%_ptr_v4uint = OpTypePointer Function %v4uint\n" +
+                "%main = OpFunction %void None %void_func\n" +
+                "%main_lab = OpLabel\n" +
+                "%n = OpVariable %_ptr_v4uint Function\n" +
+                "%3 = OpLoad %v4uint %n\n" + "%2 = OpUDiv %v4uint %3 %3\n" +
+                "OpReturn\n" + "OpFunctionEnd",
+            2, {1, 1, 1, 1})));
+
+INSTANTIATE_TEST_SUITE_P(
+    ChallengerStressTestDouble, DoubleVectorInstructionFoldingTest,
+    ::testing::Values(
+        // Challenger Test case 0: FDiv v3double self-division x / x
+        InstructionFoldingCase<std::vector<double>>(
+            Header() + "%v3double = OpTypeVector %double 3\n" +
+                "%_ptr_v3double = OpTypePointer Function %v3double\n" +
+                "%main = OpFunction %void None %void_func\n" +
+                "%main_lab = OpLabel\n" +
+                "%n = OpVariable %_ptr_v3double Function\n" +
+                "%3 = OpLoad %v3double %n\n" + "%2 = OpFDiv %v3double %3 %3\n" +
+                "OpReturn\n" + "OpFunctionEnd",
+            2, {1.0, 1.0, 1.0}),
+        // Challenger Test case 1: FDiv v4double self-division x / x
+        InstructionFoldingCase<std::vector<double>>(
+            Header() + "%main = OpFunction %void None %void_func\n" +
+                "%main_lab = OpLabel\n" +
+                "%n = OpVariable %_ptr_v4double Function\n" +
+                "%3 = OpLoad %v4double %n\n" + "%2 = OpFDiv %v4double %3 %3\n" +
+                "OpReturn\n" + "OpFunctionEnd",
+            2, {1.0, 1.0, 1.0, 1.0})));
+
 using FloatMatrixInstructionFoldingTest = ::testing::TestWithParam<
     InstructionFoldingCase<std::vector<std::vector<float>>>>;
 
@@ -1997,7 +2234,7 @@ TEST_P(FloatMatrixInstructionFoldingTest, Case) {
   std::unique_ptr<IRContext> context;
   Instruction* inst;
   std::tie(context, inst) =
-      FoldInstruction(tc.test_body, tc.id_to_fold, SPV_ENV_UNIVERSAL_1_1);
+      FoldInstruction(tc.test_body, tc.id_to_fold, SPV_ENV_UNIVERSAL_1_5);
 
   EXPECT_EQ(inst->opcode(), spv::Op::OpCopyObject);
   if (inst->opcode() == spv::Op::OpCopyObject) {
@@ -2066,7 +2303,7 @@ TEST_P(BooleanInstructionFoldingTest, Case) {
   std::unique_ptr<IRContext> context;
   Instruction* inst;
   std::tie(context, inst) =
-      FoldInstruction(tc.test_body, tc.id_to_fold, SPV_ENV_UNIVERSAL_1_1);
+      FoldInstruction(tc.test_body, tc.id_to_fold, SPV_ENV_UNIVERSAL_1_5);
   CheckForExpectedScalarConstant(
       inst, tc.expected_result,
       [](const analysis::Constant* c) { return c->AsBoolConstant()->value(); });
@@ -2658,7 +2895,7 @@ TEST_P(FloatInstructionFoldingTest, Case) {
   std::unique_ptr<IRContext> context;
   Instruction* inst;
   std::tie(context, inst) =
-      FoldInstruction(tc.test_body, tc.id_to_fold, SPV_ENV_UNIVERSAL_1_1);
+      FoldInstruction(tc.test_body, tc.id_to_fold, SPV_ENV_UNIVERSAL_1_5);
 
   CheckForExpectedScalarConstant(inst, tc.expected_result,
                                  [](const analysis::Constant* c) {
@@ -2675,7 +2912,7 @@ TEST_P(FloatBitsInstructionFoldingTest, Case) {
   std::unique_ptr<IRContext> context;
   Instruction* inst;
   std::tie(context, inst) =
-      FoldInstruction(tc.test_body, tc.id_to_fold, SPV_ENV_UNIVERSAL_1_1);
+      FoldInstruction(tc.test_body, tc.id_to_fold, SPV_ENV_UNIVERSAL_1_5);
 
   CheckForExpectedScalarConstant(
       inst, tc.expected_result, [](const analysis::Constant* c) {
@@ -3501,7 +3738,7 @@ TEST_P(DoubleInstructionFoldingTest, Case) {
   std::unique_ptr<IRContext> context;
   Instruction* inst;
   std::tie(context, inst) =
-      FoldInstruction(tc.test_body, tc.id_to_fold, SPV_ENV_UNIVERSAL_1_1);
+      FoldInstruction(tc.test_body, tc.id_to_fold, SPV_ENV_UNIVERSAL_1_5);
   CheckForExpectedScalarConstant(
       inst, tc.expected_result, [](const analysis::Constant* c) {
         return c->AsFloatConstant()->GetDoubleValue();
@@ -4601,7 +4838,7 @@ TEST_P(GeneralInstructionFoldingTest, Case) {
   std::unique_ptr<IRContext> context;
   Instruction* inst;
   std::tie(context, inst) =
-      FoldInstruction(tc.test_body, tc.id_to_fold, SPV_ENV_UNIVERSAL_1_1);
+      FoldInstruction(tc.test_body, tc.id_to_fold, SPV_ENV_UNIVERSAL_1_5);
 
   EXPECT_TRUE((inst == nullptr) == (tc.expected_result == 0));
   if (inst != nullptr) {
@@ -6650,7 +6887,7 @@ TEST_P(ToNegateFoldingTest, Case) {
   std::unique_ptr<IRContext> context;
   Instruction* inst;
   std::tie(context, inst) =
-      FoldInstruction(tc.test_body, tc.id_to_fold, SPV_ENV_UNIVERSAL_1_1);
+      FoldInstruction(tc.test_body, tc.id_to_fold, SPV_ENV_UNIVERSAL_1_5);
 
   EXPECT_TRUE((inst == nullptr) == (tc.expected_result == 0));
   if (inst != nullptr) {
@@ -6756,7 +6993,8 @@ TEST_P(MatchingInstructionFoldingTest, Case) {
 
   std::unique_ptr<IRContext> context;
   Instruction* inst;
-  std::tie(context, inst) = FoldInstruction(tc.test_body, tc.id_to_fold,SPV_ENV_UNIVERSAL_1_1);
+  //std::cerr << "[\n" << tc.test_body << "\n]";
+  std::tie(context, inst) = FoldInstruction(tc.test_body, tc.id_to_fold,SPV_ENV_UNIVERSAL_1_5);
 
   EXPECT_EQ(inst != nullptr, tc.expected_result);
   if (inst != nullptr) {
@@ -14463,7 +14701,254 @@ INSTANTIATE_TEST_SUITE_P(CompositeExtractOrInsertMatchingTest, MatchingInstructi
             "%4 = OpCompositeConstruct %structB %3\n" +
             "OpReturn\n" +
             "OpFunctionEnd",
-        4, false)
+        4, false),
+    // Test case 21: Fold OpCopyLogical feeding extract.
+    InstructionFoldingCase<bool>(
+        Header() + R"(
+; CHECK: [[uint:%\w+]] = OpTypeInt 32 0
+; CHECK: [[struct_type1:%\w+]] = OpTypeStruct [[uint]] [[uint]]
+; CHECK: [[struct_type2:%\w+]] = OpTypeStruct [[uint]] [[uint]]
+; CHECK: [[var:%\w+]] = OpVariable
+; CHECK: [[ld:%\w+]] = OpLoad [[struct_type1]] [[var]]
+; CHECK: [[ex:%\w+]] = OpCompositeExtract [[uint]] [[ld]] 0
+; CHECK: %13 = OpCopyObject [[uint]] [[ex]]
+    %struct1 = OpTypeStruct %uint %uint
+    %struct2 = OpTypeStruct %uint %uint
+%_ptr_StorageBuffer_struct1 = OpTypePointer StorageBuffer %struct1
+%var1 = OpVariable %_ptr_StorageBuffer_struct1 StorageBuffer
+       %main = OpFunction %void None %void_func
+          %4 = OpLabel
+         %11 = OpLoad %struct1 %var1
+         %12 = OpCopyLogical %struct2 %11
+         %13 = OpCompositeExtract %uint %12 0
+               OpReturn
+               OpFunctionEnd
+        )",
+        13, true),
+    // Test case 22: Fold OpCopyLogical feeding extract with struct result.
+    InstructionFoldingCase<bool>(
+        Header() + R"(
+; CHECK: [[uint:%\w+]] = OpTypeInt 32 0
+; CHECK: [[struct_type1:%\w+]] = OpTypeStruct [[uint]]
+; CHECK: [[struct_type2:%\w+]] = OpTypeStruct [[uint]]
+; CHECK: [[struct_type3:%\w+]] = OpTypeStruct [[struct_type1]]
+; CHECK: [[struct_type4:%\w+]] = OpTypeStruct [[struct_type2]]
+; CHECK: [[var:%\w+]] = OpVariable
+; CHECK: [[ld:%\w+]] = OpLoad [[struct_type3]] [[var]]
+; CHECK: [[ex:%\w+]] = OpCompositeExtract [[struct_type1]] [[ld]] 0
+; CHECK: %13 = OpCopyLogical [[struct_type2]] [[ex]]
+    %struct1 = OpTypeStruct %uint
+    %struct2 = OpTypeStruct %uint
+    %struct3 = OpTypeStruct %struct1
+    %struct4 = OpTypeStruct %struct2
+%_ptr_StorageBuffer_struct3 = OpTypePointer StorageBuffer %struct3
+%var1 = OpVariable %_ptr_StorageBuffer_struct3 StorageBuffer
+       %main = OpFunction %void None %void_func
+          %4 = OpLabel
+         %11 = OpLoad %struct3 %var1
+         %12 = OpCopyLogical %struct4 %11
+         %13 = OpCompositeExtract %struct2 %12 0
+               OpReturn
+               OpFunctionEnd
+        )",
+        13, true),
+    // Test case 23: Fold OpCopyLogical feeding extract, even if multiple uses.
+    InstructionFoldingCase<bool>(
+        Header() + R"(
+; CHECK: [[uint:%\w+]] = OpTypeInt 32 0
+; CHECK: [[struct_type1:%\w+]] = OpTypeStruct [[uint]] [[uint]]
+; CHECK: [[struct_type2:%\w+]] = OpTypeStruct [[uint]] [[uint]]
+; CHECK: [[var:%\w+]] = OpVariable
+; CHECK: [[ld:%\w+]] = OpLoad [[struct_type1]] [[var]]
+; CHECK: [[ex:%\w+]] = OpCompositeExtract [[uint]] [[ld]] 0
+; CHECK: %13 = OpCopyObject [[uint]] [[ex]]
+    %struct1 = OpTypeStruct %uint %uint
+    %struct2 = OpTypeStruct %uint %uint
+%_ptr_StorageBuffer_struct1 = OpTypePointer StorageBuffer %struct1
+%var1 = OpVariable %_ptr_StorageBuffer_struct1 StorageBuffer
+       %main = OpFunction %void None %void_func
+          %4 = OpLabel
+         %11 = OpLoad %struct1 %var1
+         %12 = OpCopyLogical %struct2 %11
+         %13 = OpCompositeExtract %uint %12 0
+         %14 = OpCompositeExtract %uint %12 1
+               OpReturn
+               OpFunctionEnd
+        )",
+        13, true),
+    // Test case 24: LoadFeedingExtract
+    InstructionFoldingCase<bool>(
+        Header() + R"(
+; CHECK: [[uint:%\w+]] = OpTypeInt 32 0
+; CHECK: [[uint_1:%\w+]] = OpConstant [[uint]] 1
+; CHECK: [[struct_type:%\w+]] = OpTypeStruct [[uint]] [[uint]]
+; CHECK: [[var:%\w+]] = OpVariable
+; CHECK: [[int_ptr:%\w+]] = OpTypePointer StorageBuffer [[uint]]
+; CHECK: [[ac:%\w+]] = OpAccessChain [[int_ptr]] [[var]] [[uint_1]]
+; CHECK: [[new_ld:%\w+]] = OpLoad [[uint]] [[ac]]
+; CHECK: OpCopyObject [[uint]] [[new_ld]]
+%struct1 = OpTypeStruct %uint %uint
+%_ptr_StorageBuffer_struct = OpTypePointer StorageBuffer %struct1
+%var1 = OpVariable %_ptr_StorageBuffer_struct StorageBuffer
+       %main = OpFunction %void None %void_func
+          %4 = OpLabel
+         %11 = OpLoad %struct1 %var1
+         %13 = OpCompositeExtract %uint %11 1
+               OpReturn
+               OpFunctionEnd
+        )",
+        13, true),
+    // Test case 25: Fold multiple extracts
+    InstructionFoldingCase<bool>(
+        Header() + R"(
+; CHECK: [[uint:%\w+]] = OpTypeInt 32 0
+; CHECK: [[uint_0:%\w+]] = OpConstant [[uint]] 0
+; CHECK: [[struct_type:%\w+]] = OpTypeStruct [[uint]] [[uint]]
+; CHECK: [[var:%\w+]] = OpVariable
+; CHECK: [[int_ptr:%\w+]] = OpTypePointer StorageBuffer [[uint]]
+; CHECK: [[ac:%\w+]] = OpAccessChain [[int_ptr]] [[var]] [[uint_0]]
+; CHECK: [[new_ld:%\w+]] = OpLoad [[uint]] [[ac]]
+; CHECK: OpCopyObject [[uint]] [[new_ld]]
+%struct1 = OpTypeStruct %uint %uint
+%_ptr_StorageBuffer_struct = OpTypePointer StorageBuffer %struct1
+%var1 = OpVariable %_ptr_StorageBuffer_struct StorageBuffer
+       %main = OpFunction %void None %void_func
+          %4 = OpLabel
+         %11 = OpLoad %struct1 %var1
+         %13 = OpCompositeExtract %uint %11 0
+         %14 = OpCompositeExtract %uint %11 1
+               OpReturn
+               OpFunctionEnd
+        )",
+        13, true),
+    // Test case 26: Don't fold function scope load.
+    InstructionFoldingCase<bool>(
+        Header() + R"(
+%struct1 = OpTypeStruct %uint %uint
+%_ptr_Function_struct = OpTypePointer Function %struct1
+       %main = OpFunction %void None %void_func
+          %4 = OpLabel
+       %var1 = OpVariable %_ptr_Function_struct Function
+         %11 = OpLoad %struct1 %var1
+         %13 = OpCompositeExtract %uint %11 0
+               OpReturn
+               OpFunctionEnd
+        )",
+        13, false),
+    // Test case 27: Don't fold volatile load feeding extract.
+    InstructionFoldingCase<bool>(
+        Header() + R"(
+%struct1 = OpTypeStruct %uint %uint
+%_ptr_StorageBuffer_struct = OpTypePointer StorageBuffer %struct1
+%_ptr_StorageBuffer_uint = OpTypePointer StorageBuffer %uint
+%3 = OpVariable %_ptr_StorageBuffer_struct StorageBuffer
+       %main = OpFunction %void None %void_func
+          %4 = OpLabel
+         %11 = OpLoad %struct1 %3 Volatile
+         %13 = OpCompositeExtract %uint %11 0
+               OpReturn
+               OpFunctionEnd
+        )",
+        13, false),
+    // Test case 28: Fold with Aligned memory operand.
+    InstructionFoldingCase<bool>(
+        Header() + R"(
+; CHECK: [[uint:%\w+]] = OpTypeInt 32 0
+; CHECK: [[uint_1:%\w+]] = OpConstant [[uint]] 1
+; CHECK: [[struct_type:%\w+]] = OpTypeStruct [[uint]] [[uint]]
+; CHECK: [[var:%\w+]] = OpVariable
+; CHECK: [[int_ptr:%\w+]] = OpTypePointer StorageBuffer [[uint]]
+; CHECK: [[ac:%\w+]] = OpAccessChain [[int_ptr]] [[var]] [[uint_1]]
+; CHECK: [[new_ld:%\w+]] = OpLoad [[uint]] [[ac]] Aligned 4
+; CHECK: OpCopyObject [[uint]] [[new_ld]]
+               OpDecorate %struct1 Offset 0
+               OpMemberDecorate %struct1 1 Offset 4
+%struct1 = OpTypeStruct %uint %uint
+%_ptr_StorageBuffer_struct = OpTypePointer StorageBuffer %struct1
+%var1 = OpVariable %_ptr_StorageBuffer_struct StorageBuffer
+       %main = OpFunction %void None %void_func
+          %4 = OpLabel
+         %11 = OpLoad %struct1 %var1 Aligned 16
+         %13 = OpCompositeExtract %uint %11 1
+               OpReturn
+               OpFunctionEnd
+        )",
+        13, true),
+    // Test case 29: Fold with Aligned and Nontemporal memory operands.
+    InstructionFoldingCase<bool>(
+        Header() + R"(
+; CHECK: [[uint:%\w+]] = OpTypeInt 32 0
+; CHECK: [[uint_1:%\w+]] = OpConstant [[uint]] 1
+; CHECK: [[struct_type:%\w+]] = OpTypeStruct [[uint]] [[uint]]
+; CHECK: [[var:%\w+]] = OpVariable
+; CHECK: [[int_ptr:%\w+]] = OpTypePointer StorageBuffer [[uint]]
+; CHECK: [[ac:%\w+]] = OpAccessChain [[int_ptr]] [[var]] [[uint_1]]
+; CHECK: [[new_ld:%\w+]] = OpLoad [[uint]] [[ac]] Aligned|Nontemporal 4
+; CHECK: OpCopyObject [[uint]] [[new_ld]]
+               OpDecorate %struct1 Offset 0
+               OpMemberDecorate %struct1 1 Offset 4
+%struct1 = OpTypeStruct %uint %uint
+%_ptr_StorageBuffer_struct = OpTypePointer StorageBuffer %struct1
+%var1 = OpVariable %_ptr_StorageBuffer_struct StorageBuffer
+       %main = OpFunction %void None %void_func
+          %4 = OpLabel
+         %11 = OpLoad %struct1 %var1 Aligned|Nontemporal 16
+         %13 = OpCompositeExtract %uint %11 1
+               OpReturn
+               OpFunctionEnd
+        )",
+        13, true),
+    // Test case 30: Fold with MakePointerVisible memory operand and scope.
+    InstructionFoldingCase<bool>(
+        Header() + R"(
+; CHECK: [[uint:%\w+]] = OpTypeInt 32 0
+; CHECK: [[struct_type:%\w+]] = OpTypeStruct [[uint]] [[uint]]
+; CHECK: [[var:%\w+]] = OpVariable
+; CHECK: [[int_ptr:%\w+]] = OpTypePointer StorageBuffer [[uint]]
+; CHECK: [[ac:%\w+]] = OpAccessChain [[int_ptr]] [[var]] [[idx:%\w+]]
+; CHECK: [[new_ld:%\w+]] = OpLoad [[uint]] [[ac]] MakePointerVisible [[idx]]
+; CHECK: OpCopyObject [[uint]] [[new_ld]]
+               OpDecorate %struct1 Offset 0
+               OpMemberDecorate %struct1 1 Offset 4
+%struct1 = OpTypeStruct %uint %uint
+%_ptr_StorageBuffer_struct = OpTypePointer StorageBuffer %struct1
+%var1 = OpVariable %_ptr_StorageBuffer_struct StorageBuffer
+       %main = OpFunction %void None %void_func
+          %4 = OpLabel
+         %11 = OpLoad %struct1 %var1 MakePointerVisible %uint_1
+         %13 = OpCompositeExtract %uint %11 1
+               OpReturn
+               OpFunctionEnd
+        )",
+        13, true),
+    // Test case 31: Fold OpCopyLogical feeding extract into vector.
+    InstructionFoldingCase<bool>(
+        Header() + R"(
+; CHECK: [[uint:%\w+]] = OpTypeInt 32 0
+; CHECK: [[v2uint:%\w+]] = OpTypeVector [[uint]] 2
+; CHECK: [[struct_type1:%\w+]] = OpTypeStruct [[v2uint]]
+; CHECK: [[struct_type2:%\w+]] = OpTypeStruct [[v2uint]]
+; CHECK: [[struct_type3:%\w+]] = OpTypeStruct [[struct_type1]]
+; CHECK: [[struct_type4:%\w+]] = OpTypeStruct [[struct_type2]]
+; CHECK: [[var:%\w+]] = OpVariable
+; CHECK: [[ld:%\w+]] = OpLoad [[struct_type3]] [[var]]
+; CHECK: [[ex:%\w+]] = OpCompositeExtract [[uint]] [[ld]] 0 0 0
+; CHECK: %13 = OpCopyObject [[uint]] [[ex]]
+    %struct1 = OpTypeStruct %v2uint
+    %struct2 = OpTypeStruct %v2uint
+    %struct3 = OpTypeStruct %struct1
+    %struct4 = OpTypeStruct %struct2
+%_ptr_StorageBuffer_struct3 = OpTypePointer StorageBuffer %struct3
+%var1 = OpVariable %_ptr_StorageBuffer_struct3 StorageBuffer
+       %main = OpFunction %void None %void_func
+          %4 = OpLabel
+         %11 = OpLoad %struct3 %var1
+         %12 = OpCopyLogical %struct4 %11
+         %13 = OpCompositeExtract %uint %12 0 0 0
+               OpReturn
+               OpFunctionEnd
+        )",
+        13, true)
 ));
 
 INSTANTIATE_TEST_SUITE_P(DotProductMatchingTest, MatchingInstructionFoldingTest,
@@ -14748,7 +15233,7 @@ TEST_P(MatchingInstructionWithNoResultFoldingTest, Case) {
 
   std::unique_ptr<IRContext> context;
   Instruction* inst;
-  std::tie(context, inst) = FoldInstruction(tc.test_body, tc.id_to_fold,SPV_ENV_UNIVERSAL_1_1);
+  std::tie(context, inst) = FoldInstruction(tc.test_body, tc.id_to_fold,SPV_ENV_UNIVERSAL_1_5);
 
   // Find the instruction to test.
   EXPECT_EQ(inst != nullptr, tc.expected_result);
@@ -15438,6 +15923,69 @@ INSTANTIATE_TEST_SUITE_P(ImageOperandsBitmaskFoldingTest, MatchingInstructionWit
         , 89, true)
 ));
 
+TEST(FoldingTest, SelectVectorScalarConditionSPIRV13) {
+  std::string shader = R"(
+    OpCapability Shader
+    OpMemoryModel Logical GLSL450
+    OpEntryPoint GLCompute %main "main"
+    %void = OpTypeVoid
+    %void_fn = OpTypeFunction %void
+    %bool = OpTypeBool
+    %_ptr_Function_bool = OpTypePointer Function %bool
+    %float = OpTypeFloat 32
+    %v3float = OpTypeVector %float 3
+    %float_8 = OpConstant %float 8
+    %float_0 = OpConstant %float 0
+    %float_1 = OpConstant %float 1
+    %v3float_111 = OpConstantComposite %v3float %float_1 %float_1 %float_1
+    %main = OpFunction %void None %void_fn
+    %entry = OpLabel
+    %var = OpVariable %_ptr_Function_bool Function
+    %cond = OpLoad %bool %var
+    %select = OpSelect %float %cond %float_8 %float_0
+    %mul = OpVectorTimesScalar %v3float %v3float_111 %select
+    OpReturn
+    OpFunctionEnd
+  )";
+
+  std::unique_ptr<IRContext> context;
+  Instruction* inst;
+  std::tie(context, inst) = FoldInstruction(shader, 0, SPV_ENV_UNIVERSAL_1_3);
+  EXPECT_EQ(inst, nullptr);
+}
+
+TEST(FoldingTest, SelectVectorScalarConditionSPIRV14) {
+  std::string shader = R"(
+    OpCapability Shader
+    OpMemoryModel Logical GLSL450
+    OpEntryPoint GLCompute %main "main"
+    %void = OpTypeVoid
+    %void_fn = OpTypeFunction %void
+    %bool = OpTypeBool
+    %_ptr_Function_bool = OpTypePointer Function %bool
+    %float = OpTypeFloat 32
+    %v3float = OpTypeVector %float 3
+    %float_8 = OpConstant %float 8
+    %float_0 = OpConstant %float 0
+    %float_1 = OpConstant %float 1
+    %v3float_111 = OpConstantComposite %v3float %float_1 %float_1 %float_1
+    %main = OpFunction %void None %void_fn
+    %entry = OpLabel
+    %var = OpVariable %_ptr_Function_bool Function
+    %cond = OpLoad %bool %var
+    %select = OpSelect %float %cond %float_8 %float_0
+    %mul = OpVectorTimesScalar %v3float %v3float_111 %select
+    OpReturn
+    OpFunctionEnd
+  )";
+
+  std::unique_ptr<IRContext> context;
+  Instruction* inst;
+  std::tie(context, inst) = FoldInstruction(shader, 0, SPV_ENV_UNIVERSAL_1_4);
+  EXPECT_NE(inst, nullptr);
+  EXPECT_EQ(inst->opcode(), spv::Op::OpSelect);
+}
+
 }  // namespace
 // Regression test: (b * poszw) / (poszw * c21) with b = (0, 1) and
 // c21 = (2, 1) folds to (b / c21) * (poszw / poszw) = (0, 1). The divisor
@@ -15469,14 +16017,15 @@ TEST(FoldingTest, ReassociateNestedMulDivWithVectorConstant) {
   Instruction* inst;
   std::tie(context, inst) = FoldInstruction(body, 2, SPV_ENV_UNIVERSAL_1_5);
   ASSERT_NE(inst, nullptr);
-  // The fold reassociates to (b / c21) * (poszw / poszw): an OpFMul whose
-  // first operand is the merged constant b * (1/c21) = (0, 1).
+  // The regression value is that the fold completes without the null
+  // dereference: the rule reassociates to an OpFMul of the merged constant
+  // b * (1/c21) = (0, 1) and the nested multiply of the runtime operands.
   EXPECT_EQ(inst->opcode(), spv::Op::OpFMul);
   Instruction* merged_inst =
       context->get_def_use_mgr()->GetDef(inst->GetSingleWordInOperand(0));
   EXPECT_EQ(merged_inst->opcode(), spv::Op::OpConstantComposite);
   const analysis::Constant* merged =
-      context->get_constant_mgr()->GetConstantFromOpcode(merged_inst);
+      context->get_constant_mgr()->GetConstantFromInst(merged_inst);
   ASSERT_NE(merged, nullptr);
   const auto* vec_const = merged->AsVectorConstant();
   ASSERT_NE(vec_const, nullptr);
