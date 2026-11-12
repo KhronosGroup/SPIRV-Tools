@@ -2567,6 +2567,63 @@ TEST_F(ValidateSpvEXTDescriptorHeap, ArrayStrideConstantZero) {
               HasSubstr("ArrayStrideIdEXT contains a stride of zero"));
 }
 
+TEST_F(ValidateSpvEXTDescriptorHeap, ArrayStrideUndef) {
+  const std::string str = R"(
+      OpCapability Shader
+      OpCapability DescriptorHeapEXT
+      OpExtension "SPV_EXT_descriptor_heap"
+      OpMemoryModel Logical GLSL450
+      OpEntryPoint GLCompute %main "main"
+      OpExecutionMode %main LocalSize 1 1 1
+      OpDecorateId %array ArrayStrideIdEXT %undef
+%int = OpTypeInt 32 0
+%int_2 = OpConstant %int 2
+%undef = OpUndef %int
+%sampler = OpTypeSampler
+%array = OpTypeArray %sampler %int_2
+%void = OpTypeVoid
+  %3 = OpTypeFunction %void
+%main = OpFunction %void None %3
+  %5 = OpLabel
+      OpReturn
+      OpFunctionEnd
+
+  )";
+  CompileSuccessfully(str.c_str(), SPV_ENV_VULKAN_1_4);
+  EXPECT_NE(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_4));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("ArrayStrideIdEXT extra operand must be a constant "
+                        "instruction"));
+}
+
+TEST_F(ValidateSpvEXTDescriptorHeap, OffsetIdUndef) {
+  const std::string str = R"(
+      OpCapability Shader
+      OpCapability DescriptorHeapEXT
+      OpExtension "SPV_EXT_descriptor_heap"
+      OpMemoryModel Logical GLSL450
+      OpEntryPoint GLCompute %main "main"
+      OpExecutionMode %main LocalSize 1 1 1
+      OpMemberDecorateIdEXT %struct 0 OffsetIdEXT %undef
+%int = OpTypeInt 32 0
+%undef = OpUndef %int
+%sampler = OpTypeSampler
+%struct = OpTypeStruct %sampler
+%void = OpTypeVoid
+  %3 = OpTypeFunction %void
+%main = OpFunction %void None %3
+  %5 = OpLabel
+      OpReturn
+      OpFunctionEnd
+
+  )";
+  CompileSuccessfully(str.c_str(), SPV_ENV_VULKAN_1_4);
+  EXPECT_NE(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_4));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("OffsetIdEXT extra operand must be a constant "
+                        "instruction"));
+}
+
 TEST_F(ValidateSpvEXTDescriptorHeap, ArrayStrideSpecConstantZero) {
   const std::string str = R"(
       OpCapability Shader

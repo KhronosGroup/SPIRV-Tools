@@ -435,6 +435,11 @@ spv_result_t ValidateDecorateId(ValidationState_t& _, const Instruction* inst) {
                << "ArrayStrideIdEXT extra operand must be a 32-bit int "
                   "scalar type.";
       }
+      if (!spvOpcodeIsConstant(_.GetIdOpcode(operand_id))) {
+        return _.diag(SPV_ERROR_INVALID_ID, inst)
+               << "ArrayStrideIdEXT extra operand must be a constant "
+                  "instruction.";
+      }
 
       // Even if spec constant, validation layers will test when frozen
       uint64_t stride_value = 0;
@@ -534,6 +539,10 @@ spv_result_t ValidateMemberDecorate(ValidationState_t& _,
       if (!_.IsIntScalarType(_.GetTypeId(operand_id), 32)) {
         return _.diag(SPV_ERROR_INVALID_ID, inst)
                << "OffsetIdEXT extra operand must be a 32-bit int scalar type.";
+      }
+      if (!spvOpcodeIsConstant(_.GetIdOpcode(operand_id))) {
+        return _.diag(SPV_ERROR_INVALID_ID, inst)
+               << "OffsetIdEXT extra operand must be a constant instruction.";
       }
       if (!_.ContainsType(struct_type_id, is_descriptor_type, true)) {
         return _.diag(SPV_ERROR_INVALID_ID, inst)
