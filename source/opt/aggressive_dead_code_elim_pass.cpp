@@ -474,8 +474,9 @@ void AggressiveDCEPass::AddDecorationsToWorkList(const Instruction* inst) {
         dec->opcode() != spv::Op::OpMemberDecorateIdEXT) {
       continue;
     }
-    if (spv::Decoration(dec->GetSingleWordInOperand(1)) ==
-        spv::Decoration::HlslCounterBufferGOOGLE) {
+    if (dec->opcode() == spv::Op::OpDecorateId &&
+        spv::Decoration(dec->GetSingleWordInOperand(1)) ==
+            spv::Decoration::HlslCounterBufferGOOGLE) {
       // These decorations should not force the use id to be live.  It will be
       // removed if either the target or the in operand are dead.
       continue;
