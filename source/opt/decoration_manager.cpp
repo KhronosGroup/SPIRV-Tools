@@ -195,8 +195,8 @@ bool DecorationManager::HaveTheSameDecorations(uint32_t id1,
 
   // This function splits the decoration instructions into different sets,
   // based on their opcode; only OpDecorate, OpDecorateId,
-  // OpDecorateStringGOOGLE, and OpMemberDecorate are considered, the other
-  // opcodes are ignored.
+  // OpDecorateStringGOOGLE, OpMemberDecorate, and OpMemberDecorateIdEXT are
+  // considered, the other opcodes are ignored.
   const auto fillDecorationSets =
       [](const InstructionVector& decoration_list, DecorationSet* decorate_set,
          DecorationSet* decorate_id_set, DecorationSet* decorate_string_set,
@@ -216,6 +216,7 @@ bool DecorationManager::HaveTheSameDecorations(uint32_t id1,
               decorate_set->emplace(std::move(decoration_payload));
               break;
             case spv::Op::OpMemberDecorate:
+            case spv::Op::OpMemberDecorateIdEXT:
               member_decorate_set->emplace(std::move(decoration_payload));
               break;
             case spv::Op::OpDecorateId:
@@ -261,8 +262,8 @@ bool DecorationManager::HaveSubsetOfDecorations(uint32_t id1,
 
   // This function splits the decoration instructions into different sets,
   // based on their opcode; only OpDecorate, OpDecorateId,
-  // OpDecorateStringGOOGLE, and OpMemberDecorate are considered, the other
-  // opcodes are ignored.
+  // OpDecorateStringGOOGLE, OpMemberDecorate, and OpMemberDecorateIdEXT are
+  // considered, the other opcodes are ignored.
   const auto fillDecorationSets =
       [](const InstructionVector& decoration_list, DecorationSet* decorate_set,
          DecorationSet* decorate_id_set, DecorationSet* decorate_string_set,
@@ -282,6 +283,7 @@ bool DecorationManager::HaveSubsetOfDecorations(uint32_t id1,
               decorate_set->emplace(std::move(decoration_payload));
               break;
             case spv::Op::OpMemberDecorate:
+            case spv::Op::OpMemberDecorateIdEXT:
               member_decorate_set->emplace(std::move(decoration_payload));
               break;
             case spv::Op::OpDecorateId:
@@ -330,6 +332,7 @@ bool DecorationManager::AreDecorationsTheSame(const Instruction* inst1,
   switch (inst1->opcode()) {
     case spv::Op::OpDecorate:
     case spv::Op::OpMemberDecorate:
+    case spv::Op::OpMemberDecorateIdEXT:
     case spv::Op::OpDecorateId:
     case spv::Op::OpDecorateStringGOOGLE:
       break;
@@ -361,7 +364,8 @@ void DecorationManager::AddDecoration(Instruction* inst) {
     case spv::Op::OpDecorate:
     case spv::Op::OpDecorateId:
     case spv::Op::OpDecorateStringGOOGLE:
-    case spv::Op::OpMemberDecorate: {
+    case spv::Op::OpMemberDecorate:
+    case spv::Op::OpMemberDecorateIdEXT: {
       const auto target_id = inst->GetSingleWordInOperand(0u);
       id_to_decoration_insts_[target_id].direct_decorations.push_back(inst);
       break;
@@ -465,6 +469,7 @@ bool DecorationManager::WhileEachDecoration(
   for (const Instruction* inst : GetDecorationsFor(id, true)) {
     switch (inst->opcode()) {
       case spv::Op::OpMemberDecorate:
+      case spv::Op::OpMemberDecorateIdEXT:
         if (inst->GetSingleWordInOperand(2) == decoration) {
           if (!f(*inst)) return false;
         }
@@ -610,7 +615,8 @@ void DecorationManager::RemoveDecoration(Instruction* inst) {
     case spv::Op::OpDecorate:
     case spv::Op::OpDecorateId:
     case spv::Op::OpDecorateStringGOOGLE:
-    case spv::Op::OpMemberDecorate: {
+    case spv::Op::OpMemberDecorate:
+    case spv::Op::OpMemberDecorateIdEXT: {
       const auto target_id = inst->GetSingleWordInOperand(0u);
       auto const iter = id_to_decoration_insts_.find(target_id);
       if (iter == id_to_decoration_insts_.end()) return;

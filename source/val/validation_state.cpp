@@ -1724,6 +1724,13 @@ const Instruction* ValidationState_t::FindUntypedBaseVariable(
       case spv::Op::OpUntypedArrayLengthKHR:
         base_inst = FindDef(base_inst->GetOperandAs<uint32_t>(3));
         break;
+      case spv::Op::OpAccessChain:
+      case spv::Op::OpInBoundsAccessChain:
+      case spv::Op::OpPtrAccessChain:
+      case spv::Op::OpInBoundsPtrAccessChain:
+      case spv::Op::OpCopyObject:
+        base_inst = FindDef(base_inst->GetOperandAs<uint32_t>(2));
+        break;
       case spv::Op::OpLoad:
       case spv::Op::OpAtomicLoad:
         if (GetIdOpcode(GetOperandTypeId(base_inst, 2)) ==
@@ -1783,8 +1790,10 @@ bool ValidationState_t::IsDescriptorHeapBaseVariable(const Instruction* inst) {
       IsBuiltin(base_inst->id(), spv::BuiltIn::SamplerHeapEXT) ||
       IsBuiltin(base_inst->id(), spv::BuiltIn::ResourceHeapEXT);
 
-  return FindDef(base_inst->id())->opcode() == spv::Op::OpBufferPointerEXT ||
-         (FindDef(base_inst->id())->opcode() == spv::Op::OpUntypedVariableKHR &&
+  const spv::Op base_opcode = base_inst->opcode();
+  return base_opcode == spv::Op::OpBufferPointerEXT ||
+         ((base_opcode == spv::Op::OpUntypedVariableKHR ||
+           base_opcode == spv::Op::OpVariable) &&
           is_heap_base);
 }
 
@@ -3836,6 +3845,16 @@ std::string ValidationState_t::VkErrorID(uint32_t id,
       return VUID_WRAP(VUID-StandaloneSpirv-Base-12469);
     case 12509:
       return VUID_WRAP(VUID-StandaloneSpirv-Offset-12509);
+    case 13706:
+      return VUID_WRAP(VUID-StandaloneSpirv-UniformConstant-13706);
+    case 13743:
+      return VUID_WRAP(VUID-StandaloneSpirv-OpUntypedImageTexelPointerEXT-13743);
+    case 13744:
+      return VUID_WRAP(VUID-StandaloneSpirv-ResourceHeapEXT-13744);
+    case 13745:
+      return VUID_WRAP(VUID-StandaloneSpirv-UniformConstant-13745);
+    case 13746:
+      return VUID_WRAP(VUID-StandaloneSpirv-UniformConstant-13746);
     default:
       return "";  // unknown id
   }

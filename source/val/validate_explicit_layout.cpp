@@ -567,6 +567,8 @@ struct Impl {
       case spv::Op::OpTypeBufferEXT:
       case spv::Op::OpTypeAccelerationStructureKHR:
         return vstate.options()->buffer_descriptor_layout.alignment;
+      case spv::Op::OpTypeTensorARM:
+        return vstate.options()->tensor_descriptor_layout.alignment;
       case spv::Op::OpTypeInt:
       case spv::Op::OpTypeFloat:
         return type_inst->GetOperandAs<uint32_t>(1u) / 8;
@@ -662,6 +664,8 @@ struct Impl {
       case spv::Op::OpTypeBufferEXT:
       case spv::Op::OpTypeAccelerationStructureKHR:
         return vstate.options()->buffer_descriptor_layout.size;
+      case spv::Op::OpTypeTensorARM:
+        return vstate.options()->tensor_descriptor_layout.size;
       case spv::Op::OpTypeInt:
       case spv::Op::OpTypeFloat:
         return type_inst->GetOperandAs<uint32_t>(1u) / 8;
@@ -690,16 +694,16 @@ struct Impl {
         return 0;
       case spv::Op::OpTypeMatrix: {
         const auto num_cols = type_inst->GetOperandAs<uint32_t>(2u);
-        if (matrix_constraints.col_major) {
-          return num_cols * matrix_constraints.stride;
-        } else {
-          const auto* col_inst =
-              vstate.FindDef(type_inst->GetOperandAs<uint32_t>(1u));
-          const auto ele_id = col_inst->GetOperandAs<uint32_t>(1u);
-          const auto num_rows = col_inst->GetOperandAs<uint32_t>(2u);
-          return (num_rows - 1) * matrix_constraints.stride +
-                 num_cols * GetSize(ele_id, {});
-        }
+        const auto* col_inst =
+            vstate.FindDef(type_inst->GetOperandAs<uint32_t>(1u));
+        const auto ele_id = col_inst->GetOperandAs<uint32_t>(1u);
+        const auto num_rows = col_inst->GetOperandAs<uint32_t>(2u);
+        const uint32_t major =
+            matrix_constraints.col_major ? num_cols : num_rows;
+        const uint32_t minor =
+            matrix_constraints.col_major ? num_rows : num_cols;
+        return (major - 1) * matrix_constraints.stride +
+               minor * GetSize(ele_id, {});
       }
       case spv::Op::OpTypeStruct: {
         const auto& members = GetStructMembers(type_id);

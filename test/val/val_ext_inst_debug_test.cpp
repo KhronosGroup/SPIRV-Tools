@@ -6369,6 +6369,27 @@ TEST_F(ValidateVulkan101DebugInfo, DebugTypeVectorIdEXTWithSpecConst) {
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
+// A DebugTypeVectorIdEXT is a valid base type in a version 101 module.
+TEST_F(ValidateVulkan101DebugInfo, DebugTypeVectorIdEXTAsBaseType) {
+  const std::string src = R"(
+%src = OpString "simple.hlsl"
+%code = OpString "main() {}"
+%float_name = OpString "float"
+)";
+
+  const std::string dbg_inst_header = R"(
+%dbg_src = OpExtInst %void %DbgExt DebugSource %src %code
+%comp_unit = OpExtInst %void %DbgExt DebugCompilationUnit %u32_2 %u32_4 %dbg_src %u32_5
+%float_info = OpExtInst %void %DbgExt DebugTypeBasic %float_name %u32_32 %u32_3 %u32_0
+%vecid_info = OpExtInst %void %DbgExt DebugTypeVectorIdEXT %float_info %u32_4
+%qual_info = OpExtInst %void %DbgExt DebugTypeQualifier %vecid_info %u32_0
+)";
+
+  CompileSuccessfully(GenerateShaderCodeForDebugInfo(
+      src, "", dbg_inst_header, "", shader_extension_101, "Vertex"));
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
 TEST_F(ValidateVulkan101DebugInfo, DebugTypeCooperativeMatrixKHR) {
   const std::string src = R"(
 %src = OpString "simple.hlsl"

@@ -57,6 +57,7 @@ constexpr uint32_t kDebugValueValueInIdx = 3;
 // spv::Op::OpDecorate
 // spv::Op::OpMemberDecorate
 // spv::Op::OpDecorateId
+// spv::Op::OpMemberDecorateIdEXT
 // spv::Op::OpDecorateStringGOOGLE
 // spv::Op::OpDecorationGroup
 struct DecorationLess {
@@ -75,6 +76,7 @@ struct DecorationLess {
       PRIORITY_CASE(spv::Op::OpDecorate)
       PRIORITY_CASE(spv::Op::OpMemberDecorate)
       PRIORITY_CASE(spv::Op::OpDecorateId)
+      PRIORITY_CASE(spv::Op::OpMemberDecorateIdEXT)
       PRIORITY_CASE(spv::Op::OpDecorateStringGOOGLE)
       // OpDecorationGroup is lowest priority to ensure use/def chains remain
       // usable for instructions that target this group.
@@ -458,20 +460,23 @@ void AggressiveDCEPass::AddDebugInstructionsToWorkList(
 }
 
 void AggressiveDCEPass::AddDecorationsToWorkList(const Instruction* inst) {
-  // Add OpDecorateId instructions that apply to this instruction to the work
-  // list.  We use the decoration manager to look through the group
-  // decorations to get to the OpDecorate* instructions themselves.
+  // Add OpDecorateId and OpMemberDecorateIdEXT instructions that apply to this
+  // instruction to the work list.  We use the decoration manager to look
+  // through the group decorations to get to the OpDecorate* instructions
+  // themselves.
   auto decorations =
       get_decoration_mgr()->GetDecorationsFor(inst->result_id(), false);
   for (Instruction* dec : decorations) {
-    // We only care about OpDecorateId instructions because the are the only
-    // decorations that will reference an id that will have to be kept live
-    // because of that use.
-    if (dec->opcode() != spv::Op::OpDecorateId) {
+    // We only care about OpDecorateId and OpMemberDecorateIdEXT instructions
+    // because they are the only decorations that will reference an id that
+    // will have to be kept live because of that use.
+    if (dec->opcode() != spv::Op::OpDecorateId &&
+        dec->opcode() != spv::Op::OpMemberDecorateIdEXT) {
       continue;
     }
-    if (spv::Decoration(dec->GetSingleWordInOperand(1)) ==
-        spv::Decoration::HlslCounterBufferGOOGLE) {
+    if (dec->opcode() == spv::Op::OpDecorateId &&
+        spv::Decoration(dec->GetSingleWordInOperand(1)) ==
+            spv::Decoration::HlslCounterBufferGOOGLE) {
       // These decorations should not force the use id to be live.  It will be
       // removed if either the target or the in operand are dead.
       continue;
@@ -911,6 +916,7 @@ bool AggressiveDCEPass::ProcessGlobalValues() {
     switch (annotation->opcode()) {
       case spv::Op::OpDecorate:
       case spv::Op::OpMemberDecorate:
+      case spv::Op::OpMemberDecorateIdEXT:
       case spv::Op::OpDecorateStringGOOGLE:
       case spv::Op::OpMemberDecorateStringGOOGLE:
         if (IsTargetDead(annotation)) {
