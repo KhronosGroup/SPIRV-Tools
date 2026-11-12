@@ -3538,7 +3538,7 @@ TEST_F(ValidateDecorations, UniformIdDecorationWithWrongInstructionBad) {
   EXPECT_THAT(
       getDiagnosticString(),
       HasSubstr(
-          "Decorations taking ID parameters may not be used with OpDecorateId\n"
+          "Decorations taking ID parameters may not be used with OpDecorate\n"
           "  OpDecorate %int0 UniformId %subgroupscope"));
 }
 

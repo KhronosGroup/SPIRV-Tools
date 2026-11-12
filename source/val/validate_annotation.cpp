@@ -385,7 +385,7 @@ spv_result_t ValidateDecorate(ValidationState_t& _, const Instruction* inst) {
   if (DecorationTakesIdParameters(decoration)) {
     return _.diag(SPV_ERROR_INVALID_ID, inst)
            << "Decorations taking ID parameters may not be used with "
-              "OpDecorateId";
+              "OpDecorate";
   }
 
   if (target->opcode() != spv::Op::OpDecorationGroup) {
@@ -409,7 +409,7 @@ spv_result_t ValidateDecorateId(ValidationState_t& _, const Instruction* inst) {
   const auto target = _.FindDef(target_id);
   if (target && spv::Op::OpDecorationGroup == target->opcode()) {
     return _.diag(SPV_ERROR_INVALID_ID, inst)
-           << "OpMemberDecorate Target <id> " << _.getIdName(target_id)
+           << "OpDecorateId Target <id> " << _.getIdName(target_id)
            << " must not be an OpDecorationGroup instruction.";
   }
 

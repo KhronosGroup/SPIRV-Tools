@@ -108,7 +108,7 @@ spv::StorageClass GetStorageClass(const Instruction& inst) {
       return spv::StorageClass(inst.word(3));
     }
     case spv::Op::OpUntypedVariableKHR: {
-      return spv::StorageClass(inst.word(4));
+      return spv::StorageClass(inst.word(3));
     }
     case spv::Op::OpGenericCastToPtrExplicit: {
       return spv::StorageClass(inst.word(4));
