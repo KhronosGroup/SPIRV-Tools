@@ -474,3 +474,30 @@ OpFunctionEnd
 }  // namespace
 }  // namespace opt
 }  // namespace spvtools
+
+TEST_F(SimplificationTest, ReciprocalOfVectorConstantIsSkipped) {
+  // The ReassociateNestedMulDivFloat folding rule used to call the scalar
+  // Reciprocal helper on a vector constant, crashing on the null AsFloat()
+  // in release builds. The helper now reports no reciprocal for non-float
+  // constants and the division is left unfolded.
+  const std::string text = R"(OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %main "main"
+OpExecutionMode %main OriginUpperLeft
+%f32 = OpTypeFloat 32
+%v2f32 = OpTypeVector %f32 2
+%f32_2 = OpConstant %f32 2
+%f32_1 = OpConstant %f32 1
+%vec_const = OpConstantComposite %v2f32 %f32_2 %f32_1
+%ptr_v2f32 = OpTypePointer Function %v2f32
+%main_func_type = OpTypeFunction %void
+%main = OpFunction %void None %main_func_type
+%main_lab = OpLabel
+%n = OpVariable %ptr_v2f32 Function
+%3 = OpLoad %v2f32 %n
+%2 = OpFDiv %v2f32 %3 %vec_const
+OpReturn
+OpFunctionEnd
+)";
+  SinglePassRunAndCheck<SimplificationPass>(text, text, false);
+}
