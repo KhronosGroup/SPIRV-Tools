@@ -471,6 +471,58 @@ OpFunctionEnd
   SinglePassRunAndMatch<SimplificationPass>(text, false);
 }
 
+TEST_F(SimplificationTest, DontFoldToConstantsOfStorageOnlyTypes) {
+  // Only the storage capabilities are declared, so 8- and 16-bit constants
+  // are not allowed and the conversions must not be folded.
+  const std::string text = R"(
+               OpCapability Shader
+               OpCapability StorageBuffer8BitAccess
+               OpCapability StorageBuffer16BitAccess
+               OpExtension "SPV_KHR_8bit_storage"
+               OpExtension "SPV_KHR_16bit_storage"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %main "main"
+               OpExecutionMode %main LocalSize 1 1 1
+               OpDecorate %Block Block
+               OpMemberDecorate %Block 0 Offset 0
+               OpMemberDecorate %Block 1 Offset 2
+               OpDecorate %buf DescriptorSet 0
+               OpDecorate %buf Binding 0
+       %void = OpTypeVoid
+         %fn = OpTypeFunction %void
+       %uint = OpTypeInt 32 0
+        %int = OpTypeInt 32 1
+      %uchar = OpTypeInt 8 0
+      %short = OpTypeInt 16 1
+     %uint_0 = OpConstant %uint 0
+     %uint_1 = OpConstant %uint 1
+     %uint_9 = OpConstant %uint 9
+     %int_n3 = OpConstant %int -3
+      %Block = OpTypeStruct %uchar %short
+    %ptr_blk = OpTypePointer StorageBuffer %Block
+  %ptr_uchar = OpTypePointer StorageBuffer %uchar
+  %ptr_short = OpTypePointer StorageBuffer %short
+        %buf = OpVariable %ptr_blk StorageBuffer
+       %main = OpFunction %void None %fn
+      %entry = OpLabel
+; CHECK-NOT: OpConstant %uchar
+; CHECK-NOT: OpConstant %short
+; CHECK: OpUConvert %uchar %uint_9
+; CHECK: OpSConvert %short %int_n3
+          %c = OpUConvert %uchar %uint_9
+          %s = OpSConvert %short %int_n3
+          %p = OpAccessChain %ptr_uchar %buf %uint_0
+               OpStore %p %c
+          %q = OpAccessChain %ptr_short %buf %uint_1
+               OpStore %q %s
+               OpReturn
+               OpFunctionEnd
+)";
+
+  auto result = SinglePassRunAndMatch<SimplificationPass>(text, true);
+  EXPECT_EQ(std::get<1>(result), Pass::Status::SuccessWithoutChange);
+}
+
 }  // namespace
 }  // namespace opt
 }  // namespace spvtools

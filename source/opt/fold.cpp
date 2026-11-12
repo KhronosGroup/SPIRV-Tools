@@ -179,7 +179,10 @@ uint32_t InstructionFolder::OperateWords(
 
 bool InstructionFolder::FoldInstructionInternal(Instruction* inst) const {
   auto identity_map = [](uint32_t id) { return id; };
-  Instruction* folded_inst = FoldInstructionToConstant(inst, identity_map);
+  Instruction* folded_inst = nullptr;
+  if (CanDeclareConstantOfType(inst->type_id())) {
+    folded_inst = FoldInstructionToConstant(inst, identity_map);
+  }
   if (folded_inst != nullptr) {
     inst->SetOpcode(spv::Op::OpCopyObject);
     inst->SetInOperands({{SPV_OPERAND_TYPE_ID, {folded_inst->result_id()}}});
@@ -664,6 +667,35 @@ Instruction* InstructionFolder::FoldInstructionToConstant(
   }
 
   return nullptr;
+}
+
+bool InstructionFolder::CanDeclareConstantOfType(uint32_t type_id) const {
+  const FeatureManager* feature_mgr = context_->get_feature_mgr();
+  if (!feature_mgr->HasCapability(spv::Capability::Shader)) {
+    return true;
+  }
+  const analysis::Type* type = context_->get_type_mgr()->GetType(type_id);
+  if (type == nullptr) {
+    return true;
+  }
+  if (const analysis::Vector* vector_type = type->AsVector()) {
+    type = vector_type->element_type();
+  }
+  if (const analysis::Integer* int_type = type->AsInteger()) {
+    if (int_type->width() == 8) {
+      return feature_mgr->HasCapability(spv::Capability::Int8);
+    }
+    if (int_type->width() == 16) {
+      return feature_mgr->HasCapability(spv::Capability::Int16);
+    }
+  }
+  if (const analysis::Float* float_type = type->AsFloat()) {
+    if (float_type->width() == 16 &&
+        float_type->encoding() == spv::FPEncoding::Max) {
+      return feature_mgr->HasCapability(spv::Capability::Float16);
+    }
+  }
+  return true;
 }
 
 bool InstructionFolder::IsFoldableType(Instruction* type_inst) const {
