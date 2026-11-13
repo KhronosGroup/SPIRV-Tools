@@ -210,8 +210,10 @@ class LoopUnrollerUtilsImpl {
   void AddBlocksToFunction(const BasicBlock* insert_point);
 
   // Moves the blocks of |loop| that are laid out after its merge block to just
-  // before the merge block, keeping the structured order.
-  void MoveLoopBlocksBeforeMerge(const Loop* loop);
+  // before the merge block, keeping the structured order. The header must
+  // already be laid out before the merge block, which can only fail when the
+  // merge is unreachable.
+  void MoveLoopBlocksBeforeMerge(Loop* loop);
 
   // Duplicates the |old_loop|, cloning each body and remapping the ids without
   // removing instructions or changing relative structure. Result will be stored
@@ -900,27 +902,28 @@ bool LoopUnrollerUtilsImpl::DuplicateLoop(Loop* old_loop, Loop* new_loop) {
   return true;
 }
 
-void LoopUnrollerUtilsImpl::MoveLoopBlocksBeforeMerge(const Loop* loop) {
-  const BasicBlock* merge_block = loop->GetMergeBlock();
+void LoopUnrollerUtilsImpl::MoveLoopBlocksBeforeMerge(Loop* loop) {
+  BasicBlock* merge_block = loop->GetMergeBlock();
   std::unordered_set<uint32_t> after_merge;
-  BasicBlock* insert_after = nullptr;
   bool seen_merge = false;
   for (BasicBlock& block : function_) {
     if (&block == merge_block) {
       seen_merge = true;
-    } else if (!seen_merge) {
-      insert_after = &block;
-    } else if (loop->IsInsideLoop(&block)) {
+    } else if (seen_merge && loop->IsInsideLoop(&block)) {
       after_merge.insert(block.id());
     }
   }
   if (after_merge.empty()) return;
 
+  assert(after_merge.count(loop->GetHeaderBlock()->id()) == 0 &&
+         "Loop header is laid out after its merge block.");
+
+  std::vector<uint32_t> ids;
+  ids.reserve(after_merge.size());
   for (BasicBlock* block : loop_blocks_inorder_) {
-    if (after_merge.count(block->id()) == 0) continue;
-    function_.MoveBasicBlockToAfter(block->id(), insert_after);
-    insert_after = block;
+    if (after_merge.count(block->id())) ids.push_back(block->id());
   }
+  function_.MoveBasicBlocksBefore(ids, merge_block);
 }
 
 // Whenever the utility copies a block it stores it in a temporary buffer, this
