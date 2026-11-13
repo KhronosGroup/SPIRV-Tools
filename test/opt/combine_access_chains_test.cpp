@@ -476,12 +476,15 @@ OpFunctionEnd
   SinglePassRunAndMatch<CombineAccessChains>(text, true);
 }
 
-TEST_F(CombineAccessChainsTest, DontCombineNonConstantStructSlide) {
+// The last index of the feeder selects an element of an array of structs, so it
+// is added to a non-constant element operand.
+TEST_F(CombineAccessChainsTest, CombineNonConstantElementWithArrayOfStructs) {
   const std::string text = R"(
 ; CHECK: [[int0:%\w+]] = OpConstant {{%\w+}} 0
+; CHECK: [[var:%\w+]] = OpVariable {{%\w+}} Workgroup
 ; CHECK: [[ld:%\w+]] = OpLoad
-; CHECK: [[gep:%\w+]] = OpAccessChain
-; CHECK: OpPtrAccessChain {{%\w+}} [[gep]] [[ld]] [[int0]]
+; CHECK: [[add:%\w+]] = OpIAdd {{%\w+}} [[int0]] [[ld]]
+; CHECK: OpAccessChain {{%\w+}} [[var]] [[add]] [[int0]]
 OpCapability Shader
 OpCapability VariablePointers
 OpExtension "SPV_KHR_variable_pointers"
@@ -542,6 +545,74 @@ OpExecutionMode %main OriginUpperLeft
 %ld = OpLoad %uint %func_var
 %gep = OpPtrAccessChain %ptr_Workgroup_struct %wg_var %ld
 %ptr_gep = OpPtrAccessChain %ptr_Workgroup_uint %gep %ld %uint_0
+OpReturn
+OpFunctionEnd
+)";
+
+  SinglePassRunAndMatch<CombineAccessChains>(text, true);
+}
+
+// The last index of the feeder selects a struct member, so it is not combined
+// with a constant element operand.
+TEST_F(CombineAccessChainsTest, DontCombineStructMemberWithConstantElement) {
+  const std::string text = R"(
+; CHECK: [[int2:%\w+]] = OpConstant {{%\w+}} 2
+; CHECK: [[gep:%\w+]] = OpAccessChain
+; CHECK: OpPtrAccessChain {{%\w+}} [[gep]] [[int2]]
+OpCapability Shader
+OpCapability VariablePointers
+OpExtension "SPV_KHR_variable_pointers"
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %main "main"
+OpExecutionMode %main OriginUpperLeft
+%void = OpTypeVoid
+%uint = OpTypeInt 32 0
+%uint_0 = OpConstant %uint 0
+%uint_2 = OpConstant %uint 2
+%struct = OpTypeStruct %uint %uint
+%ptr_Workgroup_uint = OpTypePointer Workgroup %uint
+%ptr_Workgroup_struct = OpTypePointer Workgroup %struct
+%wg_var = OpVariable %ptr_Workgroup_struct Workgroup
+%void_func = OpTypeFunction %void
+%main = OpFunction %void None %void_func
+%1 = OpLabel
+%gep = OpAccessChain %ptr_Workgroup_uint %wg_var %uint_0
+%ptr_gep = OpPtrAccessChain %ptr_Workgroup_uint %gep %uint_2
+OpReturn
+OpFunctionEnd
+)";
+
+  SinglePassRunAndMatch<CombineAccessChains>(text, true);
+}
+
+// The last index of the feeder selects a struct member, so it is not combined
+// with a non-constant element operand.
+TEST_F(CombineAccessChainsTest, DontCombineStructMemberWithNonConstantElement) {
+  const std::string text = R"(
+; CHECK: [[ld:%\w+]] = OpLoad
+; CHECK: [[gep:%\w+]] = OpAccessChain
+; CHECK: OpPtrAccessChain {{%\w+}} [[gep]] [[ld]]
+OpCapability Shader
+OpCapability VariablePointers
+OpExtension "SPV_KHR_variable_pointers"
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %main "main"
+OpExecutionMode %main OriginUpperLeft
+%void = OpTypeVoid
+%uint = OpTypeInt 32 0
+%uint_0 = OpConstant %uint 0
+%struct = OpTypeStruct %uint %uint
+%ptr_Workgroup_uint = OpTypePointer Workgroup %uint
+%ptr_Function_uint = OpTypePointer Function %uint
+%ptr_Workgroup_struct = OpTypePointer Workgroup %struct
+%wg_var = OpVariable %ptr_Workgroup_struct Workgroup
+%void_func = OpTypeFunction %void
+%main = OpFunction %void None %void_func
+%1 = OpLabel
+%func_var = OpVariable %ptr_Function_uint Function
+%ld = OpLoad %uint %func_var
+%gep = OpAccessChain %ptr_Workgroup_uint %wg_var %uint_0
+%ptr_gep = OpPtrAccessChain %ptr_Workgroup_uint %gep %ld
 OpReturn
 OpFunctionEnd
 )";
