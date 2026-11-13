@@ -101,7 +101,8 @@ uint32_t CombineAccessChains::GetArrayStride(const Instruction* inst) {
   return array_stride;
 }
 
-const analysis::Type* CombineAccessChains::GetIndexedType(Instruction* inst) {
+const analysis::Type* CombineAccessChains::GetTypeIndexedByLastIndex(
+    Instruction* inst) {
   analysis::DefUseManager* def_use_mgr = context()->get_def_use_mgr();
   analysis::TypeManager* type_mgr = context()->get_type_mgr();
 
@@ -116,7 +117,7 @@ const analysis::Type* CombineAccessChains::GetIndexedType(Instruction* inst) {
     // resolution.
     starting_index = 2;
   }
-  for (uint32_t i = starting_index; i < inst->NumInOperands(); ++i) {
+  for (uint32_t i = starting_index; i < inst->NumInOperands() - 1; ++i) {
     Instruction* index_inst =
         def_use_mgr->GetDef(inst->GetSingleWordInOperand(i));
     const analysis::Constant* index_constant =
@@ -133,31 +134,33 @@ const analysis::Type* CombineAccessChains::GetIndexedType(Instruction* inst) {
   return type;
 }
 
+bool CombineAccessChains::CanCombineLastIndexWithElement(
+    Instruction* ptr_input) {
+  // The only index of |ptr_input| is its own element operand.
+  if (IsPtrAccessChain(ptr_input->opcode()) &&
+      ptr_input->NumInOperands() == 2) {
+    return true;
+  }
+  // Adding the element index to an index into a struct is generally not valid.
+  // The element index is treating the pointer like an array with equal step
+  // for each index. For a struct the offset from one member to the next depends
+  // on the types of the members.
+  return !GetTypeIndexedByLastIndex(ptr_input)->AsStruct();
+}
+
 Pass::Status CombineAccessChains::CombineIndices(
     Instruction* ptr_input, Instruction* inst,
     std::vector<Operand>* new_operands) {
   assert(IsPtrAccessChain(inst->opcode()));
-  analysis::DefUseManager* def_use_mgr = context()->get_def_use_mgr();
-  analysis::ConstantManager* constant_mgr = context()->get_constant_mgr();
+  if (!CanCombineLastIndexWithElement(ptr_input)) {
+    return Status::SuccessWithoutChange;
+  }
 
+  analysis::DefUseManager* def_use_mgr = context()->get_def_use_mgr();
   Instruction* last_index_inst = def_use_mgr->GetDef(
       ptr_input->GetSingleWordInOperand(ptr_input->NumInOperands() - 1));
   Instruction* element_inst =
       def_use_mgr->GetDef(inst->GetSingleWordInOperand(1));
-
-  // Combine the last index of the AccessChain (|ptr_inst|) with the element
-  // operand of the PtrAccessChain (|inst|).
-  const bool combining_element_operands =
-      IsPtrAccessChain(ptr_input->opcode()) && ptr_input->NumInOperands() == 2;
-  const bool combining_constants =
-      constant_mgr->GetConstantFromInst(last_index_inst) &&
-      constant_mgr->GetConstantFromInst(element_inst);
-  if (!combining_constants && !combining_element_operands &&
-      GetIndexedType(ptr_input)->AsStruct()) {
-    // Indexing into structs must be constant, so bail out here.
-    return Status::SuccessWithoutChange;
-  }
-
   InstructionBuilder builder(
       context(), inst,
       IRContext::kAnalysisDefUse | IRContext::kAnalysisInstrToBlockMapping);
