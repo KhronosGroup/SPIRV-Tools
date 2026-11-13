@@ -172,7 +172,7 @@ spv_result_t ValidateExtInstFloatEncoding(ValidationState_t& _,
                                           spv_ext_inst_type_t ext_inst_type) {
   const bool bfloat16_arithmetic_allowed =
       ext_inst_type == SPV_EXT_INST_TYPE_OPENCL_STD &&
-      _.HasCapability(spv::Capability::BFloat16ArithmeticINTEL);
+      _.HasCapability(spv::Capability::BFloat16ArithmeticEXT);
   auto check = [&](uint32_t type_id) -> spv_result_t {
     if (!bfloat16_arithmetic_allowed && _.IsBfloat16Type(type_id)) {
       return _.diag(SPV_ERROR_INVALID_DATA, inst)

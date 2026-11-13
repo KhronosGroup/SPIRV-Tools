@@ -62,7 +62,7 @@ bool IsOCPMicroscalingScalarOrCompositeType(ValidationState_t& _,
 }
 
 // Returns true for the arithmetic and relational/logical instructions that
-// the BFloat16ArithmeticINTEL capability (SPV_INTEL_bfloat16_arithmetic)
+// the BFloat16ArithmeticEXT capability (SPV_EXT_bfloat16_arithmetic)
 // permits to operate on the BFloat16 type.
 bool IsBfloat16ArithmeticInstruction(spv::Op opcode) {
   switch (opcode) {
@@ -105,7 +105,7 @@ spv_result_t CheckInvalidScalarOrCompositeType(ValidationState_t& _,
                                                uint32_t type_id) {
   const spv::Op opcode = inst->opcode();
   const bool bfloat16_arithmetic_allowed =
-      _.HasCapability(spv::Capability::BFloat16ArithmeticINTEL) &&
+      _.HasCapability(spv::Capability::BFloat16ArithmeticEXT) &&
       IsBfloat16ArithmeticInstruction(opcode);
   if (!bfloat16_arithmetic_allowed &&
       IsBfloat16ScalarOrCompositeType(_, type_id)) {
@@ -257,7 +257,7 @@ spv_result_t InvalidTypePass(ValidationState_t& _, const Instruction* inst) {
     case spv::Op::OpSignBitSet: {
       const uint32_t operand_type = _.GetOperandTypeId(inst, 2);
       const bool bfloat16_arithmetic_allowed =
-          _.HasCapability(spv::Capability::BFloat16ArithmeticINTEL) &&
+          _.HasCapability(spv::Capability::BFloat16ArithmeticEXT) &&
           IsBfloat16ArithmeticInstruction(opcode);
       if (!bfloat16_arithmetic_allowed && _.IsBfloat16Type(operand_type)) {
         return _.diag(SPV_ERROR_INVALID_DATA, inst)

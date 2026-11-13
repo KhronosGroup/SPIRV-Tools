@@ -251,9 +251,9 @@ std::string GenerateBFloatArithmeticCode(const std::string& main_body) {
       R"(
 OpCapability Shader
 OpCapability BFloat16TypeKHR
-OpCapability BFloat16ArithmeticINTEL
+OpCapability BFloat16ArithmeticEXT
 OpExtension "SPV_KHR_bfloat16"
-OpExtension "SPV_INTEL_bfloat16_arithmetic"
+OpExtension "SPV_EXT_bfloat16_arithmetic"
 %1 = OpExtInstImport "GLSL.std.450"
 %2 = OpExtInstImport "OpenCL.std"
 OpMemoryModel Logical GLSL450
