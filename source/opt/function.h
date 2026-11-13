@@ -20,6 +20,7 @@
 #include <iterator>
 #include <memory>
 #include <string>
+#include <unordered_map>
 #include <unordered_set>
 #include <utility>
 #include <vector>
@@ -71,6 +72,13 @@ class Function {
   // Move basic block with |id| to the position after |ip|. Both have to be
   // contained in this function.
   inline void MoveBasicBlockToAfter(uint32_t id, BasicBlock* ip);
+
+  // Moves the basic blocks whose ids are in |ids| so they are laid out just
+  // before |position|, in the order given by |ids|. The relative order of the
+  // other blocks is unchanged. All blocks have to be in this function and
+  // |position| must not be one of the moved blocks.
+  inline void MoveBasicBlocksBefore(const std::vector<uint32_t>& ids,
+                                    BasicBlock* position);
 
   // Delete all basic blocks that contain no instructions.
   inline void RemoveEmptyBlocks();
@@ -266,6 +274,41 @@ inline void Function::MoveBasicBlockToAfter(uint32_t id, BasicBlock* ip) {
          "Both blocks have to be in the same function.");
 
   InsertBasicBlockAfter(std::move(block_to_move), ip);
+}
+
+inline void Function::MoveBasicBlocksBefore(const std::vector<uint32_t>& ids,
+                                            BasicBlock* position) {
+  std::unordered_map<uint32_t, std::unique_ptr<BasicBlock>> moved;
+  for (uint32_t id : ids) moved.emplace(id, nullptr);
+  assert(moved.count(position->id()) == 0 &&
+         "|position| cannot be one of the moved blocks.");
+
+  auto kept_end = blocks_.begin();
+  for (auto& block : blocks_) {
+    auto it = moved.find(block->id());
+    if (it != moved.end()) {
+      it->second = std::move(block);
+    } else {
+      *kept_end++ = std::move(block);
+    }
+  }
+  blocks_.erase(kept_end, blocks_.end());
+
+  auto pos = std::find_if(blocks_.begin(), blocks_.end(),
+                          [position](const std::unique_ptr<BasicBlock>& bb) {
+                            return bb.get() == position;
+                          });
+  assert(pos != blocks_.end() && "|position| is not in this function.");
+
+  std::vector<std::unique_ptr<BasicBlock>> to_insert;
+  to_insert.reserve(ids.size());
+  for (uint32_t id : ids) {
+    std::unique_ptr<BasicBlock>& block = moved[id];
+    assert(block && "Each id has to name a distinct block in this function.");
+    to_insert.push_back(std::move(block));
+  }
+  blocks_.insert(pos, std::make_move_iterator(to_insert.begin()),
+                 std::make_move_iterator(to_insert.end()));
 }
 
 inline void Function::RemoveEmptyBlocks() {
