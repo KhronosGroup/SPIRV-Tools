@@ -62,8 +62,10 @@ class CombineAccessChains : public Pass {
   Status CreateNewInputOperands(Instruction* ptr_input, Instruction* inst,
                                 std::vector<Operand>* new_operands);
 
-  // Combines the last index of |ptr_input| with the element operand of |inst|.
-  // Adds the combined operand to |new_operands|.
+  // Adds an OpIAdd of the last index of |ptr_input| and the element operand of
+  // |inst| before |inst|, and appends its id to |new_operands|. |inst| must be
+  // a pointer access chain. Returns SuccessWithoutChange if the two cannot be
+  // combined.
   Status CombineIndices(Instruction* ptr_input, Instruction* inst,
                         std::vector<Operand>* new_operands);
 

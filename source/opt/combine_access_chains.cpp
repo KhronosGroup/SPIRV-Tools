@@ -136,52 +136,38 @@ const analysis::Type* CombineAccessChains::GetIndexedType(Instruction* inst) {
 Pass::Status CombineAccessChains::CombineIndices(
     Instruction* ptr_input, Instruction* inst,
     std::vector<Operand>* new_operands) {
+  assert(IsPtrAccessChain(inst->opcode()));
   analysis::DefUseManager* def_use_mgr = context()->get_def_use_mgr();
   analysis::ConstantManager* constant_mgr = context()->get_constant_mgr();
 
   Instruction* last_index_inst = def_use_mgr->GetDef(
       ptr_input->GetSingleWordInOperand(ptr_input->NumInOperands() - 1));
-  const analysis::Constant* last_index_constant =
-      constant_mgr->GetConstantFromInst(last_index_inst);
-
   Instruction* element_inst =
       def_use_mgr->GetDef(inst->GetSingleWordInOperand(1));
-  const analysis::Constant* element_constant =
-      constant_mgr->GetConstantFromInst(element_inst);
 
   // Combine the last index of the AccessChain (|ptr_inst|) with the element
   // operand of the PtrAccessChain (|inst|).
   const bool combining_element_operands =
-      IsPtrAccessChain(inst->opcode()) &&
       IsPtrAccessChain(ptr_input->opcode()) && ptr_input->NumInOperands() == 2;
-  uint32_t new_value_id = 0;
-  const analysis::Type* type = GetIndexedType(ptr_input);
-  if (last_index_constant && element_constant) {
-    // Combine the constants.
-    uint32_t new_value = GetConstantValue(last_index_constant) +
-                         GetConstantValue(element_constant);
-    const analysis::Constant* new_value_constant =
-        constant_mgr->GetConstant(last_index_constant->type(), {new_value});
-    if (!new_value_constant) return Status::Failure;
-    Instruction* new_value_inst =
-        constant_mgr->GetDefiningInstruction(new_value_constant);
-    if (!new_value_inst) return Status::Failure;
-    new_value_id = new_value_inst->result_id();
-  } else if (!type->AsStruct() || combining_element_operands) {
-    // Generate an addition of the two indices.
-    InstructionBuilder builder(
-        context(), inst,
-        IRContext::kAnalysisDefUse | IRContext::kAnalysisInstrToBlockMapping);
-    Instruction* addition = builder.AddIAdd(last_index_inst->type_id(),
-                                            last_index_inst->result_id(),
-                                            element_inst->result_id());
-    if (!addition) return Status::Failure;
-    new_value_id = addition->result_id();
-  } else {
+  const bool combining_constants =
+      constant_mgr->GetConstantFromInst(last_index_inst) &&
+      constant_mgr->GetConstantFromInst(element_inst);
+  if (!combining_constants && !combining_element_operands &&
+      GetIndexedType(ptr_input)->AsStruct()) {
     // Indexing into structs must be constant, so bail out here.
     return Status::SuccessWithoutChange;
   }
-  new_operands->push_back({SPV_OPERAND_TYPE_ID, {new_value_id}});
+
+  InstructionBuilder builder(
+      context(), inst,
+      IRContext::kAnalysisDefUse | IRContext::kAnalysisInstrToBlockMapping);
+  Instruction* addition =
+      builder.AddIAdd(last_index_inst->type_id(), last_index_inst->result_id(),
+                      element_inst->result_id());
+  if (!addition) {
+    return Status::Failure;
+  }
+  new_operands->push_back({SPV_OPERAND_TYPE_ID, {addition->result_id()}});
   return Status::SuccessWithChange;
 }
 
