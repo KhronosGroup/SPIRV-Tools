@@ -71,14 +71,14 @@ vars = {
 
   # Commits for SPIRV-Tools dependencies
 
-  'abseil_revision': 'd522178b54087d2c3855484c1899ce99ad278169',
-  'effcee_revision': 'f8e8a164822d4f65e757bff66bc00e1567959aa0',
-  'googletest_revision': 'b66cffcd5f5d6ee34a4f96d57bf016d9a22cb023',
+  'abseil_revision': '86be10dfb67e80788634240aa32f6edd9945e8d0',
+  'effcee_revision': '05be15d8a2b985a3ffee004a5e1fcea8a0528d0a',
+  'googletest_revision': '2910168b8bc15b4497ef10f4ff5a1155973fc499',
   # Use a recent protobuf, which can depend on abseil
   'protobuf_revision': '35cd01f9fe9afbeea38cc7b979a3b6bfcde82c03',
   're2_revision': '2da0056814cf180480a19f5cf811e7e1c054bf6d',
   'spirv_headers_revision': '6efe5ae6b7c6ad29da3f2cc3f164b9c3d72b78b1',
-  'mimalloc_revision': '31d034d94cdb8e22f7d7ed55967f581a2d6e831d',
+  'mimalloc_revision': 'dcd6f09b1d878e06d62949dabea3417eec98c89a',
 
   # SPIRV-Tools standalone GN-only dependencies
   'chromium_testing_version': '555e7546214837372345fef14e25eed42ff2ea07',
