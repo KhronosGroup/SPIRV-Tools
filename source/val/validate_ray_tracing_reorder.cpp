@@ -137,8 +137,7 @@ spv_result_t ValidateHitObjectInstructionCommonParameters(
 
   if (isValidId(miss_index)) {
     const uint32_t miss_index_id = _.GetOperandTypeId(inst, miss_index);
-    if (!_.IsUnsignedIntScalarType(miss_index_id) ||
-        _.GetBitWidth(miss_index_id) != 32) {
+    if (!_.IsIntScalarType(miss_index_id, 32)) {
       return _.diag(SPV_ERROR_INVALID_DATA, inst)
              << "Miss Index must be a 32-bit int scalar";
     }
@@ -146,8 +145,7 @@ spv_result_t ValidateHitObjectInstructionCommonParameters(
 
   if (isValidId(cull_mask_index)) {
     const uint32_t cull_mask_id = _.GetOperandTypeId(inst, cull_mask_index);
-    if (!_.IsUnsignedIntScalarType(cull_mask_id) ||
-        _.GetBitWidth(cull_mask_id) != 32) {
+    if (!_.IsIntScalarType(cull_mask_id, 32)) {
       return _.diag(SPV_ERROR_INVALID_DATA, inst)
              << "Cull mask must be a 32-bit int scalar";
     }
@@ -164,20 +162,18 @@ spv_result_t ValidateHitObjectInstructionCommonParameters(
 
   if (isValidId(sbt_offset_index)) {
     const uint32_t sbt_offset_id = _.GetOperandTypeId(inst, sbt_offset_index);
-    if (!_.IsUnsignedIntScalarType(sbt_offset_id) ||
-        _.GetBitWidth(sbt_offset_id) != 32) {
+    if (!_.IsIntScalarType(sbt_offset_id, 32)) {
       return _.diag(SPV_ERROR_INVALID_DATA, inst)
-             << "SBT Offset must be a 32-bit unsigned int scalar";
+             << "SBT Offset must be a 32-bit int scalar";
     }
   }
 
   if (isValidId(sbt_stride_index)) {
     const uint32_t sbt_stride_index_id =
         _.GetOperandTypeId(inst, sbt_stride_index);
-    if (!_.IsUnsignedIntScalarType(sbt_stride_index_id) ||
-        _.GetBitWidth(sbt_stride_index_id) != 32) {
+    if (!_.IsIntScalarType(sbt_stride_index_id, 32)) {
       return _.diag(SPV_ERROR_INVALID_DATA, inst)
-             << "SBT Stride must be a 32-bit unsigned int scalar";
+             << "SBT Stride must be a 32-bit int scalar";
     }
   }
 
