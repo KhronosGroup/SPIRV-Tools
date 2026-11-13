@@ -2817,10 +2817,11 @@ spv_result_t ValidateCooperativeMatrixLoadStoreNV(ValidationState_t& _,
       (inst->opcode() == spv::Op::OpCooperativeMatrixLoadNV) ? 3u : 2u;
   const auto stride_id = inst->GetOperandAs<uint32_t>(stride_index);
   const auto stride = _.FindDef(stride_id);
-  if (!stride || !_.IsIntScalarType(stride->type_id())) {
+  if (!stride || !_.IsIntScalarType(stride->type_id()) ||
+      _.GetBitWidth(stride->type_id()) != 32) {
     return _.diag(SPV_ERROR_INVALID_ID, inst)
            << "Stride operand <id> " << _.getIdName(stride_id)
-           << " must be a scalar integer type.";
+           << " must be a 32-bit scalar integer type.";
   }
 
   const auto colmajor_index =
@@ -2968,10 +2969,11 @@ spv_result_t ValidateCooperativeMatrixLoadStoreKHR(ValidationState_t& _,
   if (inst->operands().size() > stride_index) {
     const auto stride_id = inst->GetOperandAs<uint32_t>(stride_index);
     const auto stride_inst = _.FindDef(stride_id);
-    if (!stride_inst || !_.IsIntScalarType(stride_inst->type_id())) {
+    if (!stride_inst || !_.IsIntScalarType(stride_inst->type_id()) ||
+        _.GetBitWidth(stride_inst->type_id()) != 32) {
       return _.diag(SPV_ERROR_INVALID_ID, inst)
              << "Stride operand <id> " << _.getIdName(stride_id)
-             << " must be a scalar integer type.";
+             << " must be a 32-bit scalar integer type.";
     }
     // Check SPV_ARM_cooperative_matrix_layouts constraints
     if (layout_requires_constant_stride &&

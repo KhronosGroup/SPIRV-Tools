@@ -17,6 +17,7 @@
 // Validation tests for memory/storage
 
 #include <string>
+#include <tuple>
 #include <vector>
 
 #include "gmock/gmock.h"
@@ -2883,6 +2884,99 @@ TEST_F(ValidateMemory, CoopMatLoadMemoryAccessFail) {
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("MakePointerAvailableKHR cannot be used with OpLoad"));
 }
+
+using ValidateCoopMatStride = spvtest::ValidateBase<
+    std::tuple<std::string, bool, std::string, bool, spv_target_env>>;
+
+TEST_P(ValidateCoopMatStride, LoadStoreStrideType) {
+  const auto& suffix = std::get<0>(GetParam());
+  const bool load = std::get<1>(GetParam());
+  const auto& stride_type = std::get<2>(GetParam());
+  const bool dynamic = std::get<3>(GetParam());
+  const auto target = std::get<4>(GetParam());
+  const bool khr = suffix == "KHR";
+  const std::string opcode =
+      std::string("OpCooperativeMatrix") + (load ? "Load" : "Store") + suffix;
+  std::string body = R"(
+OpCapability Shader
+OpCapability Int8
+OpCapability Int16
+OpCapability Int64
+OpCapability VulkanMemoryModel
+OpCapability CooperativeMatrix)" +
+                     suffix + R"(
+OpExtension "SPV_)" + suffix +
+                     R"(_cooperative_matrix"
+OpExtension "SPV_KHR_vulkan_memory_model"
+OpMemoryModel Logical Vulkan
+OpEntryPoint GLCompute %main "main"
+OpExecutionMode %main LocalSize 32 1 1
+%void = OpTypeVoid
+%func = OpTypeFunction %void
+%bool = OpTypeBool
+%false = OpConstantFalse %bool
+%bool_stride = OpConstantTrue %bool
+%f32 = OpTypeFloat 32
+%f32_stride = OpConstant %f32 8
+%u8 = OpTypeInt 8 0
+%i8 = OpTypeInt 8 1
+%u16 = OpTypeInt 16 0
+%i16 = OpTypeInt 16 1
+%u32 = OpTypeInt 32 0
+%i32 = OpTypeInt 32 1
+%u64 = OpTypeInt 64 0
+%i64 = OpTypeInt 64 1
+%u8_stride = OpConstant %u8 8
+%i8_stride = OpConstant %i8 8
+%u16_stride = OpConstant %u16 8
+%i16_stride = OpConstant %i16 8
+%u32_stride = OpConstant %u32 8
+%i32_stride = OpConstant %i32 8
+%u64_stride = OpConstant %u64 8
+%i64_stride = OpConstant %i64 8
+%v2u32 = OpTypeVector %u32 2
+%v2u32_stride = OpConstantComposite %v2u32 %u32_stride %u32_stride
+%subgroup = OpConstant %u32 3
+%use = OpConstant %u32 0
+%matrix = OpTypeCooperativeMatrix)" +
+                     suffix + " %f32 %subgroup %u32_stride %u32_stride" +
+                     (khr ? " %use" : "") + R"(
+%object = OpConstantComposite %matrix %f32_stride
+%ptr = OpTypePointer Workgroup %f32
+%var = OpVariable %ptr Workgroup
+%main = OpFunction %void None %func
+%entry = OpLabel
+)";
+  std::string stride = "%" + stride_type + "_stride";
+  if (dynamic) {
+    body +=
+        "%dynamic_stride = OpCopyObject %" + stride_type + " " + stride + "\n";
+    stride = "%dynamic_stride";
+  }
+  body += load ? "%loaded = " + opcode + " %matrix %var "
+               : opcode + " %var %object ";
+  body += khr ? "%use " + stride : stride + " %false";
+  body += "\nOpReturn\nOpFunctionEnd\n";
+
+  CompileSuccessfully(body.c_str(), target);
+  if (stride_type == "u32" || stride_type == "i32") {
+    EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(target));
+  } else {
+    EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(target));
+    EXPECT_THAT(getDiagnosticString(), HasSubstr("Stride operand <id>"));
+    EXPECT_THAT(getDiagnosticString(),
+                HasSubstr("must be a 32-bit scalar integer type"));
+    EXPECT_THAT(getDiagnosticString(), HasSubstr(opcode));
+  }
+}
+
+INSTANTIATE_TEST_SUITE_P(CooperativeMatrix, ValidateCoopMatStride,
+                         Combine(Values("KHR", "NV"), Values(true, false),
+                                 Values("u8", "i8", "u16", "i16", "u32", "i32",
+                                        "u64", "i64", "f32", "bool", "v2u32"),
+                                 Values(false, true),
+                                 Values(SPV_ENV_UNIVERSAL_1_3,
+                                        SPV_ENV_VULKAN_1_1)));
 
 TEST_F(ValidateMemory, CoopMatInvalidStorageClassFail) {
   const std::string body =
