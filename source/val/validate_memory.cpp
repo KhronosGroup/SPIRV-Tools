@@ -361,7 +361,8 @@ bool DoesStructContainRTA(const ValidationState_t& _, const Instruction* inst) {
 }
 
 spv_result_t CheckMemoryAccess(ValidationState_t& _, const Instruction* inst,
-                               uint32_t index) {
+                               uint32_t index, bool validate_dst = true,
+                               bool validate_src = true) {
   Instruction* dst_pointer_type = nullptr;
   Instruction* src_pointer_type = nullptr;  // only used for OpCopyMemory
   std::tie(dst_pointer_type, src_pointer_type) = GetPointerTypes(_, inst);
@@ -431,7 +432,7 @@ spv_result_t CheckMemoryAccess(ValidationState_t& _, const Instruction* inst,
   }
 
   if (mask & uint32_t(spv::MemoryAccessMask::NonPrivatePointerKHR)) {
-    if (dst_sc != spv::StorageClass::Uniform &&
+    if (validate_dst && dst_sc != spv::StorageClass::Uniform &&
         dst_sc != spv::StorageClass::Workgroup &&
         dst_sc != spv::StorageClass::CrossWorkgroup &&
         dst_sc != spv::StorageClass::Generic &&
@@ -443,7 +444,7 @@ spv_result_t CheckMemoryAccess(ValidationState_t& _, const Instruction* inst,
              << "Workgroup, CrossWorkgroup, Generic, Image or StorageBuffer "
              << "storage classes.";
     }
-    if (src_sc != spv::StorageClass::Max &&
+    if (validate_src && src_sc != spv::StorageClass::Max &&
         src_sc != spv::StorageClass::Uniform &&
         src_sc != spv::StorageClass::Workgroup &&
         src_sc != spv::StorageClass::CrossWorkgroup &&
@@ -1799,15 +1800,21 @@ spv_result_t ValidateCopyMemoryMemoryAccess(ValidationState_t& _,
   const uint32_t first_access_index =
       inst->opcode() == spv::Op::OpCopyMemory ? 2 : 3;
   if (inst->operands().size() > first_access_index) {
-    if (auto error = CheckMemoryAccess(_, inst, first_access_index))
-      return error;
-
     const auto first_access = inst->GetOperandAs<uint32_t>(first_access_index);
     const uint32_t second_access_index =
         first_access_index + MemoryAccessNumWords(first_access);
-    if (inst->operands().size() > second_access_index) {
+    bool split_masks = inst->operands().size() > second_access_index;
+
+    // If the SPIR-V provides two memory masks, we need to validate each
+    // argument in isolation. Otherwise, the single mask applies to both.
+    if (auto error =
+            CheckMemoryAccess(_, inst, first_access_index, true, !split_masks))
+      return error;
+
+    if (split_masks) {
       if (_.features().copy_memory_permits_two_memory_accesses) {
-        if (auto error = CheckMemoryAccess(_, inst, second_access_index))
+        if (auto error =
+                CheckMemoryAccess(_, inst, second_access_index, false, true))
           return error;
 
         // In the two-access form in SPIR-V 1.4 and later:
