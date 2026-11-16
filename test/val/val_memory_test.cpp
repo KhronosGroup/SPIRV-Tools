@@ -6176,6 +6176,38 @@ OpMemberDecorate %block 0 Offset 0
   EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
 }
 
+TEST_F(ValidateMemory, SmallStoragePushConstantPointerToHalf) {
+  // The block holds a 64-bit pointer, not a 16-bit value, so it doesn't need
+  // StoragePushConstant16.
+  const std::string spirv = R"(
+OpCapability Shader
+OpCapability PhysicalStorageBufferAddresses
+OpCapability StorageBuffer16BitAccess
+OpExtension "SPV_KHR_physical_storage_buffer"
+OpExtension "SPV_KHR_16bit_storage"
+OpMemoryModel PhysicalStorageBuffer64 GLSL450
+OpEntryPoint GLCompute %main "main" %var
+OpExecutionMode %main LocalSize 1 1 1
+OpDecorate %block Block
+OpMemberDecorate %block 0 Offset 0
+%void = OpTypeVoid
+%void_fn = OpTypeFunction %void
+%half = OpTypeFloat 16
+%half4 = OpTypeVector %half 4
+%ptr_psb_half4 = OpTypePointer PhysicalStorageBuffer %half4
+%block = OpTypeStruct %ptr_psb_half4
+%ptr_block = OpTypePointer PushConstant %block
+%var = OpVariable %ptr_block PushConstant
+%main = OpFunction %void None %void_fn
+%entry = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_VULKAN_1_2);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_2));
+}
+
 TEST_F(ValidateMemory, VulkanStorageBufferNotAStruct) {
   const std::string spirv = R"(
 OpCapability Shader

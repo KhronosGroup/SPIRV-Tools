@@ -2360,7 +2360,8 @@ bool ValidationState_t::ContainsSizedIntOrFloatType(uint32_t id, spv::Op type,
     }
     return false;
   };
-  return ContainsType(id, f);
+  // A pointer to a sized type doesn't contain that type.
+  return ContainsType(id, f, /* traverse_all_types = */ false);
 }
 
 bool ValidationState_t::ContainsLimitedUseIntOrFloatType(uint32_t id) const {
@@ -2385,7 +2386,8 @@ bool ValidationState_t::ContainsLimitedUseIntOrFloatType(uint32_t id) const {
     }
     return false;
   };
-  return ContainsType(id, f);
+  // A pointer to a limited use type doesn't contain that type.
+  return ContainsType(id, f, /* traverse_all_types = */ false);
 }
 
 bool ValidationState_t::ContainsRuntimeArray(uint32_t id) const {
