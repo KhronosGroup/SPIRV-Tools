@@ -281,10 +281,58 @@ spv_result_t ValidateExecuteCallable(ValidationState_t& _,
   return SPV_SUCCESS;
 }
 
+spv_result_t ValidateInstanceAtLevel(ValidationState_t& _,
+                                     const Instruction* inst) {
+  _.function(inst->function()->id())
+      ->RegisterExecutionModelLimitation(
+          [](spv::ExecutionModel model, std::string* message) {
+            if (model != spv::ExecutionModel::IntersectionKHR &&
+                model != spv::ExecutionModel::AnyHitKHR &&
+                model != spv::ExecutionModel::ClosestHitKHR) {
+              if (message) {
+                *message =
+                    "Per-level instance instructions require "
+                    "IntersectionKHR, AnyHitKHR or ClosestHitKHR";
+              }
+              return false;
+            }
+            return true;
+          });
+
+  if (!_.IsIntScalarType(_.GetOperandTypeId(inst, 2), 32)) {
+    return _.diag(SPV_ERROR_INVALID_DATA, inst)
+           << "Level must be a 32-bit int scalar";
+  }
+
+  if (inst->opcode() == spv::Op::OpGetInstanceCustomIndexAtLevelAMDX ||
+      inst->opcode() == spv::Op::OpGetInstanceIdAtLevelAMDX) {
+    if (!_.IsIntScalarType(inst->type_id(), 32)) {
+      return _.diag(SPV_ERROR_INVALID_DATA, inst)
+             << "Result Type must be a 32-bit int scalar";
+    }
+  } else {
+    uint32_t rows = 0, columns = 0, column_type = 0, component_type = 0;
+    if (!_.GetMatrixTypeInfo(inst->type_id(), &rows, &columns, &column_type,
+                             &component_type) ||
+        rows != 3 || columns != 4 || !_.IsFloatScalarType(component_type, 32)) {
+      return _.diag(SPV_ERROR_INVALID_DATA, inst)
+             << "Result Type must be a matrix with four columns of "
+                "three 32-bit floats";
+    }
+  }
+
+  return SPV_SUCCESS;
+}
+
 spv_result_t RayTracingPass(ValidationState_t& _, const Instruction* inst) {
   const spv::Op opcode = inst->opcode();
 
   switch (opcode) {
+    case spv::Op::OpGetInstanceCustomIndexAtLevelAMDX:
+    case spv::Op::OpGetInstanceIdAtLevelAMDX:
+    case spv::Op::OpGetObjectToWorldAtLevelAMDX:
+    case spv::Op::OpGetWorldToObjectAtLevelAMDX:
+      return ValidateInstanceAtLevel(_, inst);
     case spv::Op::OpTraceRayKHR:
       return ValidateTraceRay(_, inst);
     case spv::Op::OpReportIntersectionKHR:

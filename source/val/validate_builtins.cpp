@@ -207,6 +207,7 @@ bool IsExecutionModelValidForRtBuiltIn(spv::BuiltIn builtin,
         return true;
       }
       break;
+    case spv::BuiltIn::HitInstanceLevelAMDX:
     case spv::BuiltIn::InstanceCustomIndexKHR:
     case spv::BuiltIn::InstanceId:
     case spv::BuiltIn::RayGeometryIndexKHR:
@@ -4871,6 +4872,7 @@ spv_result_t BuiltInsValidator::ValidateRayTracingBuiltinsAtDefinition(
         }
         break;
       case spv::BuiltIn::HitKindKHR:
+      case spv::BuiltIn::HitInstanceLevelAMDX:
       case spv::BuiltIn::InstanceCustomIndexKHR:
       case spv::BuiltIn::InstanceId:
       case spv::BuiltIn::RayGeometryIndexKHR:
@@ -5431,6 +5433,7 @@ spv_result_t BuiltInsValidator::ValidateSingleBuiltInAtDefinitionVulkan(
     case spv::BuiltIn::ObjectRayDirectionKHR:   // alias ObjectRayDirectionNV
     case spv::BuiltIn::RayTminKHR:              // alias RayTminNV
     case spv::BuiltIn::RayTmaxKHR:              // alias RayTmaxNV
+    case spv::BuiltIn::HitInstanceLevelAMDX:
     case spv::BuiltIn::InstanceCustomIndexKHR:  // alias InstanceCustomIndexNV
     case spv::BuiltIn::ObjectToWorldKHR:        // alias ObjectToWorldNV
     case spv::BuiltIn::WorldToObjectKHR:        // alias WorldToObjectNV

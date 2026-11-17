@@ -2247,6 +2247,61 @@ INSTANTIATE_TEST_SUITE_P(
                               "needs to be a 32-bit int scalar",
                               "is not an int scalar"))));
 
+INSTANTIATE_TEST_SUITE_P(
+    HitInstanceLevelAMDXSuccess,
+    ValidateGenericCombineBuiltInExecutionModelDataTypeCapabilityExtensionResult,
+    Combine(
+        Values(SPV_ENV_VULKAN_1_2), Values("HitInstanceLevelAMDX"),
+        Values("IntersectionKHR", "AnyHitKHR", "ClosestHitKHR"),
+        Values("Input"), Values("%u32", "%i32"),
+        Values("OpCapability RayTracingMultiLevelAccelerationStructureAMDX\n"),
+        Values("OpExtension \"SPV_KHR_ray_tracing\"\n"
+               "OpExtension \"SPV_AMDX_multi_level_acceleration_structure\"\n"),
+        Values(nullptr), Values(TestResult())));
+
+INSTANTIATE_TEST_SUITE_P(
+    HitInstanceLevelAMDXInvalidExecutionModel,
+    ValidateGenericCombineBuiltInExecutionModelDataTypeCapabilityExtensionResult,
+    Combine(
+        Values(SPV_ENV_VULKAN_1_2), Values("HitInstanceLevelAMDX"),
+        Values("RayGenerationKHR", "MissKHR", "CallableKHR", "GLCompute"),
+        Values("Input"), Values("%u32"),
+        Values("OpCapability RayTracingMultiLevelAccelerationStructureAMDX\n"),
+        Values("OpExtension \"SPV_KHR_ray_tracing\"\n"
+               "OpExtension \"SPV_AMDX_multi_level_acceleration_structure\"\n"),
+        Values(nullptr),
+        Values(TestResult(SPV_ERROR_INVALID_DATA,
+                          "Vulkan spec does not allow BuiltIn",
+                          "to be used with the execution model"))));
+
+INSTANTIATE_TEST_SUITE_P(
+    HitInstanceLevelAMDXInvalidStorageClass,
+    ValidateGenericCombineBuiltInExecutionModelDataTypeCapabilityExtensionResult,
+    Combine(
+        Values(SPV_ENV_VULKAN_1_2), Values("HitInstanceLevelAMDX"),
+        Values("IntersectionKHR", "AnyHitKHR", "ClosestHitKHR"),
+        Values("Output"), Values("%u32"),
+        Values("OpCapability RayTracingMultiLevelAccelerationStructureAMDX\n"),
+        Values("OpExtension \"SPV_KHR_ray_tracing\"\n"
+               "OpExtension \"SPV_AMDX_multi_level_acceleration_structure\"\n"),
+        Values(nullptr),
+        Values(TestResult(SPV_ERROR_INVALID_DATA, "Vulkan spec allows",
+                          "used for variables with Input storage class"))));
+
+INSTANTIATE_TEST_SUITE_P(
+    HitInstanceLevelAMDXInvalidType,
+    ValidateGenericCombineBuiltInExecutionModelDataTypeCapabilityExtensionResult,
+    Combine(
+        Values(SPV_ENV_VULKAN_1_2), Values("HitInstanceLevelAMDX"),
+        Values("IntersectionKHR", "AnyHitKHR", "ClosestHitKHR"),
+        Values("Input"), Values("%f32", "%u32vec3", "%u64"),
+        Values("OpCapability RayTracingMultiLevelAccelerationStructureAMDX\n"),
+        Values("OpExtension \"SPV_KHR_ray_tracing\"\n"
+               "OpExtension \"SPV_AMDX_multi_level_acceleration_structure\"\n"),
+        Values(nullptr),
+        Values(TestResult(SPV_ERROR_INVALID_DATA,
+                          "needs to be a 32-bit int scalar"))));
+
 // PrimitiveId needs special negative testing because it has non-RT uses
 INSTANTIATE_TEST_SUITE_P(
     PrimitiveIdRTNotExecutionMode,
