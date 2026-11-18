@@ -73,7 +73,7 @@ vars = {
 
   'abseil_revision': 'be93ce230ef75c5e57366c500e71cac4f4f4241a',
   'effcee_revision': '05be15d8a2b985a3ffee004a5e1fcea8a0528d0a',
-  'googletest_revision': 'e882c36410197464e3429546e6a7d5e217bde51e',
+  'googletest_revision': 'a46a6012a133c7c0929fdae55b321c2fe65f3c5f',
   # Use a recent protobuf, which can depend on abseil
   'protobuf_revision': '35cd01f9fe9afbeea38cc7b979a3b6bfcde82c03',
   're2_revision': '2da0056814cf180480a19f5cf811e7e1c054bf6d',
