@@ -25,6 +25,7 @@ namespace spvtools {
 namespace opt {
 namespace {
 
+using ::testing::ElementsAre;
 using ::testing::Eq;
 
 TEST(FunctionTest, HasEarlyReturn) {
@@ -351,6 +352,43 @@ TEST(FunctionTest, ReorderBlocksinStructuredOrder) {
   for (++bb; bb != func->end(); ++bb) {
     EXPECT_EQ(bb->id(), (bb - first_block));
   }
+}
+
+TEST(FunctionTest, MoveBasicBlocksBefore) {
+  const std::string text = R"(
+               OpCapability Shader
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %100 "main"
+               OpExecutionMode %100 OriginUpperLeft
+       %void = OpTypeVoid
+         %10 = OpTypeFunction %void
+        %100 = OpFunction %void None %10
+          %1 = OpLabel
+               OpBranch %2
+          %2 = OpLabel
+               OpBranch %3
+          %3 = OpLabel
+               OpBranch %4
+          %4 = OpLabel
+               OpBranch %5
+          %5 = OpLabel
+               OpBranch %6
+          %6 = OpLabel
+               OpReturn
+               OpFunctionEnd
+)";
+
+  std::unique_ptr<IRContext> ctx =
+      spvtools::BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text,
+                            SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
+  ASSERT_TRUE(ctx);
+  auto* func = spvtest::GetFunction(ctx->module(), 100);
+  ASSERT_TRUE(func);
+  func->MoveBasicBlocksBefore({6, 4}, &*func->FindBlock(3));
+
+  std::vector<uint32_t> order;
+  for (const BasicBlock& bb : *func) order.push_back(bb.id());
+  EXPECT_THAT(order, ElementsAre(1, 2, 6, 4, 3, 5));
 }
 
 }  // namespace
