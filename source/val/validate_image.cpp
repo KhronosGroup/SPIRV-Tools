@@ -669,7 +669,7 @@ spv_result_t ValidateImageOperands(ValidationState_t& _,
         opcode != spv::Op::OpImageGatherQCOM) {
       return _.diag(SPV_ERROR_INVALID_DATA, inst)
              << "Image Operand ConstOffsets can only be used with "
-                "OpImageGather and OpImageDrefGather";
+                "OpImage*Gather operations.";
     }
 
     if (info.dim == spv::Dim::Cube) {
