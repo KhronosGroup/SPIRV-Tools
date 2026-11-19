@@ -91,15 +91,15 @@ TEST_F(ValidateSpvEXTDescriptorHeap, Valid) {
 %_ptr_UniformConstant = OpTypeUntypedPointerKHR UniformConstant
 %resource_heap = OpUntypedVariableKHR %_ptr_UniformConstant UniformConstant
         %int = OpTypeInt 32 1
+       %uint = OpTypeInt 32 0
      %int_27 = OpConstant %int 27
          %14 = OpTypeImage %float 2D 0 0 0 1 Unknown
 %_ptr_Uniform = OpTypeUntypedPointerKHR Uniform
-         %17 = OpConstantSizeOfEXT %int %14
+         %17 = OpConstantSizeOfEXT %uint %14
 %_runtimearr_14 = OpTypeRuntimeArray %14
 %sampler_heap = OpUntypedVariableKHR %_ptr_UniformConstant UniformConstant
       %int_0 = OpConstant %int 0
          %22 = OpTypeSampler
-       %uint = OpTypeInt 32 0
      %uint_2 = OpConstant %uint 2
 %_runtimearr_22 = OpTypeRuntimeArray %22
          %28 = OpTypeSampledImage %14
@@ -110,7 +110,7 @@ TEST_F(ValidateSpvEXTDescriptorHeap, Valid) {
       %index = OpVariable %_ptr_Input_uint Input
 %UniformBuffer = OpTypeStruct %v4float
          %41 = OpTypeBufferEXT Uniform
-         %42 = OpConstantSizeOfEXT %int %41
+         %42 = OpConstantSizeOfEXT %uint %41
 %_runtimearr_41 = OpTypeRuntimeArray %41
       %int_1 = OpConstant %int 1
 %StorageBufferA = OpTypeStruct %v4float
@@ -121,12 +121,12 @@ TEST_F(ValidateSpvEXTDescriptorHeap, Valid) {
          %55 = OpConstantComposite %v4float %float_1 %float_2 %float_3 %float_4
 %_ptr_StorageBuffer = OpTypeUntypedPointerKHR StorageBuffer
          %58 = OpTypeBufferEXT StorageBuffer
-         %59 = OpConstantSizeOfEXT %int %58
+         %59 = OpConstantSizeOfEXT %uint %58
 %_runtimearr_58 = OpTypeRuntimeArray %58
     %v3float = OpTypeVector %float 3
 %StorageBufferB = OpTypeStruct %v3float
      %uint_0 = OpConstant %uint 0
-         %69 = OpConstantSizeOfEXT %int %58
+         %69 = OpConstantSizeOfEXT %uint %58
 %_runtimearr_58_0 = OpTypeRuntimeArray %58
 %_ptr_Output_float = OpTypePointer Output %float
        %main = OpFunction %void None %3
@@ -255,11 +255,11 @@ TEST_F(ValidateSpvEXTDescriptorHeap, AtomicImageFuncs) {
 %_ptr_UniformConstant = OpTypeUntypedPointerKHR UniformConstant
 %resource_heap = OpUntypedVariableKHR %_ptr_UniformConstant UniformConstant
         %int = OpTypeInt 32 1
+       %uint = OpTypeInt 32 0
       %int_1 = OpConstant %int 1
          %10 = OpTypeImage %int 1D 0 0 0 2 R32i
-         %13 = OpConstantSizeOfEXT %int %10
+         %13 = OpConstantSizeOfEXT %uint %10
 %_runtimearr_10 = OpTypeRuntimeArray %10
-       %uint = OpTypeInt 32 0
      %uint_0 = OpConstant %uint 0
 %_ptr_Image_int = OpTypePointer Image %int
  %_ptr_Image = OpTypeUntypedPointerKHR Image
@@ -321,9 +321,9 @@ TEST_F(ValidateSpvEXTDescriptorHeap, ValidMemberDecorateIdExt) {
      %v3uint = OpTypeVector %uint 3
   %samplerTy = OpTypeSampler
 %_runtimearr_sampler = OpTypeRuntimeArray %samplerTy
-      %specA = OpSpecConstant %int 0
-      %specB = OpSpecConstant %int 4
-      %specC = OpSpecConstant %int 8
+      %specA = OpSpecConstant %uint 0
+      %specB = OpSpecConstant %uint 4
+      %specC = OpSpecConstant %uint 8
           %U = OpTypeStruct %samplerTy %samplerTy %_runtimearr_sampler
       %int_0 = OpConstant %int 0
 %_ptr_Uniform = OpTypeUntypedPointerKHR Uniform
@@ -387,9 +387,9 @@ TEST_F(ValidateSpvEXTDescriptorHeap, ValidMemberDecorateIdExt2) {
      %v3uint = OpTypeVector %uint 3
   %samplerTy = OpTypeSampler
 %_runtimearr_sampler = OpTypeRuntimeArray %samplerTy
-      %specA = OpSpecConstant %int 0
-      %specB = OpSpecConstant %int 4
-      %specC = OpSpecConstant %int 8
+      %specA = OpSpecConstant %uint 0
+      %specB = OpSpecConstant %uint 4
+      %specC = OpSpecConstant %uint 8
           %U = OpTypeStruct %v2float %int %_runtimearr_sampler
       %int_0 = OpConstant %int 0
 %_ptr_Uniform = OpTypeUntypedPointerKHR Uniform
@@ -513,7 +513,7 @@ TEST_F(ValidateSpvEXTDescriptorHeap, HeapBaseVarStorageClassResource) {
           %U = OpTypeStruct %uint
       %int_0 = OpConstant %int 0
          %17 = OpTypeBufferEXT Uniform
-         %18 = OpConstantSizeOfEXT %int %17
+         %18 = OpConstantSizeOfEXT %uint %17
 %_runtimearr_17 = OpTypeRuntimeArray %17
        %main = OpFunction %void None %3
           %5 = OpLabel
@@ -568,16 +568,16 @@ TEST_F(ValidateSpvEXTDescriptorHeap, HeapBaseVarStorageClassSampler) {
   %fragColor = OpVariable %_ptr_Output_v4float Output
 %_ptr_StorageBuffer = OpTypeUntypedPointerKHR StorageBuffer
         %int = OpTypeInt 32 1
+       %uint = OpTypeInt 32 0
      %int_27 = OpConstant %int 27
          %14 = OpTypeImage %float 2D 0 0 0 1 Unknown
 %_ptr_UniformConstant = OpTypeUntypedPointerKHR UniformConstant
-         %17 = OpConstantSizeOfEXT %int %14
+         %17 = OpConstantSizeOfEXT %uint %14
 %_runtimearr_14 = OpTypeRuntimeArray %14
 %sampler_heap = OpUntypedVariableKHR %_ptr_StorageBuffer StorageBuffer
 %resource_heap = OpUntypedVariableKHR %_ptr_StorageBuffer StorageBuffer
       %int_0 = OpConstant %int 0
          %22 = OpTypeSampler
-       %uint = OpTypeInt 32 0
      %uint_2 = OpConstant %uint 2
 %_runtimearr_22 = OpTypeRuntimeArray %22
          %28 = OpTypeSampledImage %14
@@ -706,14 +706,14 @@ TEST_F(ValidateSpvEXTDescriptorHeap, LoadDescHeapDerivedSampler) {
 %_ptr_UniformConstant = OpTypeUntypedPointerKHR UniformConstant
 %resource_heap = OpUntypedVariableKHR %_ptr_UniformConstant UniformConstant
         %int = OpTypeInt 32 1
+       %uint = OpTypeInt 32 0
      %int_27 = OpConstant %int 27
          %14 = OpTypeImage %float 2D 0 0 0 1 Unknown
-         %17 = OpConstantSizeOfEXT %int %14
+         %17 = OpConstantSizeOfEXT %uint %14
 %_runtimearr_14 = OpTypeRuntimeArray %14
 %sampler_heap = OpUntypedVariableKHR %_ptr_UniformConstant UniformConstant
       %int_0 = OpConstant %int 0
          %22 = OpTypeSampler
-       %uint = OpTypeInt 32 0
      %uint_2 = OpConstant %uint 2
 %_runtimearr_22 = OpTypeRuntimeArray %22
          %28 = OpTypeSampledImage %14
@@ -778,14 +778,14 @@ TEST_F(ValidateSpvEXTDescriptorHeap, LoadDescHeapDerivedImage) {
 %_ptr_UniformConstant = OpTypeUntypedPointerKHR UniformConstant
 %resource_heap = OpUntypedVariableKHR %_ptr_UniformConstant UniformConstant
         %int = OpTypeInt 32 1
+       %uint = OpTypeInt 32 0
      %int_27 = OpConstant %int 27
          %14 = OpTypeImage %float 2D 0 0 0 1 Unknown
-         %17 = OpConstantSizeOfEXT %int %14
+         %17 = OpConstantSizeOfEXT %uint %14
 %_runtimearr_14 = OpTypeRuntimeArray %14
 %sampler_heap = OpUntypedVariableKHR %_ptr_UniformConstant UniformConstant
       %int_0 = OpConstant %int 0
          %22 = OpTypeSampler
-       %uint = OpTypeInt 32 0
      %uint_2 = OpConstant %uint 2
 %_runtimearr_22 = OpTypeRuntimeArray %22
          %28 = OpTypeSampledImage %14
@@ -834,12 +834,13 @@ TEST_F(ValidateSpvEXTDescriptorHeap, LoadDescHeapDerivedAccStruct) {
                 %_ptr_UniformConstant = OpTypeUntypedPointerKHR UniformConstant
                 %resource_heap = OpUntypedVariableKHR %_ptr_UniformConstant UniformConstant
                 %int = OpTypeInt 32 1
+                %uint = OpTypeInt 32 0
                 %int_27 = OpConstant %int 27
                 %void = OpTypeVoid
                 %as = OpTypeAccelerationStructureKHR
                 %ptr_as = OpTypePointer Function %as
                 %void_fn = OpTypeFunction %void
-                %17 = OpConstantSizeOfEXT %int %as
+                %17 = OpConstantSizeOfEXT %uint %as
                 %_runtimearr_14 = OpTypeRuntimeArray %as
                 %main = OpFunction %void None %void_fn
                 %entry = OpLabel
@@ -951,7 +952,7 @@ TEST_F(ValidateSpvEXTDescriptorHeap, ConstantSizeOfDescriptorTypeTarget) {
           %U = OpTypeStruct %uint
       %int_0 = OpConstant %int 0
          %17 = OpTypeBufferEXT Uniform
-         %18 = OpConstantSizeOfEXT %int %U
+         %18 = OpConstantSizeOfEXT %uint %U
 %_runtimearr_17 = OpTypeRuntimeArray %17
        %main = OpFunction %void None %3
           %5 = OpLabel
@@ -1167,7 +1168,7 @@ TEST_F(ValidateSpvEXTDescriptorHeap, TypeBufferEXTStorageClass) {
           %U = OpTypeStruct %uint
       %int_0 = OpConstant %int 0
          %17 = OpTypeBufferEXT UniformConstant
-         %18 = OpConstantSizeOfEXT %int %17
+         %18 = OpConstantSizeOfEXT %uint %17
 %_runtimearr_17 = OpTypeRuntimeArray %17
        %main = OpFunction %void None %3
           %5 = OpLabel
@@ -1221,7 +1222,7 @@ TEST_F(ValidateSpvEXTDescriptorHeap, BufferPointerEXTStorageClass) {
           %U = OpTypeStruct %uint
       %int_0 = OpConstant %int 0
          %17 = OpTypeBufferEXT Uniform
-         %18 = OpConstantSizeOfEXT %int %17
+         %18 = OpConstantSizeOfEXT %uint %17
 %_runtimearr_17 = OpTypeRuntimeArray %17
        %main = OpFunction %void None %3
           %5 = OpLabel
@@ -1278,7 +1279,7 @@ TEST_F(ValidateSpvEXTDescriptorHeap, BufferPointerEXTLayout) {
           %U = OpTypeStruct %uint
       %int_0 = OpConstant %int 0
          %17 = OpTypeBufferEXT Uniform
-         %18 = OpConstantSizeOfEXT %int %17
+         %18 = OpConstantSizeOfEXT %uint %17
 %_runtimearr_17 = OpTypeRuntimeArray %17
        %main = OpFunction %void None %3
           %5 = OpLabel
@@ -1334,7 +1335,7 @@ TEST_F(ValidateSpvEXTDescriptorHeap, BufferPointerEXTDecorate) {
           %U = OpTypeStruct %uint
       %int_0 = OpConstant %int 0
          %17 = OpTypeBufferEXT Uniform
-         %18 = OpConstantSizeOfEXT %int %17
+         %18 = OpConstantSizeOfEXT %uint %17
 %_runtimearr_17 = OpTypeRuntimeArray %17
        %main = OpFunction %void None %3
           %5 = OpLabel
@@ -1634,16 +1635,17 @@ TEST_F(ValidateSpvEXTDescriptorHeap, ArrayStrideNonDescriptor) {
 %_ptr_UniformConstant = OpTypeUntypedPointerKHR UniformConstant
 %resource_heap = OpUntypedVariableKHR %_ptr_UniformConstant UniformConstant
       %int = OpTypeInt 32 1
+      %uint = OpTypeInt 32 0
     %int_16 = OpConstant %int 16
     %v4int = OpTypeVector %int 4
       %ssbo = OpTypeStruct %v4int
     %int_0 = OpConstant %int 0
         %13 = OpTypeImage %int 2D 0 0 0 2 Rgba8i
 %_ptr_Uniform = OpTypeUntypedPointerKHR Uniform
-        %16 = OpConstantSizeOfEXT %int %13
+        %16 = OpConstantSizeOfEXT %uint %13
 %_runtimearr_13 = OpTypeRuntimeArray %13
         %24 = OpTypeBufferEXT StorageBuffer
-        %25 = OpConstantSizeOfEXT %int %24
+        %25 = OpConstantSizeOfEXT %uint %24
 %_runtimearr_24 = OpTypeRuntimeArray %int
       %main = OpFunction %void None %3
         %5 = OpLabel
@@ -1987,7 +1989,7 @@ TEST_F(ValidateSpvEXTDescriptorHeap, MemberDecorateIdDecorator) {
       %int_3 = OpConstant %int 3
        %uint = OpTypeInt 32 0
      %v3uint = OpTypeVector %uint 3
-      %specC = OpSpecConstant %int 4
+      %specC = OpSpecConstant %uint 4
   %samplerTy = OpTypeSampler
 %_runtimearr_sampler = OpTypeRuntimeArray %samplerTy
           %U = OpTypeStruct %v2float %int %_runtimearr_sampler
@@ -2058,7 +2060,7 @@ TEST_F(ValidateSpvEXTDescriptorHeap, MemberDecorateIdExtraIdOrder) {
   %samplerTy = OpTypeSampler
 %_runtimearr_sampler = OpTypeRuntimeArray %samplerTy
           %U = OpTypeStruct %v2float %int %_runtimearr_sampler
-      %specC = OpSpecConstant %int 4
+      %specC = OpSpecConstant %uint 4
       %int_0 = OpConstant %int 0
 %_ptr_Uniform = OpTypeUntypedPointerKHR Uniform
          %20 = OpTypeBufferEXT Uniform
@@ -2169,11 +2171,11 @@ TEST_F(ValidateSpvEXTDescriptorHeap, AtomicImageType) {
 %_ptr_UniformConstant = OpTypeUntypedPointerKHR UniformConstant
 %resource_heap = OpUntypedVariableKHR %_ptr_UniformConstant UniformConstant
         %int = OpTypeInt 32 1
+       %uint = OpTypeInt 32 0
       %int_1 = OpConstant %int 1
          %10 = OpTypeImage %int 1D 0 0 0 2 Rgba16i
-         %13 = OpConstantSizeOfEXT %int %10
+         %13 = OpConstantSizeOfEXT %uint %10
 %_runtimearr_10 = OpTypeRuntimeArray %10
-       %uint = OpTypeInt 32 0
      %uint_0 = OpConstant %uint 0
 %_ptr_Image_int = OpTypePointer Image %int
  %_ptr_Image = OpTypeUntypedPointerKHR Image
@@ -2221,12 +2223,12 @@ TEST_F(ValidateSpvEXTDescriptorHeap, UntypedPointerStorageClass) {
 %_ptr_UniformConstant = OpTypeUntypedPointerKHR UniformConstant
 %resource_heap = OpUntypedVariableKHR %_ptr_UniformConstant UniformConstant
         %int = OpTypeInt 32 1
+       %uint = OpTypeInt 32 0
       %int_1 = OpConstant %int 1
          %10 = OpTypeImage %int 1D 0 0 0 2 R32i
 %_ptr_Uniform = OpTypeUntypedPointerKHR Private
-         %13 = OpConstantSizeOfEXT %int %10
+         %13 = OpConstantSizeOfEXT %uint %10
 %_runtimearr_10 = OpTypeRuntimeArray %10
-       %uint = OpTypeInt 32 0
      %uint_0 = OpConstant %uint 0
 %_ptr_Image_int = OpTypePointer Image %int
  %_ptr_Image = OpTypeUntypedPointerKHR Image
@@ -2289,7 +2291,7 @@ TEST_F(ValidateSpvEXTDescriptorHeap, InvalidStoreToHeap) {
 %_ptr_PushConstant_uint = OpTypePointer PushConstant %uint
 %_ptr_StorageBuffer = OpTypeUntypedPointerKHR StorageBuffer
          %20 = OpTypeBufferEXT StorageBuffer
-         %21 = OpConstantSizeOfEXT %int %20
+         %21 = OpConstantSizeOfEXT %uint %20
 %_runtimearr_20 = OpTypeRuntimeArray %20
      %v3uint = OpTypeVector %uint 3
      %uint_1 = OpConstant %uint 1
@@ -2369,7 +2371,7 @@ TEST_F(ValidateSpvEXTDescriptorHeap, ResourceHeapBuiltinOnMemeber) {
 %_ptr_PushConstant_uint = OpTypePointer PushConstant %uint
 %_ptr_StorageBuffer = OpTypeUntypedPointerKHR StorageBuffer
          %21 = OpTypeBufferEXT StorageBuffer
-         %22 = OpConstantSizeOfEXT %int %21
+         %22 = OpConstantSizeOfEXT %uint %21
 %_runtimearr_21 = OpTypeRuntimeArray %21
        %main = OpFunction %void None %3
           %5 = OpLabel
@@ -2421,6 +2423,39 @@ TEST_F(ValidateSpvEXTDescriptorHeap, OffsetIdFloat) {
   EXPECT_THAT(
       getDiagnosticString(),
       HasSubstr("OffsetIdEXT extra operand must be a 32-bit int scalar type"));
+}
+
+TEST_F(ValidateSpvEXTDescriptorHeap, OffsetIdSigned) {
+  const std::string str = R"(
+          OpCapability Shader
+          OpCapability SampledBuffer
+          OpCapability DescriptorHeapEXT
+          OpExtension "SPV_EXT_descriptor_heap"
+          OpMemoryModel Logical GLSL450
+          OpEntryPoint GLCompute %main "main"
+          OpExecutionMode %main LocalSize 1 1 1
+          OpMemberDecorateIdEXT %struct 0 OffsetIdEXT %int_0
+          OpMemberDecorateIdEXT %struct 1 OffsetIdEXT %uint_0
+          OpMemberDecorateIdEXT %struct 2 OffsetIdEXT %uint_0
+          %uint = OpTypeInt 32 0
+          %uint_0 = OpConstant %uint 0
+          %int = OpTypeInt 32 1
+          %int_0 = OpConstant %int 0
+          %14 = OpTypeImage %uint Buffer 0 0 0 2 R32ui
+%struct = OpTypeStruct %14 %uint %uint
+  %void = OpTypeVoid
+     %3 = OpTypeFunction %void
+  %main = OpFunction %void None %3
+     %5 = OpLabel
+          OpReturn
+          OpFunctionEnd
+  )";
+  CompileSuccessfully(str.c_str(), SPV_ENV_VULKAN_1_4);
+  EXPECT_NE(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_4));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("OffsetIdEXT extra operand must be an unsigned int scalar "
+                "type"));
 }
 
 TEST_F(ValidateSpvEXTDescriptorHeap, OffsetIdNonConstant) {
@@ -2537,6 +2572,35 @@ TEST_F(ValidateSpvEXTDescriptorHeap, ArrayStrideFloat) {
       getDiagnosticString(),
       HasSubstr(
           "ArrayStrideIdEXT extra operand must be a 32-bit int scalar type"));
+}
+
+TEST_F(ValidateSpvEXTDescriptorHeap, ArrayStrideSigned) {
+  const std::string str = R"(
+      OpCapability Shader
+      OpCapability DescriptorHeapEXT
+      OpExtension "SPV_EXT_descriptor_heap"
+      OpMemoryModel Logical GLSL450
+      OpEntryPoint GLCompute %main "main"
+      OpExecutionMode %main LocalSize 1 1 1
+      OpDecorateId %array ArrayStrideIdEXT %int_4
+%int = OpTypeInt 32 1
+%int_4 = OpConstant %int 4
+%uint = OpTypeInt 32 0
+%uint_2 = OpConstant %uint 2
+%sampler = OpTypeSampler
+%array = OpTypeArray %sampler %uint_2
+%void = OpTypeVoid
+  %3 = OpTypeFunction %void
+%main = OpFunction %void None %3
+  %5 = OpLabel
+      OpReturn
+      OpFunctionEnd
+  )";
+  CompileSuccessfully(str.c_str(), SPV_ENV_VULKAN_1_4);
+  EXPECT_NE(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_4));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("ArrayStrideIdEXT extra operand must be an unsigned "
+                        "int scalar type"));
 }
 
 TEST_F(ValidateSpvEXTDescriptorHeap, ArrayStrideConstantZero) {
