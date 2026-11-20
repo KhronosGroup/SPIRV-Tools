@@ -172,9 +172,11 @@ bool ExtractSourceFromModule(
           }
         } else if (instruction.opcode ==
                    static_cast<unsigned>(spv::Op::OpSourceContinued)) {
-          if (lastOpcode != spv::Op::OpSource) {
+          if (lastOpcode != spv::Op::OpSource &&
+              lastOpcode != spv::Op::OpSourceContinued) {
             spvtools::Error(spvtools::utils::CLIMessageConsumer, "", loc,
-                            "OpSourceContinued MUST follow an OpSource.");
+                            "OpSourceContinued MUST follow an OpSource or "
+                            "OpSourceContinued.");
             return SPV_ERROR_INVALID_BINARY;
           }
 
