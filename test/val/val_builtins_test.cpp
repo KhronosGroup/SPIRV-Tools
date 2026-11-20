@@ -3252,6 +3252,13 @@ TEST_F(ValidateBuiltIns, VulkanWorkgroupSizeNotVec3) {
               AnyVUID("VUID-WorkgroupSize-WorkgroupSize-04427"));
 }
 
+TEST_F(ValidateBuiltIns, WorkgroupSizeNotVec3) {
+  CodeGenerator generator = GetWorkgroupSizeNotVec3Generator();
+
+  CompileSuccessfully(generator.Build(), SPV_ENV_UNIVERSAL_1_6);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_UNIVERSAL_1_6));
+}
+
 TEST_F(ValidateBuiltIns, WorkgroupSizeNotInt32Vec) {
   CodeGenerator generator = CodeGenerator::GetDefaultShaderCodeGenerator();
   generator.before_types_ = R"(
