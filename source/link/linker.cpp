@@ -853,7 +853,13 @@ spv_result_t Link(const Context& context, const uint32_t* const* binaries,
   std::vector<Module*> modules;
   modules.reserve(num_binaries);
   for (size_t i = 0u; i < num_binaries; ++i) {
-    const uint32_t schema = binaries[i][4u];
+    if (binary_sizes[i] < SPV_INDEX_INSTRUCTION) {
+      position.index = binary_sizes[i];
+      return DiagnosticStream(position, consumer, "", SPV_ERROR_INVALID_BINARY)
+             << "Module " << i + 1 << " is too small to hold a SPIR-V header.";
+    }
+
+    const uint32_t schema = binaries[i][SPV_INDEX_SCHEMA];
     if (schema != 0u) {
       position.index = 4u;
       return DiagnosticStream(position, consumer, "", SPV_ERROR_INVALID_BINARY)
