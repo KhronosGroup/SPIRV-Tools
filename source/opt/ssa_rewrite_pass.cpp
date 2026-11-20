@@ -46,6 +46,7 @@
 
 #include "source/opcode.h"
 #include "source/opt/cfg.h"
+#include "source/opt/debug_info_manager.h"
 #include "source/opt/mem_pass.h"
 #include "source/opt/types.h"
 

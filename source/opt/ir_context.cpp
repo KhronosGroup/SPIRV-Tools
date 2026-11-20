@@ -20,8 +20,13 @@
 
 #include "OpenCLDebugInfo100.h"
 #include "source/latest_version_glsl_std_450_header.h"
+#include "source/opt/debug_info_manager.h"
+#include "source/opt/fold.h"
 #include "source/opt/log.h"
 #include "source/opt/reflect.h"
+#include "source/opt/register_pressure.h"
+#include "source/opt/scalar_analysis.h"
+#include "source/opt/value_number_table.h"
 
 namespace spvtools {
 namespace opt {
@@ -81,6 +86,13 @@ IRContext::IRContext(spv_target_env env, std::unique_ptr<Module>&& m,
 }
 
 IRContext::~IRContext() { spvContextDestroy(syntax_context_); }
+
+const InstructionFolder& IRContext::get_instruction_folder() {
+  if (!inst_folder_) {
+    inst_folder_ = MakeUnique<InstructionFolder>(this);
+  }
+  return *inst_folder_;
+}
 
 void IRContext::BuildDefUseManager() {
   def_use_mgr_ = MakeUnique<analysis::DefUseManager>(module());

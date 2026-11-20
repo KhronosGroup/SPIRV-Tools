@@ -16,7 +16,9 @@
 
 #include <optional>
 
+#include "source/opt/fold.h"
 #include "source/opt/ir_context.h"
+#include "source/util/hex_float.h"
 
 namespace spvtools {
 namespace opt {

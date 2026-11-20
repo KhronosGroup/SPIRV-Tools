@@ -19,6 +19,8 @@
 #include <tuple>
 
 #include "source/opt/constants.h"
+#include "source/opt/fold.h"
+#include "source/util/bitutils.h"
 #include "source/util/make_unique.h"
 
 namespace spvtools {

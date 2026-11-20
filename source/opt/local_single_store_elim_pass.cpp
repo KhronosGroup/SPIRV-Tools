@@ -19,6 +19,7 @@
 #include "source/opt/local_single_store_elim_pass.h"
 
 #include "source/cfa.h"
+#include "source/opt/debug_info_manager.h"
 #include "source/util/string_utils.h"
 
 namespace spvtools {

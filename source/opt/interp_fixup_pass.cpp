@@ -19,6 +19,7 @@
 #include <set>
 #include <string>
 
+#include "source/opt/fold.h"
 #include "source/opt/ir_context.h"
 #include "type_manager.h"
 

@@ -18,6 +18,7 @@
 
 #include "OpenCLDebugInfo100.h"
 #include "source/disassemble.h"
+#include "source/opt/debug_info_manager.h"
 #include "source/opt/fold.h"
 #include "source/opt/ir_context.h"
 #include "source/opt/reflect.h"

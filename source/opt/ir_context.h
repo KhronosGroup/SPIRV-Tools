@@ -29,26 +29,30 @@
 #include "source/assembly_grammar.h"
 #include "source/opt/cfg.h"
 #include "source/opt/constants.h"
-#include "source/opt/debug_info_manager.h"
 #include "source/opt/decoration_manager.h"
 #include "source/opt/def_use_manager.h"
 #include "source/opt/dominator_analysis.h"
 #include "source/opt/feature_manager.h"
-#include "source/opt/fold.h"
 #include "source/opt/liveness.h"
 #include "source/opt/loop_descriptor.h"
 #include "source/opt/module.h"
-#include "source/opt/register_pressure.h"
-#include "source/opt/scalar_analysis.h"
 #include "source/opt/struct_cfg_analysis.h"
 #include "source/opt/type_manager.h"
-#include "source/opt/value_number_table.h"
 #include "source/table2.h"
 #include "source/util/make_unique.h"
 #include "source/util/string_utils.h"
 
 namespace spvtools {
 namespace opt {
+
+class InstructionFolder;
+class LivenessAnalysis;
+class ScalarEvolutionAnalysis;
+class ValueNumberTable;
+
+namespace analysis {
+class DebugInfoManager;
+}  // namespace analysis
 
 class IRContext {
  public:
@@ -555,12 +559,7 @@ class IRContext {
   // its definitions and uses.
   inline void UpdateDefUse(Instruction* inst);
 
-  const InstructionFolder& get_instruction_folder() {
-    if (!inst_folder_) {
-      inst_folder_ = MakeUnique<InstructionFolder>(this);
-    }
-    return *inst_folder_;
-  }
+  const InstructionFolder& get_instruction_folder();
 
   uint32_t max_id_bound() const { return max_id_bound_; }
   void set_max_id_bound(uint32_t new_bound) { max_id_bound_ = new_bound; }
