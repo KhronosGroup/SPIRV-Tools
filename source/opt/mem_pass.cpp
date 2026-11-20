@@ -45,6 +45,8 @@ bool MemPass::IsBaseTargetType(const Instruction* typeInst) const {
     case spv::Op::OpTypePointer:
     case spv::Op::OpTypeCooperativeMatrixNV:
     case spv::Op::OpTypeCooperativeMatrixKHR:
+    case spv::Op::OpTypeTensorLayoutNV:
+    case spv::Op::OpTypeTensorViewNV:
       return true;
     default:
       break;
