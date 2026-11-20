@@ -53,6 +53,9 @@ spv_result_t ExtractStringLiteral(const spv_position_t& loc, const char* begin,
 
     if (read == '\\') {
       ++readIndex;
+      // A trailing backslash means the escaped byte is outside the range, so
+      // the literal has no NULL terminator.
+      if (readIndex >= sourceLength) break;
     }
     escapedString[writeIndex] = begin[readIndex];
   }
