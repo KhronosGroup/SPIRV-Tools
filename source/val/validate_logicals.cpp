@@ -181,6 +181,8 @@ spv_result_t ValidateSelect(ValidationState_t& _, const Instruction* inst,
     // Not RuntimeArray because of other rules.
     case spv::Op::OpTypeArray:
     case spv::Op::OpTypeMatrix:
+    case spv::Op::OpTypeCooperativeMatrixKHR:
+    case spv::Op::OpTypeCooperativeMatrixNV:
     case spv::Op::OpTypeStruct: {
       if (!composites) return fail();
       break;

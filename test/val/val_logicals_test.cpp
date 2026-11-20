@@ -15,6 +15,7 @@
 // Tests for unique type declaration rules validator.
 
 #include <string>
+#include <tuple>
 
 #include "gmock/gmock.h"
 #include "test/unit_spirv.h"
@@ -585,6 +586,268 @@ TEST_F(ValidateLogicals, OpSelectSuccess) {
   CompileSuccessfully(GenerateShaderCode(body).c_str());
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
+
+using ValidateCooperativeMatrixSelect =
+    spvtest::ValidateBase<std::tuple<bool, bool, spv_target_env>>;
+
+std::string GenerateCooperativeMatrixSelectCode(bool khr, bool condition,
+                                                const std::string& body,
+                                                const std::string& types = "") {
+  const std::string suffix = khr ? "KHR" : "NV";
+  return "OpCapability Shader\nOpCapability VulkanMemoryModel\n"
+         "OpCapability CooperativeMatrix" +
+         suffix + "\nOpExtension \"SPV_" + suffix + "_cooperative_matrix\"\n" +
+         R"(
+OpExtension "SPV_KHR_vulkan_memory_model"
+OpMemoryModel Logical VulkanKHR
+OpEntryPoint GLCompute %main "main"
+OpExecutionMode %main LocalSize 1 1 1
+%void = OpTypeVoid
+%func = OpTypeFunction %void
+%bool = OpTypeBool
+%f32 = OpTypeFloat 32
+%u32 = OpTypeInt 32 0
+%subgroup = OpConstant %u32 3
+%size = OpConstant %u32 16
+%use = OpConstant %u32 0
+%zero = OpConstant %f32 0
+%one = OpConstant %f32 1
+)" + "%condition = OpConstant" +
+         (condition ? "True" : "False") +
+         " %bool\n%mat = OpTypeCooperativeMatrix" + suffix +
+         " %f32 %subgroup %size %size" + (khr ? " %use" : "") + "\n" + types +
+         R"(
+%main = OpFunction %void None %func
+%entry = OpLabel
+%left = OpCompositeConstruct %mat %zero
+%right = OpCompositeConstruct %mat %one
+)" + body +
+         "\nOpReturn\nOpFunctionEnd\n";
+}
+
+TEST_P(ValidateCooperativeMatrixSelect, SelectVersionRules) {
+  const auto parameters = GetParam();
+  const auto env = std::get<2>(parameters);
+  CompileSuccessfully(GenerateCooperativeMatrixSelectCode(
+                          std::get<0>(parameters), std::get<1>(parameters),
+                          "%selected = OpSelect %mat %condition %left %right"),
+                      env);
+  if (env == SPV_ENV_UNIVERSAL_1_3) {
+    ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(env));
+    EXPECT_THAT(getDiagnosticString(),
+                HasSubstr("Expected scalar or vector type as Result Type"));
+  } else {
+    ASSERT_EQ(SPV_SUCCESS, ValidateInstructions(env));
+  }
+}
+
+TEST_P(ValidateCooperativeMatrixSelect, DynamicallyUniformSelectAndPhiAllowed) {
+  const auto parameters = GetParam();
+  const auto env = std::get<2>(parameters);
+  std::string code = GenerateCooperativeMatrixSelectCode(
+      std::get<0>(parameters), std::get<1>(parameters), R"(
+%subgroup_value = OpLoad %u32 %subgroup_id
+%uniform_condition = OpIEqual %bool %subgroup_value %use
+%selected = OpSelect %mat %uniform_condition %left %right
+OpSelectionMerge %merge None
+OpBranchConditional %uniform_condition %then %else
+%then = OpLabel
+OpBranch %merge
+%else = OpLabel
+OpBranch %merge
+%merge = OpLabel
+%merged = OpPhi %mat %selected %then %right %else
+)",
+      "%input_u32 = OpTypePointer Input %u32\n"
+      "%subgroup_id = OpVariable %input_u32 Input\n");
+  code = "OpCapability GroupNonUniform\n" + code;
+  const std::string entry_point = "OpEntryPoint GLCompute %main \"main\"";
+  code.insert(code.find(entry_point) + entry_point.size(), " %subgroup_id");
+  code.insert(code.find("%void ="),
+              "OpDecorate %subgroup_id BuiltIn SubgroupId\n");
+  if (env == SPV_ENV_UNIVERSAL_1_3) {
+    const std::string select =
+        "%selected = OpSelect %mat %uniform_condition %left %right";
+    code.replace(code.find(select), select.size(),
+                 "%selected = OpCopyObject %mat %left");
+  }
+  CompileSuccessfully(code, env);
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions(env));
+}
+
+TEST_P(ValidateCooperativeMatrixSelect, RejectVectorCondition) {
+  const auto parameters = GetParam();
+  const auto env = std::get<2>(parameters);
+  CompileSuccessfully(
+      GenerateCooperativeMatrixSelectCode(
+          std::get<0>(parameters), std::get<1>(parameters),
+          "%selected = OpSelect %mat %vector_condition %left %right",
+          "%bool2 = OpTypeVector %bool 2\n"
+          "%vector_condition = OpConstantComposite %bool2 %condition "
+          "%condition\n"),
+      env);
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(env));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr(env == SPV_ENV_UNIVERSAL_1_3
+                            ? "Expected scalar or vector type as Result Type"
+                            : "Expected vector sizes of Result Type and the "
+                              "condition"));
+}
+
+TEST_P(ValidateCooperativeMatrixSelect, RejectMismatchedObject) {
+  const auto parameters = GetParam();
+  const auto env = std::get<2>(parameters);
+  CompileSuccessfully(GenerateCooperativeMatrixSelectCode(
+                          std::get<0>(parameters), std::get<1>(parameters),
+                          "%selected = OpSelect %mat %condition %left %one"),
+                      env);
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(env));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr(env == SPV_ENV_UNIVERSAL_1_3
+                            ? "Expected scalar or vector type as Result Type"
+                            : "Expected both objects to be of Result Type"));
+}
+
+TEST_P(ValidateCooperativeMatrixSelect, CompositeSelect) {
+  const auto parameters = GetParam();
+  const auto env = std::get<2>(parameters);
+  const std::string types = R"(
+%array = OpTypeArray %mat %size
+%struct = OpTypeStruct %u32 %mat
+%nested_array = OpTypeArray %array %size
+%struct_array = OpTypeArray %struct %size
+%nested_struct = OpTypeStruct %u32 %struct_array
+)";
+  for (const std::string type : {"%array", "%struct", "%nested_array",
+                                 "%struct_array", "%nested_struct"}) {
+    SCOPED_TRACE(type);
+    CompileSuccessfully(
+        GenerateCooperativeMatrixSelectCode(
+            std::get<0>(parameters), std::get<1>(parameters),
+            "%object = OpUndef " + type + "\n%selected = OpSelect " + type +
+                " %condition %object %object",
+            types),
+        env);
+    if (env == SPV_ENV_UNIVERSAL_1_3) {
+      ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(env));
+      EXPECT_THAT(getDiagnosticString(),
+                  HasSubstr("Expected scalar or vector type as Result Type"));
+    } else {
+      ASSERT_EQ(SPV_SUCCESS, ValidateInstructions(env));
+    }
+  }
+}
+
+TEST_P(ValidateCooperativeMatrixSelect, CompositeRejectVectorCondition) {
+  const auto parameters = GetParam();
+  const auto env = std::get<2>(parameters);
+  const std::string types = R"(
+%bool2 = OpTypeVector %bool 2
+%vector_condition = OpConstantComposite %bool2 %condition %condition
+%array = OpTypeArray %mat %size
+%struct = OpTypeStruct %u32 %mat
+%nested_array = OpTypeArray %array %size
+%struct_array = OpTypeArray %struct %size
+%nested_struct = OpTypeStruct %u32 %struct_array
+)";
+  for (const std::string type : {"%array", "%struct", "%nested_array",
+                                 "%struct_array", "%nested_struct"}) {
+    SCOPED_TRACE(type);
+    CompileSuccessfully(
+        GenerateCooperativeMatrixSelectCode(
+            std::get<0>(parameters), std::get<1>(parameters),
+            "%object = OpUndef " + type + "\n%selected = OpSelect " + type +
+                " %vector_condition %object %object",
+            types),
+        env);
+    ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(env));
+    EXPECT_THAT(getDiagnosticString(),
+                HasSubstr(env == SPV_ENV_UNIVERSAL_1_3
+                              ? "Expected scalar or vector type as Result Type"
+                              : "Expected vector sizes of Result Type and the "
+                                "condition"));
+  }
+}
+
+TEST_P(ValidateCooperativeMatrixSelect, CompositeCopyAndPhiAllowed) {
+  const auto parameters = GetParam();
+  const auto env = std::get<2>(parameters);
+  CompileSuccessfully(GenerateCooperativeMatrixSelectCode(
+                          std::get<0>(parameters), std::get<1>(parameters), R"(
+%object = OpUndef %nested
+%copied = OpCopyObject %nested %object
+OpSelectionMerge %merge None
+OpBranchConditional %condition %then %else
+%then = OpLabel
+OpBranch %merge
+%else = OpLabel
+OpBranch %merge
+%merge = OpLabel
+%selected = OpPhi %nested %object %then %copied %else
+)",
+                          "%array = OpTypeArray %mat %size\n"
+                          "%nested = OpTypeStruct %u32 %array\n"),
+                      env);
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions(env));
+}
+
+TEST_P(ValidateCooperativeMatrixSelect, PrivatePointerSelectRejected) {
+  const auto parameters = GetParam();
+  const auto env = std::get<2>(parameters);
+  std::string code = GenerateCooperativeMatrixSelectCode(
+      std::get<0>(parameters), std::get<1>(parameters),
+      "%selected = OpSelect %ptr %condition %object %object",
+      "%ptr = OpTypePointer Private %mat\n"
+      "%object = OpVariable %ptr Private\n");
+  code = "OpCapability VariablePointers\n" + code;
+  code.insert(code.find("OpMemoryModel"),
+              "OpExtension \"SPV_KHR_variable_pointers\"\n");
+  if (env != SPV_ENV_UNIVERSAL_1_3) {
+    const std::string entry_point = "OpEntryPoint GLCompute %main \"main\"";
+    code.insert(code.find(entry_point) + entry_point.size(), " %object");
+  }
+  CompileSuccessfully(code, env);
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(env));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("Instruction may only have a logical pointer operand in "
+                "the StorageBuffer or Workgroup storage classes"));
+}
+
+TEST_P(ValidateCooperativeMatrixSelect, CopyObjectAllowed) {
+  const auto parameters = GetParam();
+  const auto env = std::get<2>(parameters);
+  CompileSuccessfully(GenerateCooperativeMatrixSelectCode(
+                          std::get<0>(parameters), std::get<1>(parameters),
+                          "%copied = OpCopyObject %mat %left"),
+                      env);
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions(env));
+}
+
+TEST_P(ValidateCooperativeMatrixSelect, PhiAllowed) {
+  const auto parameters = GetParam();
+  const auto env = std::get<2>(parameters);
+  CompileSuccessfully(GenerateCooperativeMatrixSelectCode(
+                          std::get<0>(parameters), std::get<1>(parameters), R"(
+OpSelectionMerge %merge None
+OpBranchConditional %condition %then %else
+%then = OpLabel
+OpBranch %merge
+%else = OpLabel
+OpBranch %merge
+%merge = OpLabel
+%selected = OpPhi %mat %left %then %right %else
+)"),
+                      env);
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions(env));
+}
+
+INSTANTIATE_TEST_SUITE_P(
+    CooperativeMatrix, ValidateCooperativeMatrixSelect,
+    ::testing::Combine(::testing::Bool(), ::testing::Bool(),
+                       ::testing::Values(SPV_ENV_UNIVERSAL_1_3,
+                                         SPV_ENV_UNIVERSAL_1_4,
+                                         SPV_ENV_UNIVERSAL_1_6)));
 
 TEST_F(ValidateLogicals, OpSelectWrongTypeId) {
   const std::string body = R"(
