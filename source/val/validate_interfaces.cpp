@@ -25,6 +25,27 @@
 
 namespace spvtools {
 namespace val {
+
+bool ExecutionModelStripsInterfaceArray(spv::ExecutionModel model,
+                                        bool is_output, bool has_patch,
+                                        bool has_per_task_nv,
+                                        bool has_per_vertex_khr) {
+  switch (model) {
+    case spv::ExecutionModel::TessellationControl:
+      return !has_patch;
+    case spv::ExecutionModel::TessellationEvaluation:
+      return !is_output && !has_patch;
+    case spv::ExecutionModel::Geometry:
+      return !is_output;
+    case spv::ExecutionModel::Fragment:
+      return !is_output && has_per_vertex_khr;
+    case spv::ExecutionModel::MeshNV:
+      return is_output && !has_per_task_nv;
+    default:
+      return false;
+  }
+}
+
 namespace {
 
 // Limit the number of checked locations to 4096. Multiplied by 4 to represent
@@ -340,36 +361,9 @@ spv_result_t GetLocationsForVariable(
   // Vulkan 14.1.3: Tessellation control and mesh per-vertex outputs and
   // tessellation control, evaluation and geometry per-vertex inputs have a
   // layer of arraying that is not included in interface matching.
-  bool is_arrayed = false;
-  switch (entry_point->GetOperandAs<spv::ExecutionModel>(0)) {
-    case spv::ExecutionModel::TessellationControl:
-      if (!has_patch) {
-        is_arrayed = true;
-      }
-      break;
-    case spv::ExecutionModel::TessellationEvaluation:
-      if (!is_output && !has_patch) {
-        is_arrayed = true;
-      }
-      break;
-    case spv::ExecutionModel::Geometry:
-      if (!is_output) {
-        is_arrayed = true;
-      }
-      break;
-    case spv::ExecutionModel::Fragment:
-      if (!is_output && has_per_vertex_khr) {
-        is_arrayed = true;
-      }
-      break;
-    case spv::ExecutionModel::MeshNV:
-      if (is_output && !has_per_task_nv) {
-        is_arrayed = true;
-      }
-      break;
-    default:
-      break;
-  }
+  const bool is_arrayed = ExecutionModelStripsInterfaceArray(
+      entry_point->GetOperandAs<spv::ExecutionModel>(0), is_output, has_patch,
+      has_per_task_nv, has_per_vertex_khr);
 
   // Unpack arrayness.
   if (is_arrayed && (type->opcode() == spv::Op::OpTypeArray ||
