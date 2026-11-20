@@ -19,7 +19,6 @@
 #include <cassert>
 #include <functional>
 #include <optional>
-#include <queue>
 #include <stack>
 #include <unordered_map>
 #include <unordered_set>
@@ -75,22 +74,11 @@ void InvocationInterlockPlacementPass::forEachNext(
   }
 }
 
-void InvocationInterlockPlacementPass::addInstructionAtBlockBoundary(
-    BasicBlock* block, spv::Op opcode, bool at_end) {
-  if (at_end) {
-    assert(block->begin()->opcode() != spv::Op::OpPhi &&
-           "addInstructionAtBlockBoundary expects to be called with at_end == "
-           "true only if there is a single successor to block");
-    // Insert a begin instruction at the end of the block.
-    Instruction* begin_inst = new Instruction(context(), opcode);
-    begin_inst->InsertAfter(&*--block->tail());
-  } else {
-    assert(block->begin()->opcode() != spv::Op::OpPhi &&
-           "addInstructionAtBlockBoundary expects to be called with at_end == "
-           "false only if there is a single predecessor to block");
-    // Insert an end instruction at the beginning of the block.
-    Instruction* end_inst = new Instruction(context(), opcode);
-    end_inst->InsertBefore(&*block->begin());
+void InvocationInterlockPlacementPass::insertInstructions(
+    Instruction* before, const std::vector<spv::Op>& opcodes) {
+  for (spv::Op opcode : opcodes) {
+    Instruction* inst = new Instruction(context(), opcode);
+    inst->InsertBefore(before);
   }
 }
 
@@ -329,63 +317,67 @@ BasicBlock* InvocationInterlockPlacementPass::splitEdge(BasicBlock* block,
   return new_succ;
 }
 
+InvocationInterlockPlacementPass::Phase
+InvocationInterlockPlacementPass::phaseAtStart(uint32_t block_id) const {
+  if (!before_end_.count(block_id)) {
+    return Phase::kAfterEnd;
+  }
+  return predecessors_after_begin_.count(block_id) ? Phase::kInside
+                                                   : Phase::kBeforeBegin;
+}
+
+InvocationInterlockPlacementPass::Phase
+InvocationInterlockPlacementPass::phaseAtEnd(uint32_t block_id) const {
+  if (!successors_before_end_.count(block_id)) {
+    return Phase::kAfterEnd;
+  }
+  return after_begin_.count(block_id) ? Phase::kInside : Phase::kBeforeBegin;
+}
+
 Pass::Status InvocationInterlockPlacementPass::placeInstructionsForEdge(
-    BasicBlock* block, uint32_t next_id, BlockSet& inside,
-    BlockSet& previous_inside, spv::Op opcode, bool reverse_cfg) {
-  bool modified = false;
+    BasicBlock* block, uint32_t succ_id) {
+  const Phase from = phaseAtEnd(block->id());
+  const Phase to = phaseAtStart(succ_id);
+  if (from == to) {
+    return Status::SuccessWithoutChange;
+  }
+  assert(from < to && "an edge cannot move back to an earlier phase");
 
-  if (previous_inside.count(next_id) && !inside.count(block->id())) {
-    // This block is not in the critical section but the next has at least one
-    // other previous block that is, so this block should be enter it as well.
-    // We need to add begin or end instructions to the edge.
-
-    modified = true;
-
-    if (hasSingleNextBlock(block->id(), reverse_cfg)) {
-      // This is the only next block.
-
-      // Additionally, because `next_id` is in `previous_inside`, we know that
-      // `next_id` has at least one previous block in `inside`. And because
-      // 'block` is not in `inside`, that means the `next_id` has to have at
-      // least one other previous block in `inside`.
-
-      // This is solely for a debug assertion. It is essentially recomputing the
-      // value of `previous_inside` to verify that it was computed correctly
-      // such that the above statement is true.
-      bool next_has_previous_inside = false;
-      // By passing !reverse_cfg to forEachNext, we are actually iterating over
-      // the previous blocks.
-      forEachNext(next_id, !reverse_cfg,
-                  [&next_has_previous_inside, inside](uint32_t previous_id) {
-                    if (inside.count(previous_id)) {
-                      next_has_previous_inside = true;
-                    }
-                  });
-      assert(next_has_previous_inside &&
-             "`previous_inside` must be the set of blocks with at least one "
-             "previous block in `inside`");
-
-      addInstructionAtBlockBoundary(block, opcode, reverse_cfg);
-    } else {
-      // This block has multiple next blocks. Split the edge and insert the
-      // instruction in the new next block.
-      BasicBlock* new_branch;
-      if (reverse_cfg) {
-        new_branch = splitEdge(block, next_id);
-      } else {
-        new_branch = splitEdge(cfg()->block(next_id), block->id());
-      }
-
-      if (!new_branch) {
-        return Status::Failure;
-      }
-
-      auto inst = new Instruction(context(), opcode);
-      inst->InsertBefore(&*new_branch->tail());
-    }
+  // A path that skips the critical section still has to execute both
+  // instructions, so leaving kBeforeBegin for kAfterEnd needs a begin
+  // immediately followed by an end.
+  std::vector<spv::Op> opcodes;
+  if (from == Phase::kBeforeBegin) {
+    opcodes.push_back(spv::Op::OpBeginInvocationInterlockEXT);
+  }
+  if (to == Phase::kAfterEnd) {
+    opcodes.push_back(spv::Op::OpEndInvocationInterlockEXT);
   }
 
-  return modified ? Status::SuccessWithChange : Status::SuccessWithoutChange;
+  if (to == Phase::kAfterEnd &&
+      hasSingleNextBlock(succ_id, /* reverse_cfg= */ false)) {
+    // The successor is only reached through this edge, so the instructions
+    // can go at its start.
+    BasicBlock* succ = cfg()->block(succ_id);
+    auto inst = succ->begin();
+    while (inst->opcode() == spv::Op::OpPhi) {
+      ++inst;
+    }
+    insertInstructions(&*inst, opcodes);
+  } else if (hasSingleNextBlock(block->id(), /* reverse_cfg= */ true)) {
+    // This is the only successor, so the instructions can go at the end of the
+    // block, before any merge instruction.
+    Instruction* merge = block->GetMergeInst();
+    insertInstructions(merge ? merge : &*block->tail(), opcodes);
+  } else {
+    BasicBlock* new_block = splitEdge(block, succ_id);
+    if (!new_block) {
+      return Status::Failure;
+    }
+    insertInstructions(&*new_block->tail(), opcodes);
+  }
+
+  return Status::SuccessWithChange;
 }
 
 Pass::Status InvocationInterlockPlacementPass::placeInstructions(
@@ -396,19 +388,7 @@ Pass::Status InvocationInterlockPlacementPass::placeInstructions(
     if (status == Status::Failure) {
       return;
     }
-    Status edge_status = placeInstructionsForEdge(
-        block, succ_id, after_begin_, predecessors_after_begin_,
-        spv::Op::OpBeginInvocationInterlockEXT, /* reverse_cfg= */ true);
-    status = CombineStatus(status, edge_status);
-    if (status == Status::Failure) {
-      return;
-    }
-
-    edge_status = placeInstructionsForEdge(cfg()->block(succ_id), block->id(),
-                                           before_end_, successors_before_end_,
-                                           spv::Op::OpEndInvocationInterlockEXT,
-                                           /* reverse_cfg= */ false);
-    status = CombineStatus(status, edge_status);
+    status = CombineStatus(status, placeInstructionsForEdge(block, succ_id));
   });
 
   return status;
@@ -417,6 +397,13 @@ Pass::Status InvocationInterlockPlacementPass::placeInstructions(
 Pass::Status InvocationInterlockPlacementPass::processFragmentShaderEntry(
     Function* entry_func) {
   bool modified = false;
+
+  // Analyze each entry point on its own. A previous entry point's blocks may
+  // have been split, and the CFG does not know the new blocks.
+  begin_.clear();
+  end_.clear();
+  predecessors_after_begin_.clear();
+  successors_before_end_.clear();
 
   // Save the original order of blocks in the function, so we don't iterate over
   // newly-added blocks.
