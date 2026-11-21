@@ -4078,11 +4078,9 @@ TEST_F(ValidateImage, NotGatherWithConstOffsets) {
 
   CompileSuccessfully(GenerateShaderCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
-  EXPECT_THAT(
-      getDiagnosticString(),
-      HasSubstr(
-          "Image Operand ConstOffsets can only be used with OpImageGather "
-          "and OpImageDrefGather"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Image Operand ConstOffsets can only be used with "
+                        "OpImage*Gather operations."));
 }
 
 TEST_F(ValidateImage, DrefGatherSuccess) {
@@ -6106,6 +6104,19 @@ OpExtension "SPV_KHR_vulkan_memory_model"
                           .c_str(),
                       SPV_ENV_UNIVERSAL_1_3);
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
+}
+
+TEST_F(ValidateImage, SparseGatherConstOffsetsSuccess) {
+  const std::string body = R"(
+%img = OpLoad %type_image_f32_2d_0001 %uniform_image_f32_2d_0001
+%sampler = OpLoad %type_sampler %uniform_sampler
+%simg = OpSampledImage %type_sampled_image_f32_2d_0001 %img %sampler
+%res1 = OpImageSparseGather %struct_u32_f32vec4 %simg %f32vec4_0000 %u32_1 ConstOffsets %const_offsets
+%res2 = OpImageSparseDrefGather %struct_u32_f32vec4 %simg %f32vec4_0000 %f32_0_5 ConstOffsets %const_offsets
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body).c_str());
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
 TEST_F(ValidateImage, SparseGatherResultTypeNotStruct) {
