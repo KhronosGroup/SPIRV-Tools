@@ -182,6 +182,11 @@ spv_result_t ValidateLogicalPointerOperands(ValidationState_t& _,
     case spv::Op::OpRayQueryGetRayFlagsKHR:
     case spv::Op::OpRayQueryGetIntersectionTKHR:
     case spv::Op::OpRayQueryGetIntersectionInstanceCustomIndexKHR:
+    case spv::Op::OpRayQueryGetIntersectionInstanceLevelAMDX:
+    case spv::Op::OpRayQueryGetIntersectionInstanceCustomIndexAtLevelAMDX:
+    case spv::Op::OpRayQueryGetIntersectionInstanceIdAtLevelAMDX:
+    case spv::Op::OpRayQueryGetIntersectionObjectToWorldAtLevelAMDX:
+    case spv::Op::OpRayQueryGetIntersectionWorldToObjectAtLevelAMDX:
     case spv::Op::OpRayQueryGetIntersectionInstanceIdKHR:
     case spv::Op::
         OpRayQueryGetIntersectionInstanceShaderBindingTableRecordOffsetKHR:

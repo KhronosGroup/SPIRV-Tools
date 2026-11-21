@@ -1379,6 +1379,8 @@ spv_result_t ValidateExtension(ValidationState_t& _, const Instruction* inst) {
     if (extension ==
             ExtensionToString(kSPV_KHR_workgroup_memory_explicit_layout) ||
         extension == ExtensionToString(kSPV_KHR_opacity_micromap) ||
+        extension ==
+            ExtensionToString(kSPV_AMDX_multi_level_acceleration_structure) ||
         extension == ExtensionToString(kSPV_EXT_mesh_shader) ||
         extension == ExtensionToString(kSPV_NV_shader_invocation_reorder) ||
         extension == ExtensionToString(kSPV_EXT_shader_invocation_reorder) ||

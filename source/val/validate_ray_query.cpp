@@ -199,6 +199,9 @@ spv_result_t RayQueryPass(ValidationState_t& _, const Instruction* inst) {
       break;
     }
 
+    case spv::Op::OpRayQueryGetIntersectionInstanceLevelAMDX:
+    case spv::Op::OpRayQueryGetIntersectionInstanceCustomIndexAtLevelAMDX:
+    case spv::Op::OpRayQueryGetIntersectionInstanceIdAtLevelAMDX:
     case spv::Op::OpRayQueryGetIntersectionTypeKHR:
     case spv::Op::OpRayQueryGetIntersectionInstanceCustomIndexKHR:
     case spv::Op::OpRayQueryGetIntersectionInstanceIdKHR:
@@ -216,6 +219,15 @@ spv_result_t RayQueryPass(ValidationState_t& _, const Instruction* inst) {
 
       if (opcode != spv::Op::OpRayQueryGetRayFlagsKHR) {
         if (auto error = ValidateIntersectionId(_, inst, 3)) return error;
+      }
+
+      if ((opcode ==
+               spv::Op::
+                   OpRayQueryGetIntersectionInstanceCustomIndexAtLevelAMDX ||
+           opcode == spv::Op::OpRayQueryGetIntersectionInstanceIdAtLevelAMDX) &&
+          !_.IsIntScalarType(_.GetOperandTypeId(inst, 4), 32)) {
+        return _.diag(SPV_ERROR_INVALID_DATA, inst)
+               << "Level must be a 32-bit int scalar";
       }
 
       break;
@@ -258,10 +270,21 @@ spv_result_t RayQueryPass(ValidationState_t& _, const Instruction* inst) {
       break;
     }
 
+    case spv::Op::OpRayQueryGetIntersectionObjectToWorldAtLevelAMDX:
+    case spv::Op::OpRayQueryGetIntersectionWorldToObjectAtLevelAMDX:
     case spv::Op::OpRayQueryGetIntersectionObjectToWorldKHR:
     case spv::Op::OpRayQueryGetIntersectionWorldToObjectKHR: {
       if (auto error = ValidateRayQueryPointer(_, inst, 2)) return error;
       if (auto error = ValidateIntersectionId(_, inst, 3)) return error;
+
+      if ((opcode ==
+               spv::Op::OpRayQueryGetIntersectionObjectToWorldAtLevelAMDX ||
+           opcode ==
+               spv::Op::OpRayQueryGetIntersectionWorldToObjectAtLevelAMDX) &&
+          !_.IsIntScalarType(_.GetOperandTypeId(inst, 4), 32)) {
+        return _.diag(SPV_ERROR_INVALID_DATA, inst)
+               << "Level must be a 32-bit int scalar";
+      }
 
       uint32_t num_rows = 0;
       uint32_t num_cols = 0;
