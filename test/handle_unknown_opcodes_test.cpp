@@ -507,5 +507,87 @@ TEST_F(HandleUnknownOpcodesTest, InstructionBinaryToTextUnknownOpcode) {
   EXPECT_THAT(output, HasSubstr("OpUnknown(65534, 3) 42 99"));
 }
 
+// Disassembler: NESTED_INDENT builds a CFG from the stashed block
+// instructions.  An OpSelectionMerge whose Selection Control has an unknown
+// bit is handed to the disassembler with no decoded operands, so its merge
+// block id must not be read.
+TEST_F(HandleUnknownOpcodesTest, DisassembleNestedIndentUnknownSelectionMerge) {
+  // OpTypeVoid %1                       (opcode=19,  word_count=2)
+  // OpTypeFunction %2 %1                (opcode=33,  word_count=3)
+  // OpFunction %1 %3 None %2            (opcode=54,  word_count=5)
+  //   OpLabel %4                        (opcode=248, word_count=2)
+  //   OpSelectionMerge %5 0x80000000    (opcode=247, word_count=3)
+  //   OpBranch %5                       (opcode=249, word_count=2)
+  //   OpLabel %5                        (opcode=248, word_count=2)
+  //   OpReturn                          (opcode=253, word_count=1)
+  // OpFunctionEnd                       (opcode=56,  word_count=1)
+  std::vector<uint32_t> binary = spvtest::Concatenate({
+      MakeHeader(6),
+      {MakeFirstWord(2, 19u), 1u},
+      {MakeFirstWord(3, 33u), 2u, 1u},
+      {MakeFirstWord(5, 54u), 1u, 3u, 0u, 2u},
+      {MakeFirstWord(2, 248u), 4u},
+      {MakeFirstWord(3, 247u), 5u, 0x80000000u},
+      {MakeFirstWord(2, 249u), 5u},
+      {MakeFirstWord(2, 248u), 5u},
+      {MakeFirstWord(1, 253u)},
+      {MakeFirstWord(1, 56u)},
+  });
+  spv_text text = nullptr;
+  spv_diagnostic diag = nullptr;
+  ASSERT_EQ(SPV_SUCCESS,
+            spvBinaryToText(context_, binary.data(), binary.size(),
+                            SPV_BINARY_TO_TEXT_OPTION_HANDLE_UNKNOWN_OPCODES |
+                                SPV_BINARY_TO_TEXT_OPTION_NESTED_INDENT,
+                            &text, &diag))
+      << (diag ? diag->error : "(no diagnostic)");
+  const std::string output(text->str, text->length);
+  // OpSelectionMerge opcode=247, word_count=3; operands: 5, 2147483648.
+  EXPECT_THAT(output, HasSubstr("OpUnknown(247, 3) 5 2147483648"));
+  EXPECT_THAT(output, HasSubstr("OpBranch"));
+  spvTextDestroy(text);
+  spvDiagnosticDestroy(diag);
+}
+
+// Same for an OpLoopMerge with an unknown Loop Control bit, which reads two
+// operands when building the CFG.
+TEST_F(HandleUnknownOpcodesTest, DisassembleReorderBlocksUnknownLoopMerge) {
+  // OpTypeVoid %1                        (opcode=19,  word_count=2)
+  // OpTypeFunction %2 %1                 (opcode=33,  word_count=3)
+  // OpFunction %1 %3 None %2             (opcode=54,  word_count=5)
+  //   OpLabel %4                         (opcode=248, word_count=2)
+  //   OpLoopMerge %5 %6 0x80000000       (opcode=246, word_count=4)
+  //   OpBranch %5                        (opcode=249, word_count=2)
+  //   OpLabel %5                         (opcode=248, word_count=2)
+  //   OpReturn                           (opcode=253, word_count=1)
+  // OpFunctionEnd                        (opcode=56,  word_count=1)
+  std::vector<uint32_t> binary = spvtest::Concatenate({
+      MakeHeader(7),
+      {MakeFirstWord(2, 19u), 1u},
+      {MakeFirstWord(3, 33u), 2u, 1u},
+      {MakeFirstWord(5, 54u), 1u, 3u, 0u, 2u},
+      {MakeFirstWord(2, 248u), 4u},
+      {MakeFirstWord(4, 246u), 5u, 6u, 0x80000000u},
+      {MakeFirstWord(2, 249u), 5u},
+      {MakeFirstWord(2, 248u), 5u},
+      {MakeFirstWord(1, 253u)},
+      {MakeFirstWord(1, 56u)},
+  });
+  spv_text text = nullptr;
+  spv_diagnostic diag = nullptr;
+  ASSERT_EQ(SPV_SUCCESS,
+            spvBinaryToText(context_, binary.data(), binary.size(),
+                            SPV_BINARY_TO_TEXT_OPTION_HANDLE_UNKNOWN_OPCODES |
+                                SPV_BINARY_TO_TEXT_OPTION_REORDER_BLOCKS,
+                            &text, &diag))
+      << (diag ? diag->error : "(no diagnostic)");
+  const std::string output(text->str, text->length);
+  // OpLoopMerge opcode=246, word_count=4; operands: 5, 6, 2147483648.
+  EXPECT_THAT(output, HasSubstr("OpUnknown(246, 4) 5 6 2147483648"));
+  EXPECT_THAT(output, HasSubstr("OpBranch"));
+  spvTextDestroy(text);
+  spvDiagnosticDestroy(diag);
+}
+
 }  // namespace
 }  // namespace spvtools

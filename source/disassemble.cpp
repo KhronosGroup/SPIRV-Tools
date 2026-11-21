@@ -228,9 +228,16 @@ spv_result_t Disassembler::HandleInstruction(
   return SPV_SUCCESS;
 }
 
-// Helper to get the operand of an instruction as an id.
+// Helper to get the operand of an instruction as an id.  Returns 0 if the
+// instruction has no such operand.  With
+// SPV_BINARY_TO_TEXT_OPTION_HANDLE_UNKNOWN_OPCODES the parser hands back
+// instructions whose operands it could not decode, with num_operands set to 0
+// and num_words left intact, so the operand count cannot be inferred from the
+// opcode.  Zero is already the "no such block" value for the successor fields
+// filled in below.
 uint32_t GetOperand(const spv_parsed_instruction_t* instruction,
                     uint32_t operand) {
+  if (operand >= instruction->num_operands) return 0;
   return instruction->words[instruction->operands[operand].offset];
 }
 
