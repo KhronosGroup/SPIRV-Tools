@@ -1337,14 +1337,20 @@ bool IsConstWithIntScalarType(ValidationState_t& _, const Instruction* inst,
 bool IsDebugVariableWithIntScalarType(ValidationState_t& _,
                                       const Instruction* inst,
                                       uint32_t word_index) {
-  auto* dbg_int_scalar_var = _.FindDef(inst->word(word_index));
-  if (CommonDebugInfoInstructions(dbg_int_scalar_var->word(4)) ==
-          CommonDebugInfoDebugLocalVariable ||
-      CommonDebugInfoInstructions(dbg_int_scalar_var->word(4)) ==
-          CommonDebugInfoDebugGlobalVariable) {
-    auto* dbg_type = _.FindDef(dbg_int_scalar_var->word(6));
-    if (CommonDebugInfoInstructions(dbg_type->word(4)) ==
-        CommonDebugInfoDebugTypeBasic) {
+  std::function<bool(CommonDebugInfoInstructions)> is_variable =
+      [](CommonDebugInfoInstructions dbg_inst) {
+        return dbg_inst == CommonDebugInfoDebugLocalVariable ||
+               dbg_inst == CommonDebugInfoDebugGlobalVariable;
+      };
+  std::function<bool(CommonDebugInfoInstructions)> is_type_basic =
+      [](CommonDebugInfoInstructions dbg_inst) {
+        return dbg_inst == CommonDebugInfoDebugTypeBasic;
+      };
+  if (DoesDebugInfoOperandMatchExpectation(_, is_variable, inst, word_index)) {
+    auto* dbg_int_scalar_var = _.FindDef(inst->word(word_index));
+    if (DoesDebugInfoOperandMatchExpectation(_, is_type_basic,
+                                             dbg_int_scalar_var, 6)) {
+      auto* dbg_type = _.FindDef(dbg_int_scalar_var->word(6));
       const spv_ext_inst_type_t ext_inst_type =
           spv_ext_inst_type_t(inst->ext_inst_type());
       const bool vulkanDebugInfo =
@@ -3829,6 +3835,11 @@ spv_result_t ValidateExtInstDebugInfo(ValidationState_t& _,
         auto validate_base_type =
             ValidateOperandDebugType(_, "Base Type", inst, 5, false);
         if (validate_base_type != SPV_SUCCESS) return validate_base_type;
+        std::function<bool(CommonDebugInfoInstructions)> is_variable =
+            [](CommonDebugInfoInstructions dbg_inst) {
+              return dbg_inst == CommonDebugInfoDebugLocalVariable ||
+                     dbg_inst == CommonDebugInfoDebugGlobalVariable;
+            };
         for (uint32_t i = 6; i < num_words; ++i) {
           bool invalid = false;
           auto* component_count = _.FindDef(inst->word(i));
@@ -3842,11 +3853,8 @@ spv_result_t ValidateExtInstDebugInfo(ValidationState_t& _,
                                             _, component_count)) {
             // Spec constants are valid component counts for
             // NonSemantic.Shader.DebugInfo.
-          } else if (component_count->words().size() > 6 &&
-                     (CommonDebugInfoInstructions(component_count->word(4)) ==
-                          CommonDebugInfoDebugLocalVariable ||
-                      CommonDebugInfoInstructions(component_count->word(4)) ==
-                          CommonDebugInfoDebugGlobalVariable)) {
+          } else if (DoesDebugInfoOperandMatchExpectation(_, is_variable, inst,
+                                                          i)) {
             auto* component_count_type = _.FindDef(component_count->word(6));
             if (component_count_type->words().size() > 7) {
               uint32_t encoding = component_count_type->word(7);

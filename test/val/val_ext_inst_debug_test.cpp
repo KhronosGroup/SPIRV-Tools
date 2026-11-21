@@ -1324,6 +1324,53 @@ TEST_F(ValidateOpenCL100DebugInfo, DebugTypeArrayFailComponentCount) {
                         "integer scalar type"));
 }
 
+TEST_F(ValidateOpenCL100DebugInfo,
+       DebugTypeArrayFailComponentCountNonDebugComposite) {
+  // %arr4_const is not a debug instruction, but its word 4 (id 26) matches
+  // DebugLocalVariable and its word 6 leads to %arr5_const, whose words 4 and
+  // 7 (ids 2 and 6) match DebugTypeBasic and Unsigned.
+  const std::string text = R"(
+OpCapability Shader
+%DbgExt = OpExtInstImport "OpenCL.DebugInfo.100"
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %main "main"
+OpExecutionMode %main LocalSize 1 1 1
+%src = OpString "simple.cl"
+%int_name = OpString "int"
+%void = OpTypeVoid
+%void_fn = OpTypeFunction %void
+%u32 = OpTypeInt 32 0
+%2 = OpConstant %u32 1
+%6 = OpConstant %u32 2
+%u32_4 = OpConstant %u32 4
+%u32_5 = OpConstant %u32 5
+%u32_32 = OpConstant %u32 32
+%arr5 = OpTypeArray %u32 %u32_5
+%arr4 = OpTypeArray %arr5 %u32_4
+%undef = OpUndef %u32
+%26 = OpConstantNull %arr5
+%arr5_const = OpConstantComposite %arr5 %2 %2 %2 %undef %6
+%arr4_const = OpConstantComposite %arr4 %26 %26 %26 %arr5_const
+%dbg_src = OpExtInst %void %DbgExt DebugSource %src
+%comp_unit = OpExtInst %void %DbgExt DebugCompilationUnit 2 4 %dbg_src HLSL
+%int_info = OpExtInst %void %DbgExt DebugTypeBasic %int_name %u32_32 Signed
+%int_arr_info = OpExtInst %void %DbgExt DebugTypeArray %int_info %arr4_const
+%main = OpFunction %void None %void_fn
+%entry = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
+  CompileSuccessfully(text);
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Component Count must be OpConstant with a 32- or "
+                        "64-bits integer scalar type or DebugGlobalVariable or "
+                        "DebugLocalVariable with a 32- or 64-bits unsigned "
+                        "integer scalar type"));
+}
+
 TEST_F(ValidateOpenCL100DebugInfo, DebugTypeArrayFailComponentCountFloat) {
   const std::string src = R"(
 %src = OpString "simple.hlsl"
@@ -4736,6 +4783,7 @@ INSTANTIATE_TEST_SUITE_P(
         std::make_pair(R"(%dbg_src %int_32 %null_expr)", "Local Variable"),
         std::make_pair(R"(%foo_info %int_32 %dbg_src)", "Expression"),
         std::make_pair(R"(%foo_info %int_32 %null_expr %dbg_src)", "Indexes"),
+        std::make_pair(R"(%foo_info %int_32 %null_expr %void)", "Indexes"),
     }));
 
 TEST_F(ValidateVulkan100DebugInfo, DebugValue) {
@@ -4845,6 +4893,7 @@ INSTANTIATE_TEST_SUITE_P(
                        "Local Variable"),
         std::make_pair(R"(%foo_info %u32_32 %dbg_src %u32_3)", "Expression"),
         std::make_pair(R"(%foo_info %u32_32 %null_expr %dbg_src)", "Indexes"),
+        std::make_pair(R"(%foo_info %u32_32 %null_expr %void)", "Indexes"),
     }));
 
 TEST_F(ValidateVulkan100DebugInfo, VulkanDebugInfoSample) {
