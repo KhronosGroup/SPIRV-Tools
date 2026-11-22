@@ -1626,7 +1626,35 @@ INSTANTIATE_TEST_SUITE_P(
                 "%2 = OpExtInst %ulong %1 UMax %ulong_9223372036854775809 %ulong_max\n" +
                 "OpReturn\n" +
                 "OpFunctionEnd",
-            2, 18446744073709551615ull)
+            2, 18446744073709551615ull),
+        // Test case 20: fold min / -1 (signed), which overflows
+        InstructionFoldingCase<uint64_t>(
+            Header() + "%main = OpFunction %void None %void_func\n" +
+                "%main_lab = OpLabel\n" +
+                "%2 = OpSDiv %long %long_min %long_n1\n" + "OpReturn\n" +
+                "OpFunctionEnd",
+            2, 0x8000000000000000ull),
+        // Test case 21: fold min rem -1 (signed)
+        InstructionFoldingCase<uint64_t>(
+            Header() + "%main = OpFunction %void None %void_func\n" +
+                "%main_lab = OpLabel\n" +
+                "%2 = OpSRem %long %long_min %long_n1\n" + "OpReturn\n" +
+                "OpFunctionEnd",
+            2, 0ull),
+        // Test case 22: fold min mod -1 (signed)
+        InstructionFoldingCase<uint64_t>(
+            Header() + "%main = OpFunction %void None %void_func\n" +
+                "%main_lab = OpLabel\n" +
+                "%2 = OpSMod %long %long_min %long_n1\n" + "OpReturn\n" +
+                "OpFunctionEnd",
+            2, 0ull),
+        // Test case 23: fold 3 mod -3 (signed)
+        InstructionFoldingCase<uint64_t>(
+            Header() + "%main = OpFunction %void None %void_func\n" +
+                "%main_lab = OpLabel\n" +
+                "%2 = OpSMod %long %long_3 %long_n3\n" + "OpReturn\n" +
+                "OpFunctionEnd",
+            2, 0ull)
         ));
 // clang-format on
 
