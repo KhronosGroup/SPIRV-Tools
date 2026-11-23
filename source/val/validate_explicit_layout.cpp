@@ -400,7 +400,7 @@ struct Impl {
                  << vstate.getIdName(type_id) << ", the "
                  << spv::StorageClassToString(sc)
                  << " storage class has an explicit layout from the "
-                 << vstate.SpvDecorationString(dec) << " decoration";
+                 << spv::DecorationToString(dec) << " decoration";
         }
       }
     }
@@ -1125,7 +1125,7 @@ struct Impl {
                  << vstate.getIdName(reference.descriptor_array_id) << ", the "
                  << spv::StorageClassToString(reference.storage_class)
                  << " storage class has an explicit layout from the "
-                 << vstate.SpvDecorationString(
+                 << spv::DecorationToString(
                         array_stride ? spv::Decoration::ArrayStride
                                      : spv::Decoration::ArrayStrideIdEXT)
                  << " decoration";

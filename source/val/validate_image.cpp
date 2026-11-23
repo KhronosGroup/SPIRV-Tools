@@ -2502,7 +2502,7 @@ spv_result_t ValidateImageProcessingQCOMDecoration(ValidationState_t& _, int id,
   int texture_id = ld_inst->GetOperandAs<int>(2);  // variable to load
   if (!_.HasDecoration(texture_id, decor)) {
     return _.diag(SPV_ERROR_INVALID_DATA, ld_inst)
-           << "Missing decoration " << _.SpvDecorationString(decor);
+           << "Missing decoration " << spv::DecorationToString(decor);
   }
 
   return SPV_SUCCESS;
@@ -2520,12 +2520,12 @@ spv_result_t ValidateImageProcessing2QCOMWindowDecoration(ValidationState_t& _,
     spv::Decoration decor = spv::Decoration::BlockMatchTextureQCOM;
     if (!_.HasDecoration(texture_id, decor)) {
       return _.diag(SPV_ERROR_INVALID_DATA, ld_inst)
-             << "Missing decoration " << _.SpvDecorationString(decor);
+             << "Missing decoration " << spv::DecorationToString(decor);
     }
     decor = spv::Decoration::BlockMatchSamplerQCOM;
     if (!_.HasDecoration(texture_id, decor)) {
       return _.diag(SPV_ERROR_INVALID_DATA, ld_inst)
-             << "Missing decoration " << _.SpvDecorationString(decor);
+             << "Missing decoration " << spv::DecorationToString(decor);
     }
   } else {
     const Instruction* si_inst = ld_inst;
@@ -2539,7 +2539,7 @@ spv_result_t ValidateImageProcessing2QCOMWindowDecoration(ValidationState_t& _,
     spv::Decoration decor = spv::Decoration::BlockMatchTextureQCOM;
     if (!_.HasDecoration(texture_id, decor)) {
       return _.diag(SPV_ERROR_INVALID_DATA, ld_inst)
-             << "Missing decoration " << _.SpvDecorationString(decor);
+             << "Missing decoration " << spv::DecorationToString(decor);
     }
     int s_idx = si_inst->GetOperandAs<int>(3);  // sampler
     const Instruction* s_ld_inst = _.FindDef(s_idx);
@@ -2551,7 +2551,7 @@ spv_result_t ValidateImageProcessing2QCOMWindowDecoration(ValidationState_t& _,
     decor = spv::Decoration::BlockMatchSamplerQCOM;
     if (!_.HasDecoration(sampler_id, decor)) {
       return _.diag(SPV_ERROR_INVALID_DATA, ld_inst)
-             << "Missing decoration " << _.SpvDecorationString(decor);
+             << "Missing decoration " << spv::DecorationToString(decor);
     }
   }
 

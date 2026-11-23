@@ -363,7 +363,7 @@ spv_result_t CheckDecorationsOfEntryPoints(ValidationState_t& vstate) {
                   (models->size() > 1 || has_vert)) {
                 return vstate.diag(SPV_ERROR_INVALID_ID, var_instr)
                        << vstate.VkErrorID(6202)
-                       << vstate.SpvDecorationString(decoration.dec_type())
+                       << spv::DecorationToString(decoration.dec_type())
                        << " decorated variable must not be used in vertex "
                           "execution model as an Input storage class for Entry "
                           "Point id "
@@ -372,7 +372,7 @@ spv_result_t CheckDecorationsOfEntryPoints(ValidationState_t& vstate) {
                          (models->size() > 1 || has_frag)) {
                 return vstate.diag(SPV_ERROR_INVALID_ID, var_instr)
                        << vstate.VkErrorID(6201)
-                       << vstate.SpvDecorationString(decoration.dec_type())
+                       << spv::DecorationToString(decoration.dec_type())
                        << " decorated variable must not be used in fragment "
                           "execution model as an Output storage class for "
                           "Entry Point id "
@@ -732,7 +732,7 @@ spv_result_t CheckDecorationsCompatibility(ValidationState_t& vstate) {
       if (already_used && AtMostOncePerId(dec_type)) {
         return vstate.diag(SPV_ERROR_INVALID_ID, vstate.FindDef(id))
                << "ID '" << id << "' decorated with "
-               << vstate.SpvDecorationString(dec_type)
+               << spv::DecorationToString(dec_type)
                << " multiple times is not allowed.";
       }
       // Verify certain mutually exclusive decorations are not both applied on
@@ -752,8 +752,8 @@ spv_result_t CheckDecorationsCompatibility(ValidationState_t& vstate) {
         if (seen_per_id.find(excl_k) != seen_per_id.end()) {
           return vstate.diag(SPV_ERROR_INVALID_ID, vstate.FindDef(id))
                  << "ID '" << id << "' decorated with both "
-                 << vstate.SpvDecorationString(dec_type) << " and "
-                 << vstate.SpvDecorationString(excl_dec_type)
+                 << spv::DecorationToString(dec_type) << " and "
+                 << spv::DecorationToString(excl_dec_type)
                  << " is not allowed.";
         }
       }
@@ -767,7 +767,7 @@ spv_result_t CheckDecorationsCompatibility(ValidationState_t& vstate) {
       if (already_used && AtMostOncePerMember(dec_type)) {
         return vstate.diag(SPV_ERROR_INVALID_ID, vstate.FindDef(id))
                << "ID '" << id << "', member '" << member_id
-               << "' decorated with " << vstate.SpvDecorationString(dec_type)
+               << "' decorated with " << spv::DecorationToString(dec_type)
                << " multiple times is not allowed.";
       }
       // Verify certain mutually exclusive decorations are not both applied on
@@ -788,8 +788,8 @@ spv_result_t CheckDecorationsCompatibility(ValidationState_t& vstate) {
           return vstate.diag(SPV_ERROR_INVALID_ID, vstate.FindDef(id))
                  << "ID '" << id << "', member '" << member_id
                  << "' decorated with both "
-                 << vstate.SpvDecorationString(dec_type) << " and "
-                 << vstate.SpvDecorationString(excl_dec_type)
+                 << spv::DecorationToString(dec_type) << " and "
+                 << spv::DecorationToString(excl_dec_type)
                  << " is not allowed.";
         }
       }
