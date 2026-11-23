@@ -17,7 +17,7 @@ jobs:
         - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
           with:
             persist-credentials: false
-        - uses: lukka/get-cmake@f86dd60acae0d132056913e248bdabf0e0580b7a # v4.4.5
+        - uses: lukka/get-cmake@16e8153a8b4918849d92aad131befe67a3705daa # v4.5.0
         - name: Download dependencies
           run: python3 utils/git-sync-deps
         # NOTE: The MacOS SDK ships universal binaries. CI should reflect this.
