@@ -862,18 +862,6 @@ class ValidationState_t {
   std::string Disassemble(const uint32_t* words, uint16_t num_words) const;
 
   // Returns the string name for |decoration|.
-  std::string SpvDecorationString(uint32_t decoration) {
-    const spvtools::OperandDesc* desc = nullptr;
-    if (spvtools::LookupOperand(SPV_OPERAND_TYPE_DECORATION, decoration,
-                                &desc) != SPV_SUCCESS) {
-      return std::string("Unknown");
-    }
-    return std::string(desc->name().data());
-  }
-  std::string SpvDecorationString(spv::Decoration decoration) {
-    return SpvDecorationString(uint32_t(decoration));
-  }
-
   bool CheckForceOpacityMicromap2StateKHRCapabilityRequirement(
       const Instruction* inst, uint32_t flag_operand) {
     bool retval = true;

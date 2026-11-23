@@ -115,7 +115,7 @@ spv_result_t ValidateDecorationTarget(ValidationState_t& _, spv::Decoration dec,
                                       const Instruction* target) {
   auto fail = [&_, dec, target]() -> std::string {
     std::ostringstream ss;
-    ss << _.SpvDecorationString(dec) << " decoration on target <id> "
+    ss << spv::DecorationToString(dec) << " decoration on target <id> "
        << _.getIdName(target->id()) << " ";
     return ss.str();
   };
@@ -282,7 +282,7 @@ spv_result_t ValidateDecorationTarget(ValidationState_t& _, spv::Decoration dec,
             sc != spv::StorageClass::HitObjectAttributeEXT &&
             sc != spv::StorageClass::TileImageEXT) {
           return _.diag(SPV_ERROR_INVALID_ID, target)
-                 << _.VkErrorID(6672) << _.SpvDecorationString(dec)
+                 << _.VkErrorID(6672) << spv::DecorationToString(dec)
                  << " decoration must not be applied to this storage class";
         }
         break;
@@ -349,7 +349,7 @@ spv_result_t ValidateDecorate(ValidationState_t& _, const Instruction* inst) {
         (decoration == spv::Decoration::GLSLPacked)) {
       return _.diag(SPV_ERROR_INVALID_ID, inst)
              << _.VkErrorID(4669) << "OpDecorate decoration '"
-             << _.SpvDecorationString(decoration)
+             << spv::DecorationToString(decoration)
              << "' is not valid for the Vulkan execution environment.";
     }
   }
@@ -391,7 +391,7 @@ spv_result_t ValidateDecorate(ValidationState_t& _, const Instruction* inst) {
   if (target->opcode() != spv::Op::OpDecorationGroup) {
     if (IsMemberDecorationOnly(decoration)) {
       return _.diag(SPV_ERROR_INVALID_ID, inst)
-             << _.SpvDecorationString(decoration)
+             << spv::DecorationToString(decoration)
              << " can only be applied to structure members";
     }
 
@@ -482,7 +482,7 @@ spv_result_t ValidateDecorateId(ValidationState_t& _, const Instruction* inst) {
 
   if (IsMemberDecorationOnly(decoration)) {
     return _.diag(SPV_ERROR_INVALID_ID, inst)
-           << _.SpvDecorationString(decoration)
+           << spv::DecorationToString(decoration)
            << " can only be applied to structure members";
   }
 
@@ -563,7 +563,7 @@ spv_result_t ValidateMemberDecorate(ValidationState_t& _,
 
   if (IsNotMemberDecoration(decoration)) {
     return _.diag(SPV_ERROR_INVALID_ID, inst)
-           << _.SpvDecorationString(decoration)
+           << spv::DecorationToString(decoration)
            << " cannot be applied to structure members";
   }
 
