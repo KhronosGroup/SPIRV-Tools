@@ -1,5 +1,45 @@
 Revision history for SPIRV-Tools
 
+v2026.5 2026-11-23
+  - General
+    - Add BSD-3-Clause to LICENSE (#6988)
+    - Fix finite-range checks and rounding carries in HexFloat::castTo (#6902)
+    - CMake: install linter.hpp, order libraries in SPIRV-Tools.pc for static linking, and fix Target vs Targets naming in exported config (#7000, #6875, #6810)
+    - Bazel: remove WORKSPACE (#7001)
+    - Improve build time by moving code to source files (#7010)
+    - Various build system and dependency updates (Bazel, CMake, Abseil, SPIRV-Headers)
+  - Optimizer
+    - Add pass to convert uniform buffers to push constants (#6974)
+    - Add nonwritable-propagation pass (#6844)
+    - Add constant folding for more GLSL.std.450 extended instructions, including SAbs and FAbs (#6983, #6930)
+    - Add OpMemberDecorateIdEXT support (#7021)
+    - Allow SPV_KHR_float_controls in local optimizations (#7017)
+    - Handle OpTypeCooperativeMatrixNV and OpTypeVectorIdEXT in fix-storage-class access chains (#6982, #6971)
+    - Harden passes against ID overflow and fix memory leaks on ID overflow (#6877, #6878, #6887)
+    - Reduce memory usage in redundancy elimination (#6962)
+    - Correctness fixes for constant folding: OpSelect with scalar condition, 8/16-bit constants without Int8/Int16, spec constants, OpCompositeInsert index bounds, vector reciprocals, and fp8 (#6843, #6990, #6993, #6922, #6936, #6677)
+    - Correctness fixes for combine-access-chains (#7030, #7031)
+    - Stability fixes for merge-return, loop dependence analysis, null composite constants, cooperative matrix replicates, eliminate dead members, and function declarations (#6885, #6985, #6984, #6975, #6916, #6995)
+  - Validator
+    - Allow BFloat16ArithmeticEXT to permit BFloat16 on arithmetic/relational ops and OpenCL.std extended instructions (#6813)
+    - Improve SPV_EXT_descriptor_heaps validation, including OpImageTexelPointer, direct heap access, OpCopyMemory on opaque descriptors, OffsetId/ArrayStrideId, and OpConstantSizeOfEXT (#7023, #7028, #6929, #6937, #7029, #6949, #6939)
+    - Improve NonSemantic.Shader.DebugInfo validation and fix related crashes (#6944, #6943, #7026, #6965, #6946, #6915)
+    - Require 32-bit cooperative matrix load/store strides and validate CoopMat MulAdd float with Signed operands (#7033, #6924)
+    - Add ray tracing and ray query checks: static RayQuery/RayTracing values, RayQuery in structs, OpCopyObject of RayQuery, RT Volatile memory model, and SER capability requirements (#5567, #6898, #6952, #6868, #7007)
+    - Fix untyped pointer validation for OpLifetimeStart/Stop, variable-length arrays, FPRoundingMode, and storage class operands (#7012, #6928, #6956, #6940)
+    - Validate OpBranchConditional branch weights (#6959)
+    - Add ExecutionModeTakesIdOperands validation (#6992)
+    - Add Vulkan checks: Image mask 04865, OpUndef result type, banned OpConstantNull, StencilRefReplacingEXT, Bool in PhysicalStorageBuffer, and Component of array-of-arrays (#6961, #6931, #6960, #6917, #6935, #6866)
+    - Fix Mesh builtin validation and matrix explicit layouts (#6958, #6957, #7020)
+    - Add OpenCL checks: reject Initializer for Workgroup OpVariable and printf format pointers to arrays (#7006, #6942)
+    - Don't look through pointers when checking 8/16-bit types (#7035)
+    - Performance improvements, reducing parsing passes and allocations (#6910, #6906, #6907, #6909, #6908, #6904, #6905)
+    - Fix crashes in OpAbortKHR, pointer compare, and long vector OpVectorShuffle (#6934, #6938, #6918)
+  - Disassembler
+    - Fix crash when reordering blocks with missing branch targets (#6920)
+  - Fuzzer
+    - Restrict atomic loads and stores to scalar types and handle composites without static index bounds (#6889, #6890)
+
 v2026.4 2026-09-09
   - Optimizer
     - Add pass to convert typed pointers to untyped pointers (`--convert-to-untyped`) (#6714)
