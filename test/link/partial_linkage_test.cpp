@@ -13,6 +13,7 @@
 // limitations under the License.
 
 #include <string>
+#include <vector>
 
 #include "gmock/gmock.h"
 #include "test/link/linker_fixture.h"
@@ -69,6 +70,56 @@ OpDecorate %1 LinkageAttributes "foo" Import
   ASSERT_EQ(SPV_SUCCESS, Disassemble(linked_binary, &res_body))
       << GetErrorMessage();
   EXPECT_EQ(expected_res, res_body);
+}
+
+TEST_F(PartialLinkage, FunctionDeclarationsBeforeDefinitions) {
+  const std::string body1 = R"(
+OpCapability Addresses
+OpCapability Kernel
+OpCapability Linkage
+OpMemoryModel Physical64 OpenCL
+OpDecorate %first LinkageAttributes "first" Export
+%void = OpTypeVoid
+%fn = OpTypeFunction %void
+%first = OpFunction %void None %fn
+%entry = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+  const std::string body2 = R"(
+OpCapability Addresses
+OpCapability Kernel
+OpCapability Linkage
+OpMemoryModel Physical64 OpenCL
+OpDecorate %external LinkageAttributes "external" Import
+OpDecorate %second LinkageAttributes "second" Export
+%void = OpTypeVoid
+%fn = OpTypeFunction %void
+%external = OpFunction %void None %fn
+OpFunctionEnd
+%second = OpFunction %void None %fn
+%entry = OpLabel
+%call = OpFunctionCall %void %external
+OpReturn
+OpFunctionEnd
+)";
+
+  for (bool create_library : {false, true}) {
+    SCOPED_TRACE(create_library);
+    LinkerOptions options;
+    options.SetAllowPartialLinkage(true);
+    options.SetCreateLibrary(create_library);
+    for (bool reverse : {false, true}) {
+      SCOPED_TRACE(reverse);
+      const std::vector<std::string> bodies =
+          reverse ? std::vector<std::string>{body2, body1}
+                  : std::vector<std::string>{body1, body2};
+      spvtest::Binary linked_binary;
+      ASSERT_EQ(SPV_SUCCESS, AssembleAndLink(bodies, &linked_binary, options))
+          << GetErrorMessage();
+      EXPECT_TRUE(Validate(linked_binary)) << GetErrorMessage();
+    }
+  }
 }
 
 TEST_F(PartialLinkage, Disallowed) {

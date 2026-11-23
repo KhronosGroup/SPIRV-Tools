@@ -401,11 +401,15 @@ spv_result_t MergeModules(const MessageConsumer& consumer,
     }
   }
 
-  // Process functions and their basic blocks
-  for (const auto& module : input_modules) {
-    for (const auto& func : *module) {
-      std::unique_ptr<opt::Function> cloned_func(func.Clone(linked_context));
-      linked_module->AddFunction(std::move(cloned_func));
+  // Declarations must precede definitions, including imports kept by partial
+  // linkage from later input modules.
+  for (bool declarations : {true, false}) {
+    for (const auto& module : input_modules) {
+      for (const auto& func : *module) {
+        if (func.IsDeclaration() != declarations) continue;
+        std::unique_ptr<opt::Function> cloned_func(func.Clone(linked_context));
+        linked_module->AddFunction(std::move(cloned_func));
+      }
     }
   }
 
