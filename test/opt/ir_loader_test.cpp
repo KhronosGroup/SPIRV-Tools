@@ -1636,6 +1636,66 @@ OpGraphEndARM
 )");
 }
 
+TEST(IrBuilder, RoundTripUnknownShaderDebugInfoInstructionInBlock) {
+  DoRoundTripCheck(R"(OpCapability Shader
+OpExtension "SPV_KHR_non_semantic_info"
+%1 = OpExtInstImport "NonSemantic.Shader.DebugInfo.9999"
+OpMemoryModel Logical GLSL450
+OpEntryPoint Vertex %2 "main"
+%void = OpTypeVoid
+%4 = OpTypeFunction %void
+%uint = OpTypeInt 32 0
+%uint_0 = OpConstant %uint 0
+%7 = OpExtInst %void %1 20000 %uint_0
+%2 = OpFunction %void None %4
+%8 = OpLabel
+%9 = OpExtInst %void %1 20001 %uint_0 %7
+OpReturn
+OpFunctionEnd
+)");
+}
+
+TEST(IrBuilder, UnknownShaderDebugInfoInstructionInBlockKnownVersion) {
+  DoErrorMessageCheck(R"(OpCapability Shader
+OpExtension "SPV_KHR_non_semantic_info"
+%1 = OpExtInstImport "NonSemantic.Shader.DebugInfo.101"
+OpMemoryModel Logical GLSL450
+OpEntryPoint Vertex %2 "main"
+%void = OpTypeVoid
+%4 = OpTypeFunction %void
+%2 = OpFunction %void None %4
+%5 = OpLabel
+%6 = OpExtInst %void %1 20000
+OpReturn
+OpFunctionEnd
+)",
+                      "Debug info extension instruction other than "
+                      "DebugScope, DebugNoScope, DebugDeclare, and "
+                      "DebugValue found inside function",
+                      10);
+}
+
+TEST(IrBuilder, KnownShaderDebugInfoInstructionInBlockUnknownVersion) {
+  DoErrorMessageCheck(R"(OpCapability Shader
+OpExtension "SPV_KHR_non_semantic_info"
+%1 = OpExtInstImport "NonSemantic.Shader.DebugInfo.9999"
+OpMemoryModel Logical GLSL450
+OpEntryPoint Vertex %2 "main"
+%3 = OpString "simple.hlsl"
+%void = OpTypeVoid
+%5 = OpTypeFunction %void
+%2 = OpFunction %void None %5
+%6 = OpLabel
+%7 = OpExtInst %void %1 DebugSource %3
+OpReturn
+OpFunctionEnd
+)",
+                      "Debug info extension instruction other than "
+                      "DebugScope, DebugNoScope, DebugDeclare, and "
+                      "DebugValue found inside function",
+                      11);
+}
+
 TEST(IrBuilder, GraphInsideGraph) {
   DoErrorMessageCheck("%2 = OpGraphARM %1\n%3 = OpGraphARM %2",
                       "graph inside graph", 2);
