@@ -2423,6 +2423,38 @@ TEST_F(ValidateSpvEXTDescriptorHeap, OffsetIdFloat) {
       HasSubstr("OffsetIdEXT extra operand must be a 32-bit int scalar type"));
 }
 
+TEST_F(ValidateSpvEXTDescriptorHeap, OffsetIdSignedInt) {
+  const std::string str = R"(
+          OpCapability Shader
+          OpCapability SampledBuffer
+          OpCapability DescriptorHeapEXT
+          OpExtension "SPV_EXT_descriptor_heap"
+          OpMemoryModel Logical GLSL450
+          OpEntryPoint GLCompute %main "main"
+          OpExecutionMode %main LocalSize 1 1 1
+          OpMemberDecorateIdEXT %struct 0 OffsetIdEXT %int_0
+          OpMemberDecorateIdEXT %struct 1 OffsetIdEXT %uint_0
+          OpMemberDecorateIdEXT %struct 2 OffsetIdEXT %uint_0
+          %uint = OpTypeInt 32 0
+          %uint_0 = OpConstant %uint 0
+          %int = OpTypeInt 32 1
+          %int_0 = OpConstant %int 0
+          %14 = OpTypeImage %uint Buffer 0 0 0 2 R32ui
+%struct = OpTypeStruct %14 %uint %uint
+  %void = OpTypeVoid
+     %3 = OpTypeFunction %void
+  %main = OpFunction %void None %3
+     %5 = OpLabel
+          OpReturn
+          OpFunctionEnd
+  )";
+  CompileSuccessfully(str.c_str(), SPV_ENV_VULKAN_1_4);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_4));
+}
+
+TEST_F(ValidateSpvEXTDescriptorHeap, OffsetIdNonConstant) {
+  const std::string str = R"(
+          OpCapability Shader
 TEST_F(ValidateSpvEXTDescriptorHeap, OffsetIdNonConstant) {
   const std::string str = R"(
           OpCapability Shader
@@ -2539,6 +2571,31 @@ TEST_F(ValidateSpvEXTDescriptorHeap, ArrayStrideFloat) {
           "ArrayStrideIdEXT extra operand must be a 32-bit int scalar type"));
 }
 
+TEST_F(ValidateSpvEXTDescriptorHeap, ArrayStrideSignedInt) {
+  const std::string str = R"(
+      OpCapability Shader
+      OpCapability DescriptorHeapEXT
+      OpExtension "SPV_EXT_descriptor_heap"
+      OpMemoryModel Logical GLSL450
+      OpEntryPoint GLCompute %main "main"
+      OpExecutionMode %main LocalSize 1 1 1
+      OpDecorateId %array ArrayStrideIdEXT %int_4
+%int = OpTypeInt 32 1
+%int_4 = OpConstant %int 4
+%uint = OpTypeInt 32 0
+%uint_2 = OpConstant %uint 2
+%sampler = OpTypeSampler
+%array = OpTypeArray %sampler %uint_2
+%void = OpTypeVoid
+  %3 = OpTypeFunction %void
+%main = OpFunction %void None %3
+  %5 = OpLabel
+      OpReturn
+      OpFunctionEnd
+  )";
+  CompileSuccessfully(str.c_str(), SPV_ENV_VULKAN_1_4);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_4));
+}
 TEST_F(ValidateSpvEXTDescriptorHeap, ArrayStrideConstantZero) {
   const std::string str = R"(
       OpCapability Shader
