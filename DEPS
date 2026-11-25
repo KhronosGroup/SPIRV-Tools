@@ -77,7 +77,7 @@ vars = {
   # Use a recent protobuf, which can depend on abseil
   'protobuf_revision': '35cd01f9fe9afbeea38cc7b979a3b6bfcde82c03',
   're2_revision': '2da0056814cf180480a19f5cf811e7e1c054bf6d',
-  'spirv_headers_revision': 'fb1379425b16e58dcbdda7be0f8604a7f5cdce78',
+  'spirv_headers_revision': 'f6f78c717057ac7f5f3ea021f3f962aaf9d4da7e',
   'mimalloc_revision': '1d8fd85aa3abe719cd9c42c855f1fc27dbccf84d',
 
   # SPIRV-Tools standalone GN-only dependencies
