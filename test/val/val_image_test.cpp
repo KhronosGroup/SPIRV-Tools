@@ -1812,6 +1812,18 @@ TEST_F(ValidateImage, ImageTexelPointerImageCoordSizeBad) {
       HasSubstr("Expected Coordinate to have 2 components, but given 3"));
 }
 
+TEST_F(ValidateImage, ImageTexelPointerArrayed3DBad) {
+  const std::string body = R"(
+%texel_ptr = OpImageTexelPointer %ptr_Image_f32 %uniform_image_f32_3d_0111 %u32vec3_012 %u32_0
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body).c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Image with Arrayed 1 must have Dim 1D, 2D, or Cube "
+                        "with OpImageTexelPointer"));
+}
+
 TEST_F(ValidateImage, ImageTexelPointerSampleNotIntScalar) {
   const std::string body = R"(
 %texel_ptr = OpImageTexelPointer %ptr_Image_u32 %private_image_u32_buffer_0002_r32ui %u32_0 %f32_0

@@ -353,7 +353,8 @@ uint32_t GetMinCoordSize(spv::Op opcode, const ImageTypeInfo& info) {
     return GetPlaneCoordSize(info);
   }
 
-  if (opcode == spv::Op::OpImageTexelPointer) {
+  if (opcode == spv::Op::OpImageTexelPointer ||
+      opcode == spv::Op::OpUntypedImageTexelPointerEXT) {
     if (info.arrayed == 0) {
       return GetPlaneCoordSize(info);
     } else if (info.dim == spv::Dim::Dim1D) {
@@ -1283,7 +1284,8 @@ spv_result_t ValidateImageCoordinate(ValidationState_t& _,
   const uint32_t min_coord_size = GetMinCoordSize(opcode, info);
   const uint32_t actual_coord_size = _.GetDimension(coord_type);
 
-  if (opcode == spv::Op::OpImageTexelPointer) {
+  if (opcode == spv::Op::OpImageTexelPointer ||
+      opcode == spv::Op::OpUntypedImageTexelPointerEXT) {
     if (min_coord_size != actual_coord_size) {
       return _.diag(SPV_ERROR_INVALID_DATA, inst)
              << "Expected Coordinate to have " << min_coord_size
@@ -1537,6 +1539,14 @@ spv_result_t ValidateImageTexelPointer(ValidationState_t& _,
   if (info.dim == spv::Dim::TileImageDataEXT) {
     return _.diag(SPV_ERROR_INVALID_DATA, inst)
            << "Image Dim TileImageDataEXT cannot be used with "
+           << (isUntyped ? "OpUntypedImageTexelPointerEXT"
+                         : "OpImageTexelPointer");
+  }
+
+  if (info.arrayed == 1 && info.dim != spv::Dim::Dim1D &&
+      info.dim != spv::Dim::Dim2D && info.dim != spv::Dim::Cube) {
+    return _.diag(SPV_ERROR_INVALID_DATA, inst)
+           << "Image with Arrayed 1 must have Dim 1D, 2D, or Cube with "
            << (isUntyped ? "OpUntypedImageTexelPointerEXT"
                          : "OpImageTexelPointer");
   }
