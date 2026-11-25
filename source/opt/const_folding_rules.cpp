@@ -2418,11 +2418,15 @@ void ConstantFoldingRules::AddFoldingRules() {
           [](uint64_t a, uint64_t b) { return (b != 0 ? a / b : 0); })));
   rules_[spv::Op::OpUDiv].push_back(FoldRedundantDiv());
 
+  // Dividing the minimum value by -1 overflows, which is undefined in SPIR-V
+  // but traps on some hosts, so -1 is handled without a division.
   rules_[spv::Op::OpSDiv].push_back(FoldBinaryOp(
       FoldBinaryIntegerOperation<Signed>([](uint64_t a, uint64_t b) {
-        return (b != 0 ? static_cast<uint64_t>(static_cast<int64_t>(a) /
-                                               static_cast<int64_t>(b))
-                       : 0);
+        if (b == 0) return static_cast<uint64_t>(0ull);
+        if (static_cast<int64_t>(b) == -1)
+          return static_cast<uint64_t>(0ull) - a;
+        return static_cast<uint64_t>(static_cast<int64_t>(a) /
+                                     static_cast<int64_t>(b));
       })));
   rules_[spv::Op::OpSDiv].push_back(FoldRedundantDiv());
 
@@ -2432,19 +2436,21 @@ void ConstantFoldingRules::AddFoldingRules() {
 
   rules_[spv::Op::OpSRem].push_back(FoldBinaryOp(
       FoldBinaryIntegerOperation<Signed>([](uint64_t a, uint64_t b) {
-        return (b != 0 ? static_cast<uint64_t>(static_cast<int64_t>(a) %
-                                               static_cast<int64_t>(b))
-                       : 0);
+        if (b == 0 || static_cast<int64_t>(b) == -1)
+          return static_cast<uint64_t>(0ull);
+        return static_cast<uint64_t>(static_cast<int64_t>(a) %
+                                     static_cast<int64_t>(b));
       })));
 
   rules_[spv::Op::OpSMod].push_back(FoldBinaryOp(
       FoldBinaryIntegerOperation<Signed>([](uint64_t a, uint64_t b) {
-        if (b == 0) return static_cast<uint64_t>(0ull);
+        if (b == 0 || static_cast<int64_t>(b) == -1)
+          return static_cast<uint64_t>(0ull);
 
         int64_t signed_a = static_cast<int64_t>(a);
         int64_t signed_b = static_cast<int64_t>(b);
         int64_t result = signed_a % signed_b;
-        if ((signed_b < 0) != (result < 0)) result += signed_b;
+        if (result != 0 && (signed_b < 0) != (result < 0)) result += signed_b;
         return static_cast<uint64_t>(result);
       })));
 
