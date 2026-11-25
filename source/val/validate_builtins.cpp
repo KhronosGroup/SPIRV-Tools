@@ -3987,13 +3987,15 @@ spv_result_t BuiltInsValidator::ValidateWorkgroupSizeAtDefinition(
                 "constant. "
              << GetIdDesc(inst) << " is not a constant.";
     }
-  } else if (inst.opcode() == spv::Op::OpConstantComposite) {
-    // can only validate product if static and not spec constant
+  } else if (inst.opcode() == spv::Op::OpConstantComposite &&
+             inst.words().size() == 6) {
+    // can only validate product if static and not spec constant. The vec3
+    // shape is only enforced above for Vulkan, so the size check guards the
+    // reads of the 3 constituents.
     if (_.FindDef(inst.word(3))->opcode() == spv::Op::OpConstant &&
         _.FindDef(inst.word(4))->opcode() == spv::Op::OpConstant &&
         _.FindDef(inst.word(5))->opcode() == spv::Op::OpConstant) {
       uint64_t x_size, y_size, z_size;
-      // ValidateI32Vec above confirms there will be 3 words to read
       bool static_x = _.EvalConstantValUint64(inst.word(3), &x_size);
       bool static_y = _.EvalConstantValUint64(inst.word(4), &y_size);
       bool static_z = _.EvalConstantValUint64(inst.word(5), &z_size);
