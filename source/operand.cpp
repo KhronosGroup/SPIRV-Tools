@@ -227,6 +227,8 @@ const char* spvOperandTypeStr(spv_operand_type_t type) {
       return "NonSemantic.Shader.DebugInfo.100 debug type qualifier";
     case SPV_OPERAND_TYPE_GATHER_MODES:
       return "gather modes";
+    case SPV_OPERAND_TYPE_ACCESS_SHAPE:
+      return "access shape";
 
     case SPV_OPERAND_TYPE_NONE:
       return "NONE";
@@ -350,6 +352,7 @@ bool spvOperandIsConcrete(spv_operand_type_t type) {
     case SPV_OPERAND_TYPE_SHDEBUG100_DEBUG_OPERATION:
     case SPV_OPERAND_TYPE_SHDEBUG100_DEBUG_TYPE_QUALIFIER:
     case SPV_OPERAND_TYPE_GATHER_MODES:
+    case SPV_OPERAND_TYPE_ACCESS_SHAPE:
       return true;
     default:
       break;

@@ -340,6 +340,9 @@ typedef enum spv_operand_type_t {
   // SPV_QCOM_image_processing3
   SPV_OPERAND_TYPE_GATHER_MODES,
 
+  // SPV_QCOM_image_vector_read_write
+  SPV_OPERAND_TYPE_ACCESS_SHAPE,
+
   // This is a sentinel value, and does not represent an operand type.
   // It should come last.
   SPV_OPERAND_TYPE_NUM_OPERAND_TYPES,
