@@ -21,6 +21,7 @@
 #include <optional>
 #include <unordered_map>
 #include <unordered_set>
+#include <vector>
 
 #include "source/enum_set.h"
 #include "source/extensions.h"
@@ -48,6 +49,9 @@ class InvocationInterlockPlacementPass : public Pass {
  private:
   using BlockSet = std::unordered_set<uint32_t>;
 
+  // Where a point in the entry function lies relative to the critical section.
+  enum class Phase { kBeforeBegin, kInside, kAfterEnd };
+
   // Specifies whether a function originally had a begin or end instruction.
   struct ExtractionResult {
     bool had_begin : 1;
@@ -68,11 +72,9 @@ class InvocationInterlockPlacementPass : public Pass {
   void forEachNext(uint32_t block_id, bool reverse_cfg,
                    std::function<void(uint32_t)> f);
 
-  // Add either a begin or end instruction to the edge of the basic block. If
-  // at_end is true, add the instruction to the end of the block; otherwise add
-  // the instruction to the beginning of the basic block.
-  void addInstructionAtBlockBoundary(BasicBlock* block, spv::Op opcode,
-                                     bool at_end);
+  // Inserts a new instruction for each of opcodes, in order, before `before`.
+  void insertInstructions(Instruction* before,
+                          const std::vector<spv::Op>& opcodes);
 
   // Remove every OpBeginInvocationInterlockEXT instruction in block after the
   // first. Returns whether any instructions were removed.
@@ -117,12 +119,13 @@ class InvocationInterlockPlacementPass : public Pass {
   // branch to the new block instead.
   BasicBlock* splitEdge(BasicBlock* block, uint32_t succ_id);
 
-  // For the edge from block to next_id, places a begin or end instruction on
-  // the edge, based on the direction we are walking the CFG, specified in
-  // reverse_cfg.
-  Status placeInstructionsForEdge(BasicBlock* block, uint32_t next_id,
-                                  BlockSet& inside, BlockSet& previous_inside,
-                                  spv::Op opcode, bool reverse_cfg);
+  // Returns the phase at the start of a block.
+  Phase phaseAtStart(uint32_t block_id) const;
+  // Returns the phase at the end of a block.
+  Phase phaseAtEnd(uint32_t block_id) const;
+
+  // Adds a begin, an end, or both to the edge from block to succ_id, as needed.
+  Status placeInstructionsForEdge(BasicBlock* block, uint32_t succ_id);
   // Calls placeInstructionsForEdge for each edge in block.
   Status placeInstructions(BasicBlock* block);
 
