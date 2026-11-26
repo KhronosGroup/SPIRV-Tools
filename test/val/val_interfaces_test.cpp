@@ -2376,6 +2376,202 @@ TEST_F(ValidateInterfacesTest, VulkanComponentArrayOfArraysOutput) {
                         "arrays of scalars or vectors"));
 }
 
+TEST_F(ValidateInterfacesTest, VulkanXfbBufferMatchingStride) {
+  const std::string text = R"(
+    OpCapability Shader
+    OpCapability TransformFeedback
+    OpMemoryModel Logical GLSL450
+    OpEntryPoint Vertex %main "main" %var1 %var2
+    OpExecutionMode %main Xfb
+    OpDecorate %var1 Location 0
+    OpDecorate %var1 XfbBuffer 0
+    OpDecorate %var1 XfbStride 16
+    OpDecorate %var2 Location 1
+    OpDecorate %var2 XfbBuffer 0
+    OpDecorate %var2 XfbStride 16
+    %void = OpTypeVoid
+    %void_fn = OpTypeFunction %void
+    %float = OpTypeFloat 32
+    %ptr_output_float = OpTypePointer Output %float
+    %var1 = OpVariable %ptr_output_float Output
+    %var2 = OpVariable %ptr_output_float Output
+    %main = OpFunction %void None %void_fn
+    %entry = OpLabel
+    OpReturn
+    OpFunctionEnd
+  )";
+
+  CompileSuccessfully(text, SPV_ENV_VULKAN_1_0);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_0));
+}
+
+TEST_F(ValidateInterfacesTest, VulkanXfbBufferMismatchedStride) {
+  const std::string text = R"(
+    OpCapability Shader
+    OpCapability TransformFeedback
+    OpMemoryModel Logical GLSL450
+    OpEntryPoint Vertex %main "main" %var1 %var2
+    OpExecutionMode %main Xfb
+    OpDecorate %var1 Location 0
+    OpDecorate %var1 XfbBuffer 0
+    OpDecorate %var1 XfbStride 16
+    OpDecorate %var2 Location 1
+    OpDecorate %var2 XfbBuffer 0
+    OpDecorate %var2 XfbStride 32
+    %void = OpTypeVoid
+    %void_fn = OpTypeFunction %void
+    %float = OpTypeFloat 32
+    %ptr_output_float = OpTypePointer Output %float
+    %var1 = OpVariable %ptr_output_float Output
+    %var2 = OpVariable %ptr_output_float Output
+    %main = OpFunction %void None %void_fn
+    %entry = OpLabel
+    OpReturn
+    OpFunctionEnd
+  )";
+
+  CompileSuccessfully(text, SPV_ENV_VULKAN_1_0);
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_VULKAN_1_0));
+  EXPECT_THAT(getDiagnosticString(),
+              AnyVUID("VUID-StandaloneSpirv-XfbBuffer-04693"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("uses XfbBuffer 0 with XfbStride 32, but the same "
+                        "XfbBuffer is already used with XfbStride 16"));
+}
+
+TEST_F(ValidateInterfacesTest, VulkanXfbBufferDifferentBuffersDifferentStride) {
+  const std::string text = R"(
+    OpCapability Shader
+    OpCapability TransformFeedback
+    OpMemoryModel Logical GLSL450
+    OpEntryPoint Vertex %main "main" %var1 %var2
+    OpExecutionMode %main Xfb
+    OpDecorate %var1 Location 0
+    OpDecorate %var1 XfbBuffer 0
+    OpDecorate %var1 XfbStride 16
+    OpDecorate %var2 Location 1
+    OpDecorate %var2 XfbBuffer 1
+    OpDecorate %var2 XfbStride 32
+    %void = OpTypeVoid
+    %void_fn = OpTypeFunction %void
+    %float = OpTypeFloat 32
+    %ptr_output_float = OpTypePointer Output %float
+    %var1 = OpVariable %ptr_output_float Output
+    %var2 = OpVariable %ptr_output_float Output
+    %main = OpFunction %void None %void_fn
+    %main_entry = OpLabel
+    OpReturn
+    OpFunctionEnd
+  )";
+
+  CompileSuccessfully(text, SPV_ENV_VULKAN_1_0);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_0));
+}
+
+TEST_F(ValidateInterfacesTest, VulkanXfbBufferMismatchedStrideBlockMembers) {
+  const std::string text = R"(
+    OpCapability Shader
+    OpCapability TransformFeedback
+    OpMemoryModel Logical GLSL450
+    OpEntryPoint Vertex %main "main" %var
+    OpExecutionMode %main Xfb
+    OpDecorate %block Block
+    OpMemberDecorate %block 0 Location 0
+    OpMemberDecorate %block 0 XfbBuffer 0
+    OpMemberDecorate %block 0 XfbStride 16
+    OpMemberDecorate %block 1 Location 1
+    OpMemberDecorate %block 1 XfbBuffer 0
+    OpMemberDecorate %block 1 XfbStride 32
+    %void = OpTypeVoid
+    %void_fn = OpTypeFunction %void
+    %float = OpTypeFloat 32
+    %block = OpTypeStruct %float %float
+    %ptr_output_block = OpTypePointer Output %block
+    %var = OpVariable %ptr_output_block Output
+    %main = OpFunction %void None %void_fn
+    %main_entry = OpLabel
+    OpReturn
+    OpFunctionEnd
+  )";
+
+  CompileSuccessfully(text, SPV_ENV_VULKAN_1_0);
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_VULKAN_1_0));
+  EXPECT_THAT(getDiagnosticString(),
+              AnyVUID("VUID-StandaloneSpirv-XfbBuffer-04693"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("uses XfbBuffer 0 with XfbStride 32, but the same "
+                        "XfbBuffer is already used with XfbStride 16"));
+}
+
+TEST_F(ValidateInterfacesTest, VulkanXfbBufferMatchingStrideArrayedBlock) {
+  const std::string text = R"(
+    OpCapability Shader
+    OpCapability TransformFeedback
+    OpMemoryModel Logical GLSL450
+    OpEntryPoint Vertex %main "main" %var
+    OpExecutionMode %main Xfb
+    OpDecorate %var Location 0
+    OpDecorate %block Block
+    OpMemberDecorate %block 0 XfbBuffer 0
+    OpMemberDecorate %block 0 XfbStride 16
+    OpMemberDecorate %block 1 XfbBuffer 0
+    OpMemberDecorate %block 1 XfbStride 16
+    %void = OpTypeVoid
+    %void_fn = OpTypeFunction %void
+    %float = OpTypeFloat 32
+    %uint = OpTypeInt 32 0
+    %uint_2 = OpConstant %uint 2
+    %block = OpTypeStruct %float %float
+    %block_array = OpTypeArray %block %uint_2
+    %ptr_output_array = OpTypePointer Output %block_array
+    %var = OpVariable %ptr_output_array Output
+    %main = OpFunction %void None %void_fn
+    %main_entry = OpLabel
+    OpReturn
+    OpFunctionEnd
+  )";
+
+  CompileSuccessfully(text, SPV_ENV_VULKAN_1_0);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_0));
+}
+
+TEST_F(ValidateInterfacesTest, VulkanXfbBufferMismatchedStrideArrayedBlock) {
+  const std::string text = R"(
+    OpCapability Shader
+    OpCapability TransformFeedback
+    OpMemoryModel Logical GLSL450
+    OpEntryPoint Vertex %main "main" %var
+    OpExecutionMode %main Xfb
+    OpDecorate %var Location 0
+    OpDecorate %block Block
+    OpMemberDecorate %block 0 XfbBuffer 0
+    OpMemberDecorate %block 0 XfbStride 16
+    OpMemberDecorate %block 1 XfbBuffer 0
+    OpMemberDecorate %block 1 XfbStride 32
+    %void = OpTypeVoid
+    %void_fn = OpTypeFunction %void
+    %float = OpTypeFloat 32
+    %uint = OpTypeInt 32 0
+    %uint_2 = OpConstant %uint 2
+    %block = OpTypeStruct %float %float
+    %block_array = OpTypeArray %block %uint_2
+    %ptr_output_array = OpTypePointer Output %block_array
+    %var = OpVariable %ptr_output_array Output
+    %main = OpFunction %void None %void_fn
+    %main_entry = OpLabel
+    OpReturn
+    OpFunctionEnd
+  )";
+
+  CompileSuccessfully(text, SPV_ENV_VULKAN_1_0);
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_VULKAN_1_0));
+  EXPECT_THAT(getDiagnosticString(),
+              AnyVUID("VUID-StandaloneSpirv-XfbBuffer-04693"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("uses XfbBuffer 0 with XfbStride 32, but the same "
+                        "XfbBuffer is already used with XfbStride 16"));
+}
+
 }  // namespace
 }  // namespace val
 }  // namespace spvtools

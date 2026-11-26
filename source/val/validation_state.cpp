@@ -3444,6 +3444,8 @@ std::string ValidationState_t::VkErrorID(uint32_t id,
       return VUID_WRAP(VUID-StandaloneSpirv-OpGroupNonUniformBallotBitCount-04685);
     case 4686:
       return VUID_WRAP(VUID-StandaloneSpirv-None-04686);
+    case 4693:
+      return VUID_WRAP(VUID-StandaloneSpirv-XfbBuffer-04693);
     case 4698:
       return VUID_WRAP(VUID-StandaloneSpirv-RayPayloadKHR-04698);
     case 4699:

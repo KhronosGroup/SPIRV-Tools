@@ -14,6 +14,8 @@
 // limitations under the License.
 
 #include <algorithm>
+#include <map>
+#include <unordered_map>
 #include <vector>
 
 #include "source/spirv_constant.h"
@@ -779,6 +781,88 @@ spv_result_t ValidateStorageClass(ValidationState_t& _,
   return SPV_SUCCESS;
 }
 
+// Checks that, within the output interface of |entry_point|, everything
+// decorated with the same XfbBuffer is also decorated with the same XfbStride.
+spv_result_t ValidateXfbStride(ValidationState_t& _,
+                               const Instruction* entry_point) {
+  // Both XfbBuffer and XfbStride require this capability.
+  if (!_.HasCapability(spv::Capability::TransformFeedback)) return SPV_SUCCESS;
+
+  // The XfbBuffer and XfbStride found on a single variable or block member.
+  struct XfbInfo {
+    bool has_buffer = false;
+    bool has_stride = false;
+    uint32_t buffer = 0;
+    uint32_t stride = 0;
+  };
+
+  // Maps each XfbBuffer to the first XfbStride found for it.
+  std::unordered_map<uint32_t, uint32_t> buffer_strides;
+
+  for (uint32_t i = 3; i < entry_point->operands().size(); ++i) {
+    const auto variable = _.FindDef(entry_point->GetOperandAs<uint32_t>(i));
+    if (variable->opcode() != spv::Op::OpVariable ||
+        variable->GetOperandAs<spv::StorageClass>(2) !=
+            spv::StorageClass::Output) {
+      continue;
+    }
+
+    // Keyed by member index, with the variable itself as kInvalidMember. Direct
+    // duplicate decorations are rejected earlier, but not necessarily those
+    // introduced by a decoration group.
+    std::map<int, XfbInfo> infos;
+    auto collect = [&infos](const Decoration& dec) {
+      if (dec.dec_type() == spv::Decoration::XfbBuffer) {
+        auto& info = infos[dec.struct_member_index()];
+        info.has_buffer = true;
+        info.buffer = dec.params()[0];
+      } else if (dec.dec_type() == spv::Decoration::XfbStride) {
+        auto& info = infos[dec.struct_member_index()];
+        info.has_stride = true;
+        info.stride = dec.params()[0];
+      }
+    };
+
+    for (auto& dec : _.id_decorations(variable->id())) collect(dec);
+
+    const auto ptr_type = _.FindDef(variable->type_id());
+    auto type = _.FindDef(ptr_type->GetOperandAs<uint32_t>(2));
+    while (type->opcode() == spv::Op::OpTypeArray ||
+           type->opcode() == spv::Op::OpTypeRuntimeArray) {
+      type = _.FindDef(type->GetOperandAs<uint32_t>(1));
+    }
+    if (type->opcode() == spv::Op::OpTypeStruct &&
+        _.HasDecoration(type->id(), spv::Decoration::Block)) {
+      for (auto& dec : _.id_decorations(type->id())) {
+        if (dec.struct_member_index() != Decoration::kInvalidMember) {
+          collect(dec);
+        }
+      }
+    }
+
+    for (const auto& entry : infos) {
+      // The VUID only covers what is decorated with an XfbBuffer. It is not
+      // clear how a member that declares just one of the two decorations
+      // combines with what it inherits from the block, so don't check those.
+      const auto& info = entry.second;
+      if (!info.has_buffer || !info.has_stride) continue;
+
+      const auto result = buffer_strides.emplace(info.buffer, info.stride);
+      const uint32_t expected_stride = result.first->second;
+      if (expected_stride != info.stride) {
+        return _.diag(SPV_ERROR_INVALID_DATA, variable)
+               << _.VkErrorID(4693) << "Entry-point output interface variable "
+               << _.getIdName(variable->id()) << " uses XfbBuffer "
+               << info.buffer << " with XfbStride " << info.stride
+               << ", but the same XfbBuffer is already used with XfbStride "
+               << expected_stride;
+      }
+    }
+  }
+
+  return SPV_SUCCESS;
+}
+
 }  // namespace
 
 spv_result_t ValidateInterfaces(ValidationState_t& _) {
@@ -798,6 +882,9 @@ spv_result_t ValidateInterfaces(ValidationState_t& _) {
           return error;
         }
         if (auto error = ValidateStorageClass(_, &inst)) {
+          return error;
+        }
+        if (auto error = ValidateXfbStride(_, &inst)) {
           return error;
         }
       }
