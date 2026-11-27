@@ -17,6 +17,7 @@
 #include <limits>
 #include <memory>
 #include <unordered_map>
+#include <unordered_set>
 #include <utility>
 #include <vector>
 
@@ -208,6 +209,12 @@ class LoopUnrollerUtilsImpl {
   // Add all blocks_to_add_ to function_ at the |insert_point|.
   void AddBlocksToFunction(const BasicBlock* insert_point);
 
+  // Moves the blocks of |loop| that are laid out after its merge block to just
+  // before the merge block, keeping the structured order. The header must
+  // already be laid out before the merge block, which can only fail when the
+  // merge is unreachable.
+  void MoveLoopBlocksBeforeMerge(Loop* loop);
+
   // Duplicates the |old_loop|, cloning each body and remapping the ids without
   // removing instructions or changing relative structure. Result will be stored
   // in |new_loop|.
@@ -369,6 +376,10 @@ void LoopUnrollerUtilsImpl::Init(Loop* loop) {
   // Blocks are stored in an unordered set of ids in the loop class, we need to
   // create the dominator ordered list.
   ComputeLoopOrderedBlocks(loop);
+
+  // The unrolled copies are inserted in front of the merge block, so every
+  // original loop block has to be laid out before it.
+  MoveLoopBlocksBeforeMerge(loop);
 }
 
 // This function is used to partially unroll the loop when the factor provided
@@ -889,6 +900,30 @@ bool LoopUnrollerUtilsImpl::DuplicateLoop(Loop* old_loop, Loop* new_loop) {
   new_loop->SetLatchBlock(state_.new_latch_block);
   new_loop->SetMergeBlock(new_merge.release());
   return true;
+}
+
+void LoopUnrollerUtilsImpl::MoveLoopBlocksBeforeMerge(Loop* loop) {
+  BasicBlock* merge_block = loop->GetMergeBlock();
+  std::unordered_set<uint32_t> after_merge;
+  bool seen_merge = false;
+  for (BasicBlock& block : function_) {
+    if (&block == merge_block) {
+      seen_merge = true;
+    } else if (seen_merge && loop->IsInsideLoop(&block)) {
+      after_merge.insert(block.id());
+    }
+  }
+  if (after_merge.empty()) return;
+
+  assert(after_merge.count(loop->GetHeaderBlock()->id()) == 0 &&
+         "Loop header is laid out after its merge block.");
+
+  std::vector<uint32_t> ids;
+  ids.reserve(after_merge.size());
+  for (BasicBlock* block : loop_blocks_inorder_) {
+    if (after_merge.count(block->id())) ids.push_back(block->id());
+  }
+  function_.MoveBasicBlocksBefore(ids, merge_block);
 }
 
 // Whenever the utility copies a block it stores it in a temporary buffer, this
