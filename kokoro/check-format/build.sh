@@ -20,8 +20,27 @@ SCRIPT_DIR="$( cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd )"
 SRC_ROOT="$( cd "${SCRIPT_DIR}/../.." >/dev/null 2>&1 && pwd )"
 TARGET_BRANCH="${KOKORO_GITHUB_PULL_REQUEST_TARGET_BRANCH-main}"
 
+# Translate a path under KOKORO_ROOT_DIR to the corresponding host VM path under
+# KOKORO_HOST_ROOT_DIR when running Docker sibling containers on Kokoro Instances.
+function to_host_path() {
+  local path="$1"
+  if [ -n "${KOKORO_HOST_ROOT_DIR:-}" ] && [ -n "${KOKORO_ROOT_DIR:-}" ]; then
+    local container_root="${KOKORO_ROOT_DIR%/}"
+    local host_root="${KOKORO_HOST_ROOT_DIR%/}"
+    if [ "${path}" = "${container_root}" ]; then
+      echo "${host_root}"
+    elif [[ "${path}" == "${container_root}/"* ]]; then
+      echo "${host_root}${path#${container_root}}"
+    else
+      echo "${path}"
+    fi
+  else
+    echo "${path}"
+  fi
+}
+
 docker run --rm -i \
-  --volume "${SRC_ROOT}:${SRC_ROOT}" \
+  --volume "$(to_host_path "${SRC_ROOT}"):${SRC_ROOT}" \
   --workdir "${SRC_ROOT}" \
   "us-east4-docker.pkg.dev/shaderc-build/radial-docker/ubuntu-24.04-amd64/formatter" \
   "${SCRIPT_DIR}/build-docker.sh" "${TARGET_BRANCH}"
