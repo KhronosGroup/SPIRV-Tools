@@ -14,6 +14,8 @@
 
 #include "source/diff/diff.h"
 
+#include <iomanip>
+
 #include "source/diff/lcs.h"
 #include "source/disassemble.h"
 #include "source/ext_inst.h"

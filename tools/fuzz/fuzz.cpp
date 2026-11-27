@@ -16,6 +16,7 @@
 #include <cerrno>
 #include <cstring>
 #include <fstream>
+#include <iomanip>
 #include <memory>
 #include <random>
 #include <sstream>

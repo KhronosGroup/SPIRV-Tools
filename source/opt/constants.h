@@ -26,7 +26,6 @@
 #include "source/opt/module.h"
 #include "source/opt/type_manager.h"
 #include "source/opt/types.h"
-#include "source/util/hex_float.h"
 #include "source/util/make_unique.h"
 
 namespace spvtools {
@@ -245,24 +244,11 @@ class FloatConstant : public ScalarConstant {
 
   // Returns the float value of |this|.  The type of |this| must be |Float| with
   // width of 32.
-  float GetFloatValue() const {
-    assert(type()->AsFloat()->width() == 32 &&
-           "Not a 32-bit floating point value.");
-    utils::FloatProxy<float> a(words()[0]);
-    return a.getAsFloat();
-  }
+  float GetFloatValue() const;
 
   // Returns the double value of |this|.  The type of |this| must be |Float|
   // with width of 64.
-  double GetDoubleValue() const {
-    assert(type()->AsFloat()->width() == 64 &&
-           "Not a 32-bit floating point value.");
-    uint64_t combined_words = words()[1];
-    combined_words = combined_words << 32;
-    combined_words |= words()[0];
-    utils::FloatProxy<double> a(combined_words);
-    return a.getAsFloat();
-  }
+  double GetDoubleValue() const;
 };
 
 // Bool type constant.

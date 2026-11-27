@@ -23,6 +23,7 @@
 
 #include "source/opt/def_use_manager.h"
 #include "source/opt/types.h"
+#include "source/util/hex_float.h"
 #include "source/util/make_unique.h"
 #include "source/util/parse_number.h"
 #include "spirv-tools/libspirv.h"

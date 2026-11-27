@@ -20,6 +20,7 @@
 
 #include "ir_context.h"
 #include "iterator.h"
+#include "source/opt/debug_info_manager.h"
 #include "source/util/string_utils.h"
 
 namespace spvtools {

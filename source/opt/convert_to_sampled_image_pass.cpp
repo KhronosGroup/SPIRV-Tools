@@ -18,6 +18,7 @@
 #include <cstring>
 
 #include "source/opt/ir_builder.h"
+#include "source/util/hex_float.h"
 #include "source/util/make_unique.h"
 #include "source/util/parse_number.h"
 

@@ -22,6 +22,7 @@
 #include <utility>
 
 #include "source/extensions.h"
+#include "source/opt/debug_info_manager.h"
 #include "source/opt/reflect.h"
 #include "source/opt/types.h"
 #include "source/util/make_unique.h"

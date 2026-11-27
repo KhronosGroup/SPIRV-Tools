@@ -21,6 +21,7 @@
 #include <stack>
 
 #include "source/cfa.h"
+#include "source/opt/debug_info_manager.h"
 #include "source/opt/eliminate_dead_functions_util.h"
 #include "source/opt/ir_builder.h"
 #include "source/opt/reflect.h"
