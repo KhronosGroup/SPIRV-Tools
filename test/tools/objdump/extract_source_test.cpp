@@ -115,6 +115,56 @@ TEST(ExtractSourceTest, SourceContinued) {
                "[numthreads(1, 1, 1)] void compute_1(){ }");
 }
 
+TEST(ExtractSourceTest, MultipleSourceContinued) {
+  const std::string source = R"(
+      OpCapability Shader
+      OpMemoryModel Logical GLSL450
+ %1 = OpString "first.hlsl"
+ %2 = OpString "second.hlsl"
+      OpSource HLSL 660 %1 "first "
+      OpSourceContinued "source "
+      OpSourceContinued ""
+      OpSourceContinued "body"
+      OpSource HLSL 660 %2 "second "
+      OpSourceContinued "source "
+      OpSourceContinued "body"
+  )";
+
+  auto [success, result] = ExtractSource(source);
+  ASSERT_TRUE(success);
+  ASSERT_EQ(2u, result.size());
+  EXPECT_EQ("first source body", result.at("first.hlsl"));
+  EXPECT_EQ("second source body", result.at("second.hlsl"));
+}
+
+TEST(ExtractSourceTest, SourceContinuedWithoutSource) {
+  const std::string source = R"(
+      OpCapability Shader
+      OpMemoryModel Logical GLSL450
+      OpSourceContinued "unexpected"
+  )";
+
+  auto [success, result] = ExtractSource(source);
+  EXPECT_FALSE(success);
+  EXPECT_TRUE(result.empty());
+}
+
+TEST(ExtractSourceTest, SourceContinuedAfterUnrelatedInstruction) {
+  const std::string source = R"(
+      OpCapability Shader
+      OpMemoryModel Logical GLSL450
+ %1 = OpString "first.hlsl"
+      OpSource HLSL 660 %1 "prefix"
+      OpSourceContinued " fragment"
+ %2 = OpString "second.hlsl"
+      OpSourceContinued "unexpected"
+  )";
+
+  auto [success, result] = ExtractSource(source);
+  EXPECT_FALSE(success);
+  EXPECT_TRUE(result.empty());
+}
+
 TEST(ExtractSourceTest, OnlyFilename) {
   std::string source = R"(
       OpCapability Shader
